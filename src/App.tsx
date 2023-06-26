@@ -4,6 +4,7 @@ import './App.css';
 
 const Main = lazy(() => import('./pages/Main'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Login = lazy(() => import('./pages/Login'));
 const Regist = lazy(() => import('./pages/Regist'));
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Main />} />
           <Route path='/regist' element={<Regist />} />
+          <Route path='/login' element={<Login />} />
           <Route path='*' element={<NotFound />} />
         </Routes>
       </Suspense>

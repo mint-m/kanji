@@ -35,7 +35,7 @@ const Word = styled.div`
 `
 
 const JpWord = styled(Word)`
-    font-size: 3rem;
+    font-size: 5rem;
 `
 
 const JpToKo = styled(Word)`
@@ -45,14 +45,22 @@ const WordDiv = styled.div`
     margin: 0 auto;
     padding: 4rem;
     width: fit-content;
-    display: inline-flexbox;
     border: 1px solid;
 `
 const ControlPannal = styled.div`
     margin: 0 auto;
     padding: 4rem;
-    width: fit-content;
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 2fr 2fr;
+
+    & > button {
+        display: flex;
+        margin: 1rem;
+        padding: 0.5rem 1rem;
+        border: solid 1px #6495ED;
+        border-radius: 0.5rem;
+        justify-content: center;
+        font-size: 1rem;
+        background-color: aliceblue;
+    }
 `
