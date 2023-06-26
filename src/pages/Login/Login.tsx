@@ -8,6 +8,7 @@ const Login = () => {
       Login page
       소셜 로그인
       <div>
+        <GoogleLoginButton/>
       </div>
     </>
   );
