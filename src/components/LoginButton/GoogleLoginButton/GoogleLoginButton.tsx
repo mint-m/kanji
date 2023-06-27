@@ -12,7 +12,8 @@ const GoogleLoginButton = () => {
                 onError={() => {
                     console.log('Login Failed');
                 }}
-
+                type="icon"
+                shape="square"
             />
         </div>
     )
