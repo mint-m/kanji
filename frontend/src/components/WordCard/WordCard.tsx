@@ -1,66 +1,111 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { useCallback } from 'react';
+import styled, { css } from 'styled-components';
+
+export interface WordType {
+    type: 'Mean' | 'Hiragana';
+  }
 
 interface WordCardProps {
-    JpWordRead: string;
-    JpWord: string;
-    JpWordKoreanMean: string;
+    onKnowClick: (know: boolean) => void;
+    onShowClick: (type: WordType['type']) => void;
+    word: {
+        hiragana: string;
+        wordOrigin: string;
+        wordMean: string;
+        tryNum: number;
+    };
+    showHiragana: boolean;
+    showMean: boolean;
 }
 
-const WordCard = (props: WordCardProps) => {
+interface StyledVisibleProps {
+    isVisible: boolean;
+}
+
+const WordCard = React.memo((props: WordCardProps) => {
+    const handleKnowClick = useCallback((know: boolean) => {
+        props.onKnowClick(know);
+    }, [props]);
+
+    const handleShowClick = useCallback((type: WordType['type']) => {
+        props.onShowClick(type);
+    }, [props]);
+
     return (
-        <WordDiv>
+        <div>
             <WordDiv>
-                <Word>{props.JpWordRead}</Word>
-                <JpWord>{props.JpWord}</JpWord>
-                <JpToKo>{props.JpWordKoreanMean}</JpToKo>
+                <Hiragana isVisible={props.showHiragana}>{props.word.hiragana}</Hiragana>
+                <JpWord>{props.word.wordOrigin}</JpWord>
+                <JpToKo isVisible={props.showMean}>{props.word.wordMean}</JpToKo>
             </WordDiv>
             <ControlPannal>
-                <button>한글 뜻</button>
-                <button>요미가미</button>
-                <button>공부하겠습니다</button>
-                <button>외웠습니다</button>
+                <VisibleButton isVisible={!props.showMean} onClick={() => props.onShowClick('Mean')}>한글 뜻</VisibleButton>
+                <VisibleButton isVisible={!props.showHiragana} onClick={() => props.onShowClick('Hiragana')}>요미가미</VisibleButton>
+                <VisibleButton isVisible={true} onClick={() => props.onKnowClick(false)}>공부하겠습니다</VisibleButton>
+                <VisibleButton isVisible={true} onClick={() => props.onKnowClick(true)}>외웠습니다</VisibleButton>
             </ControlPannal>
-        </WordDiv>
+        </div>
     );
-};
+});
 
 export default WordCard;
 
 const Word = styled.div`
+  /* 공통 스타일 */
+  ${css`
     display: flex;
     justify-content: center;
     padding: 0rem 1rem 1rem 1rem;
     font-size: 2rem;
+  `}
+`;
+
+const Hiragana = styled(Word) <StyledVisibleProps>`
+    visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
 `
 
 const JpWord = styled(Word)`
-    font-size: 5rem;
-`
+  /* 추가 스타일 */
+  ${css`
+    font-size: 6rem;
+  `}
+`;
 
-const JpToKo = styled(Word)`
-`
+const JpToKo = styled(Word) <StyledVisibleProps>`
+  /* 추가 스타일 */
+  ${css`
+    height: 4rem;
+  `}
+
+  visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
+`;
 
 const WordDiv = styled.div`
-    margin: 0 auto;
-    padding: 4rem;
-    width: fit-content;
-    border: 1px solid;
-`
-const ControlPannal = styled.div`
-    margin: 0 auto;
-    padding: 4rem;
-    display: grid;
-    grid-template-columns: 2fr 2fr;
+  width: 50rem;
+  height: 50rem;
+  margin: 0 auto;
+  padding: 4rem;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+`;
 
-    & > button {
-        display: flex;
-        margin: 1rem;
-        padding: 0.5rem 1rem;
-        border: solid 1px #6495ED;
-        border-radius: 0.5rem;
-        justify-content: center;
-        font-size: 1rem;
-        background-color: aliceblue;
-    }
-`
+const ControlPannal = styled.div`
+  margin: 0 auto;
+  padding: 4rem;
+  display: grid;
+  grid-template-columns: 2fr 2fr;
+`;
+
+const VisibleButton = styled.div<StyledVisibleProps>`
+    display: flex;
+    margin: 1rem;
+    padding: 0.5rem 1rem;
+    border: solid 1px #6495ED;
+    border-radius: 0.5rem;
+    justify-content: center;
+    font-size: 1rem;
+    background-color: aliceblue;
+    visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
+`;

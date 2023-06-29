@@ -6,9 +6,9 @@ const Login = () => {
   return (
     <>
       Login page
-      소셜 로그인
       <div>
-        <GoogleLoginButton/>
+        <p>소셜 로그인</p>
+        <GoogleLoginButton />
       </div>
     </>
   );

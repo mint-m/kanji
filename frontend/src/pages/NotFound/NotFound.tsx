@@ -9,9 +9,22 @@ const NotFound = () => {
         navigate('/');
     };
 
+    const word = {
+        wordOrigin: '憂鬱な',
+        wordMean: '우울한',
+        hiragana: 'ゆううつな',
+        tryNum: 0
+    }
+
     return (
         <div>
-            <WordCard JpWord='憂鬱な' JpWordKoreanMean='우울한' JpWordRead='ゆううつな' />
+            <WordCard
+                word={word}
+                onKnowClick={()=>{}}
+                onShowClick={()=>{}} 
+                showMean={false}
+                showHiragana={false}
+                />
             요청하신 페이지를 찾을 수 없습니다.
             <button onClick={handleOnclick}>
                 홈으로 가기
