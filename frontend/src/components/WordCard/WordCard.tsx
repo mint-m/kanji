@@ -35,8 +35,8 @@ const WordCard = React.memo((props: WordCardProps) => {
         <div>
             <WordDiv>
                 <Hiragana isVisible={props.showHiragana}>{props.word.hiragana}</Hiragana>
-                <JpWord>{props.word.wordOrigin}</JpWord>
-                <JpToKo isVisible={props.showMean}>{props.word.wordMean}</JpToKo>
+                <OriginWord>{props.word.wordOrigin}</OriginWord>
+                <WordMean isVisible={props.showMean}>{props.word.wordMean}</WordMean>
             </WordDiv>
             <ControlPannal>
                 <VisibleButton isVisible={!props.showMean} onClick={() => props.onShowClick('Mean')}>한글 뜻</VisibleButton>
@@ -64,14 +64,14 @@ const Hiragana = styled(Word) <StyledVisibleProps>`
     visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
 `
 
-const JpWord = styled(Word)`
+const OriginWord = styled(Word)`
   /* 추가 스타일 */
   ${css`
     font-size: 6rem;
   `}
 `;
 
-const JpToKo = styled(Word) <StyledVisibleProps>`
+const WordMean = styled(Word) <StyledVisibleProps>`
   /* 추가 스타일 */
   ${css`
     height: 4rem;
