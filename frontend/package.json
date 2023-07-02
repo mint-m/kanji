@@ -1,5 +1,5 @@
 {
-  "name": "kan-ji",
+  "name": "kan-ji-client",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

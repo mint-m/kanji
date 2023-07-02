@@ -1,0 +1,15 @@
+{
+  "name": "kan-ji",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/mint-m/kan-ji.git",
+  "author": "mint-m <fwwfly@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently \"cd backend && yarn dev\" \"cd frontend && yarn start\" "
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "nodemon": "^2.0.22"
+  }
+}
