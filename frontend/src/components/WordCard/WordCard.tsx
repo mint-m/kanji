@@ -2,50 +2,50 @@ import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
 
 export interface WordType {
-    type: 'Mean' | 'Hiragana';
-  }
+  type: 'Mean' | 'Hiragana';
+}
 
 interface WordCardProps {
-    onKnowClick: (know: boolean) => void;
-    onShowClick: (type: WordType['type']) => void;
-    word: {
-        hiragana: string;
-        wordOrigin: string;
-        wordMean: string;
-        tryNum: number;
-    };
-    showHiragana: boolean;
-    showMean: boolean;
+  onKnowClick: (know: boolean) => void;
+  onShowClick: (type: WordType['type']) => void;
+  word: {
+    hiragana: string;
+    wordOrigin: string;
+    wordMean: string;
+    tryNum: number;
+  };
+  showHiragana: boolean;
+  showMean: boolean;
 }
 
 interface StyledVisibleProps {
-    isVisible: boolean;
+  $isVisible: boolean;
 }
 
 const WordCard = React.memo((props: WordCardProps) => {
-    const handleKnowClick = useCallback((know: boolean) => {
-        props.onKnowClick(know);
-    }, [props]);
+  const handleKnowClick = useCallback((know: boolean) => {
+    props.onKnowClick(know);
+  }, [props]);
 
-    const handleShowClick = useCallback((type: WordType['type']) => {
-        props.onShowClick(type);
-    }, [props]);
+  const handleShowClick = useCallback((type: WordType['type']) => {
+    props.onShowClick(type);
+  }, [props]);
 
-    return (
-        <div>
-            <WordDiv>
-                <Hiragana isVisible={props.showHiragana}>{props.word.hiragana}</Hiragana>
-                <OriginWord>{props.word.wordOrigin}</OriginWord>
-                <WordMean isVisible={props.showMean}>{props.word.wordMean}</WordMean>
-            </WordDiv>
-            <ControlPannal>
-                <VisibleButton isVisible={!props.showMean} onClick={() => props.onShowClick('Mean')}>한글 뜻</VisibleButton>
-                <VisibleButton isVisible={!props.showHiragana} onClick={() => props.onShowClick('Hiragana')}>요미가미</VisibleButton>
-                <VisibleButton isVisible={true} onClick={() => props.onKnowClick(false)}>공부하겠습니다</VisibleButton>
-                <VisibleButton isVisible={true} onClick={() => props.onKnowClick(true)}>외웠습니다</VisibleButton>
-            </ControlPannal>
-        </div>
-    );
+  return (
+    <div>
+      <WordDiv>
+        <Hiragana $isVisible={props.showHiragana}>{props.word.hiragana}</Hiragana>
+        <OriginWord>{props.word.wordOrigin}</OriginWord>
+        <WordMean $isVisible={props.showMean}>{props.word.wordMean}</WordMean>
+      </WordDiv>
+      <ControlPannal>
+        <VisibleButton $isVisible={!props.showMean} onClick={() => props.onShowClick('Mean')}>한글 뜻</VisibleButton>
+        <VisibleButton $isVisible={!props.showHiragana} onClick={() => props.onShowClick('Hiragana')}>요미가미</VisibleButton>
+        <VisibleButton $isVisible={true} onClick={() => props.onKnowClick(false)}>공부하겠습니다</VisibleButton>
+        <VisibleButton $isVisible={true} onClick={() => props.onKnowClick(true)}>외웠습니다</VisibleButton>
+      </ControlPannal>
+    </div>
+  );
 });
 
 export default WordCard;
@@ -61,7 +61,7 @@ const Word = styled.div`
 `;
 
 const Hiragana = styled(Word) <StyledVisibleProps>`
-    visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
+    visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `
 
 const OriginWord = styled(Word)`
@@ -77,7 +77,7 @@ const WordMean = styled(Word) <StyledVisibleProps>`
     height: 4rem;
   `}
 
-  visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
+  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;
 
 const WordDiv = styled.div`
@@ -107,5 +107,5 @@ const VisibleButton = styled.div<StyledVisibleProps>`
     justify-content: center;
     font-size: 1rem;
     background-color: aliceblue;
-    visibility: ${props => (props.isVisible ? 'visible' : 'hidden')};
+    visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;
