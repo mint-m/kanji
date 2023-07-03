@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import styled, { css } from 'styled-components';
 
 export interface WordType {
@@ -30,14 +30,6 @@ interface StyledVisibleProps {
 }
 
 const WordCard = React.memo((props: WordCardProps) => {
-  const handleKnowClick = useCallback((know: boolean) => {
-    props.onKnowClick(know);
-  }, [props]);
-
-  const handleShowClick = useCallback((type: WordType['type']) => {
-    props.onShowClick(type);
-  }, [props]);
-
   return (
     <div>
       <WordDiv>
