@@ -1,13 +1,14 @@
 import React from 'react';
 import Navbar from 'components/Navbar';
-import WordCardSet from 'components/WordCardSet';
-import { styled } from 'styled-components';
+import { Link } from 'react-router-dom';
 
 const Main = () => {
   return (
     <div>
       <Navbar />
-      <WordCardSet />
+      <Link to={'study'}>
+        <button>히히 니뽄</button>
+      </Link>
     </div>
   );
 
