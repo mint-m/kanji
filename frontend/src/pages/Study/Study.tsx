@@ -4,7 +4,7 @@ import SelectStep from 'components/SelectStep';
 import styled from 'styled-components';
 
 const levels = ['JLPT5', 'JLPT4', 'JLPT3', 'JLPT2', 'JLPT1'];
-const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6'];
+const steps = ['STEP 1', 'STEP 2', 'STEP 3', 'STEP 4', 'STEP 5', 'STEP 6'];
 
 const StyledHeading = styled.h1`
   text-align: center;
