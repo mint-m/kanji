@@ -1,7 +1,7 @@
 import WordCard from 'components/WordCard';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IWord } from 'components/WordCard/WordCard';
+import { Word } from 'components/WordCard/WordCard';
 
 
 const NotFound = () => {
@@ -11,7 +11,7 @@ const NotFound = () => {
         navigate('/');
     };
 
-    const word: IWord = {
+    const word: Word = {
         targetWord: '憂鬱な',
         wordMean: '우울한',
         hiragana: 'ゆううつな',

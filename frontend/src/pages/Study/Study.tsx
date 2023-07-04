@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
 import SelectStep from 'components/SelectStep';
 import styled from 'styled-components';
@@ -20,17 +21,22 @@ const Container = styled.div`
 `;
 
 const Study = () => {
-  const [level, setLevel] = useState<string>('JLPT5');
+  const [level, setLevel] = useState<string>('JLPT5'); //set default level to JLTP5 or user progressed level
+  const navigate = useNavigate();
 
   const handleSelectLevel = (selectedLevel: string) => {
     setLevel(selectedLevel);
+  };
+
+  const handleStepClick = (selectedLevel: string) => {
+    navigate('')
   };
 
   return (
     <Container>
       <StyledHeading>Level Selection</StyledHeading>
       <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={level} />
-      <SelectStep level={level} steps={steps} />
+      <SelectStep level={level} steps={steps} onStepClick={handleStepClick} />
     </Container>
   );
 };

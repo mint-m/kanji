@@ -5,7 +5,7 @@ export interface WordType {
   type: 'Mean' | 'Hiragana';
 }
 
-export interface IWord {
+export interface Word {
   tryNum: number;
   targetWord: string;
   wordMean: string;
@@ -15,12 +15,7 @@ export interface IWord {
 interface WordCardProps {
   onKnowClick: (know: boolean) => void;
   onShowClick: (type: WordType['type']) => void;
-  word: {
-    hiragana: string;
-    targetWord: string;
-    wordMean: string;
-    tryNum: number;
-  };
+  word: Word;
   showHiragana: boolean;
   showMean: boolean;
 }
@@ -30,64 +25,50 @@ interface StyledVisibleProps {
 }
 
 const WordCard = React.memo((props: WordCardProps) => {
+  const { word, showHiragana, showMean, onShowClick, onKnowClick } = props;
+
+  const handleShowClick = (type: WordType['type']) => {
+    onShowClick(type);
+  };
+
+  const handleKnowClick = (know: boolean) => {
+    onKnowClick(know);
+  };
+
   return (
-    <div>
-      <WordDiv>
-        <Hiragana $isVisible={props.showHiragana}>{props.word.hiragana}</Hiragana>
-        <OriginWord>{props.word.targetWord}</OriginWord>
-        <WordMean $isVisible={props.showMean}>{props.word.wordMean}</WordMean>
-      </WordDiv>
+    <CardContainer>
+      <WordContainer>
+        <Hiragana $isVisible={showHiragana}>{word.hiragana}</Hiragana>
+        <OriginWord>{word.targetWord}</OriginWord>
+        <WordMean $isVisible={showMean}>{word.wordMean}</WordMean>
+      </WordContainer>
       <ControlPanel>
-        <VisibleButton $isVisible={!props.showMean} onClick={() => props.onShowClick('Mean')}>
+        <VisibleButton $isVisible={!showMean} onClick={() => handleShowClick('Mean')}>
           한글 뜻
         </VisibleButton>
-        <VisibleButton $isVisible={!props.showHiragana} onClick={() => props.onShowClick('Hiragana')}>
+        <VisibleButton $isVisible={!showHiragana} onClick={() => handleShowClick('Hiragana')}>
           요미가미
         </VisibleButton>
-        <VisibleButton $isVisible={true} onClick={() => props.onKnowClick(false)}>
+        <VisibleButton $isVisible={true} onClick={() => handleKnowClick(false)}>
           공부하겠습니다
         </VisibleButton>
-        <VisibleButton $isVisible={true} onClick={() => props.onKnowClick(true)}>
+        <VisibleButton $isVisible={true} onClick={() => handleKnowClick(true)}>
           외웠습니다
         </VisibleButton>
       </ControlPanel>
-    </div>
+    </CardContainer>
   );
 });
 
 export default WordCard;
 
-const Word = styled.div`
-  /* 공통 스타일 */
-  ${css`
-    display: flex;
-    justify-content: center;
-    padding: 0rem 1rem 1rem 1rem;
-    font-size: 2rem;
-  `}
+const CardContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
-const Hiragana = styled(Word) <StyledVisibleProps>`
-  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
-`;
-
-const OriginWord = styled(Word)`
-  /* 추가 스타일 */
-  ${css`
-    font-size: 6rem;
-  `}
-`;
-
-const WordMean = styled(Word) <StyledVisibleProps>`
-  /* 추가 스타일 */
-  ${css`
-    height: 4rem;
-  `}
-
-  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
-`;
-
-const WordDiv = styled.div`
+const WordContainer = styled.div`
   width: 30rem;
   height: 30rem;
   margin: 0 auto;
@@ -105,7 +86,7 @@ const ControlPanel = styled.div`
   grid-template-columns: 2fr 2fr;
 `;
 
-const VisibleButton = styled.button<StyledVisibleProps>`
+const StyledButton = styled.button`
   display: flex;
   margin: 1rem;
   padding: 0.5rem 1rem;
@@ -114,5 +95,21 @@ const VisibleButton = styled.button<StyledVisibleProps>`
   justify-content: center;
   font-size: 1rem;
   background-color: aliceblue;
+`;
+
+const VisibleButton = styled(StyledButton) <StyledVisibleProps>`
+  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
+`;
+
+const Hiragana = styled.div<StyledVisibleProps>`
+  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
+`;
+
+const OriginWord = styled.div`
+  font-size: 6rem;
+`;
+
+const WordMean = styled.div<StyledVisibleProps>`
+  height: 4rem;
   visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;

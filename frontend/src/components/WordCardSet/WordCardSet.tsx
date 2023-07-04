@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import WordCard, { WordType, IWord } from 'components/WordCard/WordCard';
+import WordCard, { WordType, Word } from 'components/WordCard/WordCard';
 
 
-const WordSet: IWord[] = JSON.parse(`[{
+const WordSet: Word[] = JSON.parse(`[{
   "hiragana": "あい",
   "targetWord": "[愛]",
   "wordMean": "[명사]사랑;애정",

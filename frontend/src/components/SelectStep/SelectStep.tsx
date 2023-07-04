@@ -4,6 +4,7 @@ import styled from 'styled-components';
 interface SelectStepProps {
   level: string;
   steps: string[];
+  onStepClick: (step: string) => void;
 }
 
 const StepButton = styled.button`
@@ -45,15 +46,11 @@ const Container = styled.div`
   margin-top: 2%;
 `;
 
-const SelectStep: React.FC<SelectStepProps> = ({ level, steps }) => {
-  const handleStepClick = (step: string) => {
-    console.log(step);
-  };
-
+const SelectStep: React.FC<SelectStepProps> = ({ level, steps, onStepClick }) => {
   return (
     <Container>
       {steps.map((step, index) => (
-        <StepButton key={index} onClick={() => handleStepClick(step)}>
+        <StepButton key={index} onClick={() => onStepClick(step)}>
           {step}
         </StepButton>
       ))}
