@@ -25,7 +25,7 @@ const StepButton = styled.button`
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #4f858cb8;
+    background-color: #8bf1ff;
     color: #fff;
     display: flex;
     justify-content: center;
