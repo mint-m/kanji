@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
 import SelectStep from 'components/SelectStep';
 import styled from 'styled-components';
+import { useDispatch } from 'react-redux';
+import * as levelActions from 'store/modules/level';
 
 const levels = ['JLPT5', 'JLPT4', 'JLPT3', 'JLPT2', 'JLPT1'];
 const steps = ['STEP 1', 'STEP 2', 'STEP 3', 'STEP 4', 'STEP 5', 'STEP 6'];
@@ -20,14 +22,17 @@ const Container = styled.div`
 `;
 
 const Study = () => {
-  const [level, setLevel] = useState<string>('JLPT5'); //set default level to JLTP5 or user progressed level
+  const [level, setLevel] = useState<string>('JLPT5');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleSelectLevel = (selectedLevel: string) => {
     setLevel(selectedLevel);
+    dispatch(levelActions.setLevel(level));
   };
-
-  const handleStepClick = (selectedLevel: string) => {
+  
+  const handleStepClick = (selectedStep: string) => {
+    dispatch(levelActions.setStep(selectedStep));
     navigate('')
   };
 

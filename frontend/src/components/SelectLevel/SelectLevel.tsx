@@ -1,8 +1,5 @@
 import React from 'react';
-import { bindActionCreators } from 'redux'
 import styled from 'styled-components';
-import { useDispatch } from 'react-redux';
-import * as levelActions from 'modules/level';
 
 interface SelectLevelProps {
   levels: string[];
@@ -32,11 +29,8 @@ const Container = styled.div`
 `;
 
 const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, nowProgress }) => {
-  const dispatch = useDispatch();
-
   const handleLevelClick = (level: string) => {
     onSelectLevel(level);
-    dispatch(levelActions.setLevel(level));
   };
 
   return (
