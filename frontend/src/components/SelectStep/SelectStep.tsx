@@ -12,7 +12,7 @@ const StepButton = styled.button`
   background-color: #eaeaea;
   border: none;
   border-radius: 4px;
-  padding: 1vh 2vh;
+  padding: 0.8vw 1.5vw;
   margin-right: 1vh;
   cursor: pointer;
   font-size: 1rem;

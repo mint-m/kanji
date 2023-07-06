@@ -1,17 +1,19 @@
+
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import './App.css';
+import Navbar from 'components/Navbar';
 
-const Main = lazy(() => import('./pages/Main'));
-const NotFound = lazy(() => import('./pages/NotFound'));
-const Login = lazy(() => import('./pages/Login'));
-const Regist = lazy(() => import('./pages/Regist'));
-const Stage = lazy(() => import('./pages/Stage'));
-const Study = lazy(() => import('./pages/Study'));
+const Main = lazy(() => import('pages/Main'));
+const NotFound = lazy(() => import('pages/NotFound'));
+const Login = lazy(() => import('pages/Login'));
+const Regist = lazy(() => import('pages/Regist'));
+const Stage = lazy(() => import('pages/Stage'));
+const Study = lazy(() => import('pages/Study'));
 
-function App() {
+const App = () => {
   return (
     <BrowserRouter>
+      <Navbar />
       <Suspense fallback={<Main />}>
         <Routes>
           <Route path='/' element={<Main />} />

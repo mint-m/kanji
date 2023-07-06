@@ -6,8 +6,25 @@ const WordSet: Word[] = JSON.parse(`[{
   "targetWord": "[愛]",
   "wordMean": "[명사]사랑;애정",
   "tryNum": 0
+},
+{
+  "hiragana": "あい",
+  "targetWord": "[愛]",
+  "wordMean": "[명사]사랑;애정",
+  "tryNum": 0
+},
+{
+  "hiragana": "あい",
+  "targetWord": "[愛]",
+  "wordMean": "[명사]사랑;애정",
+  "tryNum": 0
+},
+{
+  "hiragana": "あい",
+  "targetWord": "[愛]",
+  "wordMean": "[명사]사랑;애정",
+  "tryNum": 0
 }]`);
-
 
 const Stage = () => {
   const [showMean, setShowMean] = useState<boolean>(false);

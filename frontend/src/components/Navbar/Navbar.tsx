@@ -43,6 +43,6 @@ const NavbarDiv = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 1rem;
-  margin-right: 1rem;
+  padding-top: 1vh;
+  padding-right: 1vh;
 `;

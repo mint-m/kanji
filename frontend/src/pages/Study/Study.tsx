@@ -16,8 +16,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 80vh;
-  margin-bottom: 20vh;
+  margin-top: 25vh;
 `;
 
 const Study = () => {
