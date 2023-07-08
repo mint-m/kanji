@@ -33,7 +33,7 @@ const Study = () => {
 
   const handleStepClick = React.useCallback((selectedStep: string) => {
     dispatch(levelActions.setStep(selectedStep));
-    navigate('/');
+    navigate(`/flash-cards`);
   }, [dispatch, navigate]);
 
   return (

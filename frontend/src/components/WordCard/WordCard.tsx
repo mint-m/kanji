@@ -26,15 +26,6 @@ interface StyledVisibleProps {
 
 const WordCard = React.memo((props: WordCardProps) => {
   const { word, showHiragana, showMean, onShowClick, onKnowClick } = props;
-
-  const handleShowClick = (type: WordType['type']) => {
-    onShowClick(type);
-  };
-
-  const handleKnowClick = (know: boolean) => {
-    onKnowClick(know);
-  };
-
   return (
     <CardContainer>
       <WordContainer>
@@ -43,16 +34,16 @@ const WordCard = React.memo((props: WordCardProps) => {
         <WordMean $isVisible={showMean}>{word.wordMean}</WordMean>
       </WordContainer>
       <ControlPanel>
-        <VisibleButton $isVisible={!showMean} onClick={() => handleShowClick('Mean')}>
+        <VisibleButton $isVisible={!showMean} onClick={() => onShowClick('Mean')}>
           한글 뜻
         </VisibleButton>
-        <VisibleButton $isVisible={!showHiragana} onClick={() => handleShowClick('Hiragana')}>
+        <VisibleButton $isVisible={!showHiragana} onClick={() => onShowClick('Hiragana')}>
           요미가미
         </VisibleButton>
-        <VisibleButton $isVisible={true} onClick={() => handleKnowClick(false)}>
+        <VisibleButton $isVisible={true} onClick={() => onKnowClick(false)}>
           공부하겠습니다
         </VisibleButton>
-        <VisibleButton $isVisible={true} onClick={() => handleKnowClick(true)}>
+        <VisibleButton $isVisible={true} onClick={() => onKnowClick(true)}>
           외웠습니다
         </VisibleButton>
       </ControlPanel>
@@ -66,17 +57,19 @@ const CardContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100vh;
 `;
 
 const WordContainer = styled.div`
-  width: 30rem;
-  height: 30rem;
+  width: 20rem;
+  height: 20rem;
   margin: 0 auto;
   padding: 4rem;
   border: 1px solid;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  text-align: center;
 `;
 
 const ControlPanel = styled.div`
@@ -102,6 +95,7 @@ const VisibleButton = styled(StyledButton) <StyledVisibleProps>`
 `;
 
 const Hiragana = styled.div<StyledVisibleProps>`
+  font-size: 2rem;
   visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;
 
@@ -110,6 +104,6 @@ const OriginWord = styled.div`
 `;
 
 const WordMean = styled.div<StyledVisibleProps>`
-  height: 4rem;
+  font-size: 1.5rem;
   visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import WordCard, { WordType, Word } from 'components/WordCard/WordCard';
 
 
@@ -10,19 +10,18 @@ const WordSet: Word[] = JSON.parse(`[{
 }]`);
 
 
-const WordCardSet = () => {
+const WordCardContainer = React.memo(() => {
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
 
-    const handleKnowClick = (know: boolean) => {
+    const handleKnowClick = useCallback((know: boolean) => {
         setShowMean(false);
         setShowHiragana(false);
-    };
+    }, []);
 
-    const handleShowClick = (type: WordType['type']) => {
-        setShowMean(type === 'Mean');
-        setShowHiragana(type === 'Hiragana');
-    };
+    const handleShowClick = useCallback((type: WordType['type']) => {
+        type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
+    }, []);
 
     const word = WordSet[0];
 
@@ -37,6 +36,6 @@ const WordCardSet = () => {
             />
         </div>
     );
-};
+});
 
-export default WordCardSet;
+export default WordCardContainer;
