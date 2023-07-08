@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
 import SelectStep from 'components/SelectStep';
 import styled from 'styled-components';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from 'store';
 import * as levelActions from 'store/modules/level';
 
 const levels = ['JLPT5', 'JLPT4', 'JLPT3', 'JLPT2', 'JLPT1'];
@@ -22,19 +23,18 @@ const Container = styled.div`
 `;
 
 const Study = () => {
-  const [level, setLevel] = useState<string>('JLPT5');
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const level = useSelector((state: RootState) => state.level.level);
 
-  const handleSelectLevel = (selectedLevel: string) => {
-    setLevel(selectedLevel);
-    dispatch(levelActions.setLevel(level));
-  };
-  
-  const handleStepClick = (selectedStep: string) => {
+  const handleSelectLevel = React.useCallback((selectedLevel: string) => {
+    dispatch(levelActions.setLevel(selectedLevel));
+  }, [dispatch]);
+
+  const handleStepClick = React.useCallback((selectedStep: string) => {
     dispatch(levelActions.setStep(selectedStep));
-    navigate('')
-  };
+    navigate('/');
+  }, [dispatch, navigate]);
 
   return (
     <Container>

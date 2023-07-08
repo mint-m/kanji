@@ -8,7 +8,7 @@ interface SelectLevelProps {
 }
 
 const LevelButton = styled.button<{ $nowProgress?: boolean }>`
-  background-color: ${props => (!props.$nowProgress ? '#eaeaea' : '#96d2d7b8')};
+  background-color: ${props => (!props.$nowProgress ? '#eaeaea' : '#5e9da5')};
   border: none;
   border-radius: 4px;
   padding: 1.5vw 3vw;
@@ -17,7 +17,7 @@ const LevelButton = styled.button<{ $nowProgress?: boolean }>`
   font-size: 1rem;
 
   &:hover {
-    background-color: ${props => (!props.$nowProgress ? '#d4d4d4' : '#4f858cb8')};
+    background-color: ${props => (!props.$nowProgress ? '#d4d4d4' : '#5e9da5')};
   }
 `;
 

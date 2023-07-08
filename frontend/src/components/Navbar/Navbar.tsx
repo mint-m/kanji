@@ -40,9 +40,10 @@ const Button = styled.button`
 `;
 
 const NavbarDiv = styled.div`
+  position: absolute;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-top: 1vh;
-  padding-right: 1vh;
+  top: 1vh;
+  right: 1vh;
 `;
