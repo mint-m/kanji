@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import axios from "axios";
 
 const app = express();
 
@@ -16,6 +17,16 @@ app.get("/api/word", (req: Request, res: Response, next: NextFunction) => {
     },
   ]);
 });
+
+app.get(
+  "/api/kanji",
+  async (req: Request, res: Response, next: NextFunction) => {
+    const baseUrl = "https://ja.dict.naver.com/api3/jako/search/hanja?query=";
+    const kanjiData = await axios.get(baseUrl + req.query.kanji);
+
+    res.json(kanjiData.data);
+  }
+);
 
 app.listen("8000", () => {
   console.log(`

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import WordCard, { WordType, Word } from 'components/WordCard/WordCard';
+import { styled } from 'styled-components';
 
 
 const WordSet: Word[] = JSON.parse(`[{
@@ -26,7 +27,7 @@ const WordCardContainer = React.memo(() => {
     const word = WordSet[0];
 
     return (
-        <div>
+        <Container>
             <WordCard
                 onKnowClick={handleKnowClick}
                 onShowClick={handleShowClick}
@@ -34,8 +35,12 @@ const WordCardContainer = React.memo(() => {
                 showMean={showMean}
                 showHiragana={showHiragana}
             />
-        </div>
+        </Container>
     );
 });
 
 export default WordCardContainer;
+
+const Container = styled.div`
+    height: 100vh
+`
