@@ -40,7 +40,7 @@ const Study = () => {
     <Container>
       <StyledHeading>Level Selection</StyledHeading>
       <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={level} />
-      <SelectStep level={level} steps={steps} onStepClick={handleStepClick} />
+      <SelectStep steps={steps} onStepClick={handleStepClick} />
     </Container>
   );
 };

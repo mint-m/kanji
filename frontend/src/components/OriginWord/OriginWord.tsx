@@ -1,6 +1,6 @@
 import React from 'react';
 import { styled } from 'styled-components';
-
+import Kanji from 'components/Kanji';
 interface OriginWordProps {
   word: string;
 }
@@ -25,16 +25,3 @@ const OriginWordWarp = styled.div`
   font-size: 6rem;
   justify-content: center;
 `
-
-//
-interface KanjiProps {
-  kanji: string;
-}
-
-const Kanji = (props: KanjiProps) => {
-  return <KanjiDiv>{props.kanji}</KanjiDiv>;
-};
-
-const KanjiDiv = styled.div`
-  cursor: pointer;
-`;

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import WordCardContainer from 'components/WordCardContainer';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
-import Kanji from 'components/Kanji';
+import KanjiMean from 'components/KanjiMean';
 
 const Container = styled.div`
   display: flex;
@@ -21,7 +21,7 @@ const FlashCard = () => {
     <Container>
       <h2>{level} / {step}</h2>
       <WordCardContainer />
-      <Kanji kanji='昔' />
+      <KanjiMean kanji='昔' />
     </Container>
   );
 };
