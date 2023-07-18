@@ -1,11 +1,20 @@
 import express, { Request, Response, NextFunction } from "express";
 import axios from "axios";
+import mongoose from "mongoose";
+import config from "./config";
+
+const { MONGO_URI } = config;
 
 const app = express();
 
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
   res.send("Hi! This is my first express server");
 });
+
+mongoose
+  .connect(MONGO_URI!)
+  .then(() => console.log("MongoDB connecting Success!!!"))
+  .catch((e) => console.log(e));
 
 app.get("/api/word", (req: Request, res: Response, next: NextFunction) => {
   res.send([

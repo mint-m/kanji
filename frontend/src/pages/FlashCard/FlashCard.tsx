@@ -21,7 +21,6 @@ const FlashCard = () => {
     <Container>
       <h2>{level} / {step}</h2>
       <WordCardContainer />
-      <KanjiMean kanji='昔' />
     </Container>
   );
 };
