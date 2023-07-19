@@ -2,30 +2,34 @@ import express, { Request, Response, NextFunction } from "express";
 import axios from "axios";
 import mongoose from "mongoose";
 import config from "./config";
+import Word from "./models/word";
 
-const { MONGO_URI } = config;
+const { MONGO_URI, PORT } = config;
 
 const app = express();
+
+mongoose
+  .connect(MONGO_URI!, { dbName: "kanji-db" })
+  .then(() => console.log("MongoDB connecting Success!!!"))
+  .catch((e) => console.log(e));
+
+app.use(express.json());
 
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
   res.send("Hi! This is my first express server");
 });
 
-mongoose
-  .connect(MONGO_URI!)
-  .then(() => console.log("MongoDB connecting Success!!!"))
-  .catch((e) => console.log(e));
-
-app.get("/api/word", (req: Request, res: Response, next: NextFunction) => {
-  res.send([
-    {
-      hiragana: "あい",
-      targetWord: "[愛]",
-      wordMean: "[명사]사랑;애정",
-      tryNum: 0,
-    },
-  ]);
-});
+app.get(
+  "/api/word/all",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const words = await Word.find();
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
 
 app.get(
   "/api/kanji",
@@ -37,10 +41,10 @@ app.get(
   }
 );
 
-app.listen("8000", () => {
+app.listen(PORT, () => {
   console.log(`
         #############################################
-        🛡️ Server listening on port: 8000 🛡️
+        🛡️ Server listening on port: ${PORT} 🛡️
         #############################################  
     `);
 });

@@ -1,19 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import WordCard, { WordType, Word } from 'components/WordCard/WordCard';
 import { styled } from 'styled-components';
-
-
-const WordSet: Word[] = JSON.parse(`[{
-  "hiragana": "あい",
-  "targetWord": "[愛]",
-  "wordMean": "[명사]사랑;애정",
-  "tryNum": 0
-}]`);
-
+import axios from 'axios';
 
 const WordCardContainer = React.memo(() => {
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
+    const [words, setWordData] = useState<Word[] | null>(null); // Define the type of 'words' as an array of Word or null
 
     const handleKnowClick = useCallback((know: boolean) => {
         setShowMean(false);
@@ -24,17 +17,29 @@ const WordCardContainer = React.memo(() => {
         type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
-    const word = WordSet[0];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await axios.get('api/word/all');
+                setWordData(response.data);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        fetchData();
+    }, []);
 
     return (
         <Container>
-            <WordCard
-                onKnowClick={handleKnowClick}
-                onShowClick={handleShowClick}
-                word={word}
-                showMean={showMean}
-                showHiragana={showHiragana}
-            />
+            {words && words.length > 0 && (
+                <WordCard
+                    onKnowClick={handleKnowClick}
+                    onShowClick={handleShowClick}
+                    word={words[0]} // Render the first word when available
+                    showMean={showMean}
+                    showHiragana={showHiragana}
+                />
+            )}
         </Container>
     );
 });
@@ -43,4 +48,4 @@ export default WordCardContainer;
 
 const Container = styled.div`
     height: 100vh
-`
+`;

@@ -12,9 +12,9 @@ const NotFound = () => {
     };
 
     const word: Word = {
-        targetWord: '憂鬱な',
-        wordMean: '우울한',
-        hiragana: 'ゆううつな',
+        pron: '憂鬱な',
+        means: ['우울한'],
+        entry: 'ゆううつな',
         tryNum: 0
     }
 

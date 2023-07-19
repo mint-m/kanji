@@ -8,10 +8,10 @@ export interface WordType {
 }
 
 export interface Word {
-  tryNum: number;
-  targetWord: string;
-  wordMean: string;
-  hiragana: string;
+  tryNum?: number;
+  pron: string;
+  means: string[];
+  entry: string;
 }
 
 interface WordCardProps {
@@ -31,9 +31,13 @@ const WordCard = React.memo((props: WordCardProps) => {
   return (
     <CardContainer>
       <WordContainer>
-        <Hiragana $isVisible={showHiragana}>{word.hiragana}</Hiragana>
-        <OriginWord word={word.targetWord} />
-        <WordMean $isVisible={showMean}>{word.wordMean}</WordMean>
+        <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
+        <OriginWord word={word.pron} />
+        {word.means.map((mean, index) => (
+          <WordMean key={index} $isVisible={showMean}>
+            {mean}
+          </WordMean>
+        ))}
       </WordContainer>
       <ControlPanel
         onShowClick={onShowClick}

@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import WordCardContainer from 'components/WordCardContainer';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
-import KanjiMean from 'components/KanjiMean';
 
 const Container = styled.div`
   display: flex;
