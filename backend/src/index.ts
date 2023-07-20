@@ -32,6 +32,19 @@ app.get(
 );
 
 app.get(
+  "/api/word/level/:level",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const level = req.params.level;
+      const words = await Word.find({ level: level });
+      res.json(words);
+    } catch (error) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+app.get(
   "/api/kanji",
   async (req: Request, res: Response, next: NextFunction) => {
     const baseUrl = "https://ja.dict.naver.com/api3/jako/search/hanja?query=";

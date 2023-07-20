@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as levelActions from 'store/modules/level';
 
-const levels = ['JLPT5', 'JLPT4', 'JLPT3', 'JLPT2', 'JLPT1'];
+const levels = ['5', '4', '3', '2', '1'];
 const steps = ['STEP 1', 'STEP 2', 'STEP 3', 'STEP 4', 'STEP 5', 'STEP 6'];
 
 const StyledHeading = styled.h1`

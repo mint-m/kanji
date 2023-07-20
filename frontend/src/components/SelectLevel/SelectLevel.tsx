@@ -36,8 +36,12 @@ const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, nowPro
   return (
     <Container>
       {levels.map((level, index) => (
-        <LevelButton key={index} $nowProgress={nowProgress === level} onClick={() => handleLevelClick(level)}>
-          {level}
+        <LevelButton
+          key={index}
+          $nowProgress={nowProgress === level}
+          onClick={() => handleLevelClick(level)}
+        >
+          JLPT{level}
         </LevelButton>
       ))}
     </Container>

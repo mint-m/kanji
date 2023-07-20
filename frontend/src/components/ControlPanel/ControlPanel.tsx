@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
-import type { WordType } from 'components/WordCard';
+import type { ShowType } from 'components/WordCard';
 
 interface ControlPanelProps {
-  onShowClick: (type: WordType['type']) => void;
+  onShowClick: (type: ShowType['type']) => void;
   onKnowClick: (know: boolean) => void;
   showMean: boolean;
   showHiragana: boolean;

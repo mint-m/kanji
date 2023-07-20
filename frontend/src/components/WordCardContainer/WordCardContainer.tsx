@@ -1,41 +1,40 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import WordCard, { WordType, Word } from 'components/WordCard/WordCard';
+import React, { useCallback, useState } from 'react';
+import { debounce } from 'lodash';
+import WordCard, { ShowType } from 'components/WordCard/WordCard';
 import { styled } from 'styled-components';
-import axios from 'axios';
+import { WordType } from 'store/modules/deck';
 
-const WordCardContainer = React.memo(() => {
+const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
+    const [wordIndex, setWordIndex] = useState<number>(0);
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
-    const [words, setWordData] = useState<Word[] | null>(null); // Define the type of 'words' as an array of Word or null
 
-    const handleKnowClick = useCallback((know: boolean) => {
+    const deck = props.deck;
+
+    const debouncedHandleKnowClick = debounce((know: boolean) => {
+        if (deck && deck.length > wordIndex) {
+            setWordIndex((prevIndex) => {
+                const nextIndex = prevIndex + 1;
+                return nextIndex >= deck.length ? prevIndex : nextIndex;
+            });
+        }
         setShowMean(false);
         setShowHiragana(false);
-    }, []);
+    }, 60);
 
-    const handleShowClick = useCallback((type: WordType['type']) => {
+    const handleKnowClick = useCallback(debouncedHandleKnowClick, [wordIndex, deck]);
+
+    const handleShowClick = useCallback((type: ShowType['type']) => {
         type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
-    }, []);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get('api/word/all');
-                setWordData(response.data);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchData();
     }, []);
 
     return (
         <Container>
-            {words && words.length > 0 && (
+            {deck && deck.length > 0 && (
                 <WordCard
                     onKnowClick={handleKnowClick}
                     onShowClick={handleShowClick}
-                    word={words[0]} // Render the first word when available
+                    word={deck[wordIndex]}
                     showMean={showMean}
                     showHiragana={showHiragana}
                 />

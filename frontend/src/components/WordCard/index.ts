@@ -1,1 +1,1 @@
-export { default, type WordType } from "./WordCard";
+export { default, type ShowType } from "./WordCard";

@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import OriginWord from 'components/OriginWord';
 import ControlPanel from 'components/ControlPanel';
 
-export interface WordType {
+export interface ShowType {
   type: 'Mean' | 'Hiragana';
 }
 
@@ -16,7 +16,7 @@ export interface Word {
 
 interface WordCardProps {
   onKnowClick: (know: boolean) => void;
-  onShowClick: (type: WordType['type']) => void;
+  onShowClick: (type: ShowType['type']) => void;
   word: Word;
   showHiragana: boolean;
   showMean: boolean;
