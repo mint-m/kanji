@@ -22,8 +22,7 @@ const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
         setShowHiragana(false);
     }, 60);
 
-    const handleKnowClick = useCallback(debouncedHandleKnowClick, [wordIndex, deck]);
-
+    const handleKnowClick = useCallback(debouncedHandleKnowClick, [wordIndex, deck, debouncedHandleKnowClick]);
     const handleShowClick = useCallback((type: ShowType['type']) => {
         type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
