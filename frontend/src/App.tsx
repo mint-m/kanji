@@ -7,7 +7,7 @@ const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
 const Login = lazy(() => import('pages/Login'));
 const Regist = lazy(() => import('pages/Regist'));
-const Study = lazy(() => import('pages/Study'));
+const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCard'));
 
 const App = () => {
@@ -19,7 +19,7 @@ const App = () => {
           <Route path='/' element={<Main />} />
           <Route path='/regist' element={<Regist />} />
           <Route path='/login' element={<Login />} />
-          <Route path='/study' element={<Study />} />
+          <Route path='/select-level' element={<SelectLevel />} />
           <Route path='/flash-cards' element={<FlashCard />} />
           <Route path='*' element={<NotFound />} />
         </Routes>

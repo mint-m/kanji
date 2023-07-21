@@ -6,7 +6,7 @@ import styled from 'styled-components';
 const Main = () => {
   return (
     <Container>
-      <Link to="study">
+      <Link to="select-level">
         <StartButton>시작하기</StartButton>
       </Link>
     </Container>
