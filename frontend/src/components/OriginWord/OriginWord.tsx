@@ -1,6 +1,6 @@
 import React from 'react';
 import { styled } from 'styled-components';
-import Kanji from 'components/Kanji';
+import Kanji from './KanjiCharacter';
 interface OriginWordProps {
   word: string;
 }

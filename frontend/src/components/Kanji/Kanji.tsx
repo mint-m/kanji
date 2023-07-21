@@ -1,16 +1,10 @@
 import React from 'react';
-import { styled } from 'styled-components';
 
-interface KanjiProps {
-  kanji: string;
-}
-
-const Kanji = (props: KanjiProps) => {
-  return <KanjiDiv>{props.kanji}</KanjiDiv>;
+const Kanji = () => {
+  return (
+    <div>
+    </div>
+  );
 };
 
 export default Kanji;
-
-const KanjiDiv = styled.div`
-  cursor: pointer;
-`;
