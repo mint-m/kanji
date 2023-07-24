@@ -3,11 +3,17 @@ import { debounce } from 'lodash';
 import WordCard, { ShowType } from 'components/WordCard/WordCard';
 import { styled } from 'styled-components';
 import { WordType } from 'store/modules/deck';
+import { useDispatch } from 'react-redux';
+import * as kanjiActions from 'store/modules/kanji';
+
 
 const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
     const [wordIndex, setWordIndex] = useState<number>(0);
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
+
+    const dispatch = useDispatch();
+
 
     const deck = props.deck;
 
@@ -20,6 +26,7 @@ const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
         }
         setShowMean(false);
         setShowHiragana(false);
+        dispatch(kanjiActions.reset())
     }, 60);
 
     const handleKnowClick = useCallback(debouncedHandleKnowClick, [wordIndex, deck, debouncedHandleKnowClick]);

@@ -5,14 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from 'store';
 import axios from 'axios';
 import { WordType } from 'store/modules/deck';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-`;
+import Kanji from 'components/Kanji';
 
 const FlashCard = () => {
   const level = useSelector((state: RootState) => state.level.level);
@@ -22,7 +15,7 @@ const FlashCard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`api/word/all`);
+        const response = await axios.get(`api/word/level/4`);
         setDeck(response.data);
       } catch (error) {
         console.log(error);
@@ -32,11 +25,25 @@ const FlashCard = () => {
   }, [level]);
 
   return (
-    <Container>
-      <h2>JLPT{level} / {step}</h2>
+    <FlashCardWrap>
+      <Title>JLPT{level} / {step}</Title>
+      <Kanji />
       {deck && <WordCardContainer deck={deck} />}
-    </Container>
+    </FlashCardWrap>
   );
 };
 
 export default FlashCard;
+
+const FlashCardWrap = styled.div`
+  display: grid;
+  height: 100vh;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr) ;
+`;
+
+const Title = styled.h1`
+  grid-column-start: 1;
+  grid-column-end: 4;
+  text-align: center;
+`;

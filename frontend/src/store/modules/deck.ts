@@ -25,17 +25,18 @@ const initialState = {
   deck: null,
   loading: false,
   error: null,
+  kanji: [],
 };
 
 //reducer
 const deckReducer = handleActions<deckState, any>(
   {
-    [deckActionType.setDeck]: (state, action: Action<Array<string>>) => ({
+    [deckActionType.setDeck]: (state, action: Action<Array<WordType>>) => ({
       ...state,
-      step: action.payload,
+      deck: action.payload,
     }),
   },
-  initialState
+  { ...initialState }
 );
 
 export default deckReducer;
