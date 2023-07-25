@@ -28,11 +28,13 @@ interface StyledVisibleProps {
 
 const WordCard = React.memo((props: WordCardProps) => {
   const { word, showHiragana, showMean, onShowClick, onKnowClick } = props;
+  console.log(word.pron);
+
   return (
     <CardContainer>
       <WordContainer>
         <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
-        <OriginWord word={word.pron} />
+        {<OriginWord word={word.pron ? word.pron : word.entry} />}
         {word.means.map((mean, index) => (
           <WordMean key={index} $isVisible={showMean}>
             {mean}

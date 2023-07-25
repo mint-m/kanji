@@ -6,37 +6,39 @@ import { WordType } from 'store/modules/deck';
 import { useDispatch } from 'react-redux';
 import * as kanjiActions from 'store/modules/kanji';
 
+interface WordCardContainerProps {
+    deck: WordType[];
+}
 
-const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
+const WordCardContainer = React.memo((props: WordCardContainerProps) => {
     const [wordIndex, setWordIndex] = useState<number>(0);
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
 
     const dispatch = useDispatch();
-
-
     const deck = props.deck;
 
     const debouncedHandleKnowClick = debounce((know: boolean) => {
-        if (deck && deck.length > wordIndex) {
-            setWordIndex((prevIndex) => {
-                const nextIndex = prevIndex + 1;
-                return nextIndex >= deck.length ? prevIndex : nextIndex;
-            });
-        }
+        setWordIndex((prevIndex) => {
+            const nextIndex = prevIndex + 1;
+            return nextIndex >= deck.length ? prevIndex : nextIndex;
+        });
         setShowMean(false);
         setShowHiragana(false);
-        dispatch(kanjiActions.reset())
-    }, 60);
+        dispatch(kanjiActions.reset());
+    }, 200);
 
-    const handleKnowClick = useCallback(debouncedHandleKnowClick, [wordIndex, deck, debouncedHandleKnowClick]);
+    const handleKnowClick = useCallback(() => {
+        debouncedHandleKnowClick(true);
+    }, [debouncedHandleKnowClick]);
+
     const handleShowClick = useCallback((type: ShowType['type']) => {
         type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
     return (
         <Container>
-            {deck && deck.length > 0 && (
+            {deck.length > 0 && (
                 <WordCard
                     onKnowClick={handleKnowClick}
                     onShowClick={handleShowClick}
@@ -52,5 +54,5 @@ const WordCardContainer = React.memo((props: { deck: WordType[] | null }) => {
 export default WordCardContainer;
 
 const Container = styled.div`
-    height: 100vh
+  height: 100vh;
 `;

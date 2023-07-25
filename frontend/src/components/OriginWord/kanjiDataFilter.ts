@@ -14,7 +14,7 @@ const kanjiFilter = async (kanji: string): Promise<KanjiDataType | null> => {
         onRead: kanjiData.expAudioRead,
         kunRead: kanjiData.expMeaningRead,
         koreanPron: kanjiData.expKoreanPron,
-        grade: (kanjiData.frequencyAdd as string).substring(5, 6),
+        level: (kanjiData.frequencyAdd as string).substring(5, 6),
         means:
           kanjiData.meansCollector?.[0]?.means.map((mean: Mean) => ({
             value: mean.value,

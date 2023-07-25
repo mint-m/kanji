@@ -2,7 +2,7 @@ import React, { PropsWithChildren } from "react";
 import styled from "styled-components";
 
 interface KanjiEnterProps extends PropsWithChildren {
-  grade: string;
+  level: string;
   kanji: string;
   onRead?: string;
   kunRead?: string;
@@ -17,7 +17,7 @@ const KanjiEnter: React.FC<KanjiEnterProps> = (props) => {
         <KanjiKoreanPorn >{props.koreanPron}</KanjiKoreanPorn>
         <KanjiRead >음독{props.onRead} 훈독{props.kunRead}</KanjiRead>
       </KanjiPorn>
-      <KanjiLevel >{props.grade}</KanjiLevel>
+      <KanjiLevel >{props.level}</KanjiLevel>
     </KanjiWarp>
   );
 };

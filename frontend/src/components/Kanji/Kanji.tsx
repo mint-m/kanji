@@ -13,7 +13,7 @@ const Kanji = () => {
       {kanjiData && (
         <KanjiEnter
           kanji={kanjiData.kanji}
-          grade={kanjiData.grade}
+          level={kanjiData.level}
           koreanPron={kanjiData.koreanPron}
           onRead={kanjiData.onRead}
           kunRead={kanjiData.kunRead}

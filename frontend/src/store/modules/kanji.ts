@@ -11,7 +11,7 @@ export interface Mean {
 }
 
 export interface KanjiDataType {
-  grade: string;
+  level: string;
   kanji: string;
   onRead?: string;
   kunRead?: string;
