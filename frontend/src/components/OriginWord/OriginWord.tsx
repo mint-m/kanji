@@ -1,18 +1,20 @@
 import React from 'react';
 import { styled } from 'styled-components';
-import Kanji from './KanjiCharacter';
+import KanjiCharacter from './KanjiCharacter';
 interface OriginWordProps {
   word: string;
 }
 
 const OriginWord = (props: OriginWordProps) => {
   const split = Array.from(props.word);
-  const kanjiRegex = /[\u4e00-\u9faf]/g;
+  const kanjiRegex = /[一-龥]/;
   const wordObj = split.map((char, index) => {
     return kanjiRegex.test(char) ?
-      <Kanji key={index} kanji={char} /> :
+      <KanjiCharacter key={index} kanji={char} /> :
       <div key={index}>{char}</div>
   });
+
+  console.log(wordObj);
 
   return <OriginWordWarp>{wordObj}</OriginWordWarp>;
 };
