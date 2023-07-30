@@ -14,8 +14,6 @@ const OriginWord = (props: OriginWordProps) => {
       <div key={index}>{char}</div>
   });
 
-  console.log(wordObj);
-
   return <OriginWordWarp>{wordObj}</OriginWordWarp>;
 };
 
