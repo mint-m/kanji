@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useGoogleLogin, TokenResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { styled } from 'styled-components';
 import { useDispatch } from 'react-redux';
+import * as userActions from 'store/modules/user';
 
 
 const GoogleLoginButton = () => {
     const dispatch = useDispatch();
-    const [name, setName] = useState('');
     const login = useGoogleLogin({
         onSuccess: tokenResponse => loginSuccess(tokenResponse),
     })
@@ -15,7 +15,7 @@ const GoogleLoginButton = () => {
     const loginSuccess = async (accessToken: TokenResponse) => {
         try {
             const res = await axios.post(`/auth/google`, { accessToken: accessToken.access_token });
-            res.data.success && setName(res.data.user.email);
+            dispatch(userActions.setUser(res.data));
         } catch (error) {
             console.error("Google login error : ", error);
         }
