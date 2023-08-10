@@ -1,10 +1,10 @@
 import { combineReducers } from "redux";
-import level from "./level";
+import user from "./user";
 import deck from "./deck";
 import kanji from "./kanji";
 
 const rootReducer = combineReducers({
-  level,
+  user,
   deck,
   kanji,
 });

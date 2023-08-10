@@ -41,7 +41,7 @@ const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, nowPro
           $nowProgress={nowProgress === level}
           onClick={() => handleLevelClick(level)}
         >
-          JLPT{level}
+          {level}
         </LevelButton>
       ))}
     </Container>

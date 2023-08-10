@@ -8,8 +8,8 @@ import { WordType } from 'store/modules/deck';
 import Kanji from 'components/Kanji';
 
 const FlashCard = () => {
-  const level = useSelector((state: RootState) => state.level.level);
-  const step = useSelector((state: RootState) => state.level.step);
+  const level = useSelector((state: RootState) => state.user.learningCheckpoint.level);
+  const step = useSelector((state: RootState) => state.user.learningCheckpoint.step);
   const [deck, setDeck] = useState<WordType[] | null>(null);
 
   useEffect(() => {

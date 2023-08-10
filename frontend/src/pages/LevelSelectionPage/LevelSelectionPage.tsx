@@ -5,10 +5,10 @@ import SelectStep from 'components/SelectStep';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
-import * as levelActions from 'store/modules/level';
+import * as userActions from 'store/modules/user';
 
-const levels = ['5', '4', '3', '2', '1'];
-const steps = ['STEP 1', 'STEP 2', 'STEP 3', 'STEP 4', 'STEP 5', 'STEP 6'];
+const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
+const steps = [1, 2, 3, 4, 5, 6];
 
 const StyledHeading = styled.h1`
   text-align: center;
@@ -25,21 +25,21 @@ const Container = styled.div`
 const Study = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const level = useSelector((state: RootState) => state.level.level);
+  const learningCheckpoint = useSelector((state: RootState) => state.user.learningCheckpoint);
 
   const handleSelectLevel = React.useCallback((selectedLevel: string) => {
-    dispatch(levelActions.setLevel(selectedLevel));
+    dispatch(userActions.setLevelCheckpoint(selectedLevel));
   }, [dispatch]);
 
-  const handleStepClick = React.useCallback((selectedStep: string) => {
-    dispatch(levelActions.setStep(selectedStep));
+  const handleStepClick = React.useCallback((selectedStep: number) => {
+    dispatch(userActions.setStepCheckpoint(selectedStep));
     navigate(`/flash-cards`);
   }, [dispatch, navigate]);
 
   return (
     <Container>
       <StyledHeading>Level Selection</StyledHeading>
-      <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={level} />
+      <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={learningCheckpoint.level} />
       <SelectStep steps={steps} onStepClick={handleStepClick} />
     </Container>
   );

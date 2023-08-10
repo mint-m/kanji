@@ -2,8 +2,8 @@ import React from 'react';
 import styled from 'styled-components';
 
 interface SelectStepProps {
-  steps: string[];
-  onStepClick: (step: string) => void;
+  steps: number[];
+  onStepClick: (step: number) => void;
 }
 
 const StepButton = styled.button`
@@ -50,7 +50,7 @@ const SelectStep: React.FC<SelectStepProps> = ({ steps, onStepClick }) => {
     <Container>
       {steps.map((step, index) => (
         <StepButton key={index} onClick={() => onStepClick(step)}>
-          {step}
+          step {step}
         </StepButton>
       ))}
     </Container>

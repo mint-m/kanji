@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useGoogleLogin, TokenResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { styled } from 'styled-components';
+import { useDispatch } from 'react-redux';
+
 
 const GoogleLoginButton = () => {
+    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const login = useGoogleLogin({
         onSuccess: tokenResponse => loginSuccess(tokenResponse),
@@ -20,7 +23,7 @@ const GoogleLoginButton = () => {
 
     return (
         <LoginButton onClick={() => login()}>
-            Sign in with Google 🚀{name}
+            Sign in with Google 🚀
         </LoginButton>
     )
 }
