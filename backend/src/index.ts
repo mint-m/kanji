@@ -114,28 +114,36 @@ app.get(
 
 app.post('/auth/google', async (req, res) => {
   const { accessToken } = req.body;
-
+  
   try {
     const tokenInfoResponse = await axios.get(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
     const tokenInfo = tokenInfoResponse.data;
 
+    (async () => {
+      try {
+        const existingUser = await User.findOne({ email: tokenInfo.email });
+        
+        if (!existingUser) {
+          const newUser = new User({
+            type: 'google',
+            userid: tokenInfo.email,
+            email: tokenInfo.email,
+            name: tokenInfo.email
+          });
+          await newUser.save();
+          console.log('New user saved successfully');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        res.json({ success: false, error: 'New user save err' });
+      }
+    })();
+    
     if (tokenInfo && tokenInfo.user_id) {
       req.logIn(tokenInfo, (err) => {
         if (err) {
           return res.status(500).json({ success: false, error: '로그인에 실패했습니다.' });
         }
-        async() => {
-          const existingUser = await User.findOne({ email: tokenInfo.user.email });
-          
-          if (!existingUser) {
-            const newUser = new User({
-              email: tokenInfo.user.email,
-            });
-    
-            await newUser.save();
-          }
-        }
-
         return res.status(200).json({ success: true, user: tokenInfo });
       });
     } else {
@@ -145,7 +153,7 @@ app.post('/auth/google', async (req, res) => {
     console.error('Google token validation error:', error);
     return res.status(500).json({ success: false, error: '서버 오류가 발생했습니다.' });
   }
-});
+});    
 
 app.listen(PORT, () => {
   console.log(`

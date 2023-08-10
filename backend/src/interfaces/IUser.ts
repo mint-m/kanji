@@ -1,13 +1,12 @@
 import { Document, Model } from 'mongoose';
 
 export interface IUser extends Document {
-  email: string;
-  name: string;
-  password: string;
-  createdAt: Date;
-  updatedAt: Date;
+  type: 'google' | 'kakao' | 'local',
+  email: string,
+  name: string,
+  learningCheckpoint: { level: number, step: number },
 }
 
-export interface IUserModel extends Model<IUser> {}
+export interface IUserModel extends Model<IUser> { }
 
 export default IUserModel;
