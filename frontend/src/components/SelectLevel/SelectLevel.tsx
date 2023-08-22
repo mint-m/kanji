@@ -7,12 +7,20 @@ interface SelectLevelProps {
   onSelectLevel: (level: string) => void;
 }
 
-const LevelButton = styled.button<{ $nowProgress?: boolean }>`
+const SelectLevelContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.6rem;
+  box-sizing: border-box;
+`;
+
+const LevelButton = styled.button<{ $nowProgress?: boolean; isLast?: boolean }>`
   background-color: ${props => (!props.$nowProgress ? '#eaeaea' : '#5e9da5')};
   border: none;
   border-radius: 4px;
-  padding: 1.5vw 3vw;
-  margin-right: 2%;
+  padding: 1.5rem 3rem;
+  margin-right: ${props => (props.isLast ? '0' : '1rem')};
   cursor: pointer;
   font-size: 1rem;
 
@@ -21,30 +29,24 @@ const LevelButton = styled.button<{ $nowProgress?: boolean }>`
   }
 `;
 
-const Container = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 1.6rem;
-`;
-
 const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, nowProgress }) => {
   const handleLevelClick = (level: string) => {
     onSelectLevel(level);
   };
 
   return (
-    <Container>
+    <SelectLevelContainer>
       {levels.map((level, index) => (
         <LevelButton
           key={index}
           $nowProgress={nowProgress === level}
+          isLast={index === levels.length - 1}
           onClick={() => handleLevelClick(level)}
         >
           {level}
         </LevelButton>
       ))}
-    </Container>
+    </SelectLevelContainer>
   );
 };
 

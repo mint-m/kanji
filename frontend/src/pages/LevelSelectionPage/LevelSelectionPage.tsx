@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
-import SelectStep from 'components/SelectStep';
+import StepSlider from 'components/StepSlider';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
@@ -14,13 +14,16 @@ const StyledHeading = styled.h1`
   text-align: center;
 `;
 
-const Container = styled.div`
+const StudyContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   margin-top: 25vh;
 `;
+
+const SelectContainer = styled.div`
+`
 
 const Study = () => {
   const navigate = useNavigate();
@@ -37,11 +40,13 @@ const Study = () => {
   }, [dispatch, navigate]);
 
   return (
-    <Container>
+    <StudyContainer>
       <StyledHeading>Level Selection</StyledHeading>
-      <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={learningCheckpoint.level} />
-      <SelectStep steps={steps} onStepClick={handleStepClick} />
-    </Container>
+      <SelectContainer>
+        <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={learningCheckpoint.level} />
+        <StepSlider level={learningCheckpoint.level} stepLength={steps.length} />
+      </SelectContainer>
+    </StudyContainer>
   );
 };
 
