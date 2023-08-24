@@ -27,20 +27,19 @@ export const setLearningCheckpoint = createAction<CheckPoint>(
   userActionTypes.setLearningCheckpoint
 );
 export const setLevelCheckpoint = createAction<string>(
-  userActionTypes.setLearningCheckpoint
+  userActionTypes.setLevelCheckpoint
 );
 export const setStepCheckpoint = createAction<number>(
-  userActionTypes.setLearningCheckpoint
+  userActionTypes.setStepCheckpoint
 );
 
 const initialState: UserState = {
   isLoggin: false,
   loginStatusType: null,
   email: null,
-  learningCheckpoint: { level: "5", step: 1 },
+  learningCheckpoint: { level: "N5", step: 1 },
 };
 
-// reducer
 const userReducer = handleActions<UserState, any>(
   {
     [userActionTypes.setUser]: (state, action: Action<UserState>) => ({

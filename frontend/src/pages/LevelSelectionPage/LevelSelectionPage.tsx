@@ -34,17 +34,17 @@ const Study = () => {
     dispatch(userActions.setLevelCheckpoint(selectedLevel));
   }, [dispatch]);
 
-  const handleStepClick = React.useCallback((selectedStep: number) => {
+  const handleSelectStep = React.useCallback((selectedStep: number) => {
     dispatch(userActions.setStepCheckpoint(selectedStep));
-    navigate(`/flash-cards`);
+    // navigate(`/flash-cards`);
   }, [dispatch, navigate]);
 
   return (
     <StudyContainer>
       <StyledHeading>Level Selection</StyledHeading>
       <SelectContainer>
-        <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} nowProgress={learningCheckpoint.level} />
-        <StepSlider level={learningCheckpoint.level} stepLength={steps.length} />
+        <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
+        <StepSlider level={learningCheckpoint.level} onSelectStep={handleSelectStep} stepLength={steps.length} progressStep={learningCheckpoint.step} />
       </SelectContainer>
     </StudyContainer>
   );

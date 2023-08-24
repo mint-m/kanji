@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 interface SelectLevelProps {
   levels: string[];
-  nowProgress: string;
+  progressLevel: string;
   onSelectLevel: (level: string) => void;
 }
 
@@ -16,20 +16,29 @@ const SelectLevelContainer = styled.div`
 `;
 
 const LevelButton = styled.button<{ $nowProgress?: boolean; isLast?: boolean }>`
-  background-color: ${props => (!props.$nowProgress ? '#eaeaea' : '#5e9da5')};
+  background: #E6EAED;
   border: none;
-  border-radius: 4px;
-  padding: 1.5rem 3rem;
+  border-radius: 0.5rem;
+  padding: 1rem 2.5rem;
   margin-right: ${props => (props.isLast ? '0' : '1rem')};
   cursor: pointer;
   font-size: 1rem;
+  box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
+              -6px -6px 12px rgba(255, 255, 255, 0.5);
 
   &:hover {
-    background-color: ${props => (!props.$nowProgress ? '#d4d4d4' : '#5e9da5')};
+    background-color: ${props => (!props.$nowProgress ? '#eeeeee' : '#E6EAED')};
   }
+
+  ${props =>
+    props.$nowProgress &&
+    `
+    box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6),
+                inset -6px -6px 12px rgba(255, 255, 255, 0.5);
+  `}
 `;
 
-const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, nowProgress }) => {
+const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, progressLevel: nowProgress }) => {
   const handleLevelClick = (level: string) => {
     onSelectLevel(level);
   };
