@@ -33,8 +33,9 @@ export default GoogleLoginButton;
 const LoginButton = styled.button`
     width: 12rem;
     height: 3rem;
-    border-radius: 8px;
+    border-radius: 0.5rem;
+    outline: none;
+    border: none;
     background: #E6EAED;
-    
-    box-shadow: -2px -2px 5px 1px #FFF, 4px 4px 4px 0px rgba(0, 0, 0, 0.25), 1px 1px 5px 0px rgba(0, 0, 0, 0.25);
+    box-shadow: -2px -2px 5px 1px #FFF, 4px 4px 4px 0px rgba(0, 0, 0, 0.25), 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
 `

@@ -23,10 +23,12 @@ const Container = styled.div`
 `;
 
 const StartButton = styled.button`
-  background-color: #eaeaea;
-  border: none;
-  border-radius: 4px;
   padding: 1rem 2rem;
   cursor: pointer;
   font-size: 1rem;
+  
+  border: none;
+  background-color: #E6EAED;
+  border-radius: 0.5rem;
+  box-shadow: -2px -2px 5px 1px #FFF, 4px 4px 4px 0px rgba(0, 0, 0, 0.25), 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
 `;

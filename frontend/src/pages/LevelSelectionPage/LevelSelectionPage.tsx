@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
-import StepSlider from 'components/StepSlider';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
+import StepSliderV2 from 'components/StepSliderV2/StepSliderV2';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];
@@ -44,7 +44,7 @@ const Study = () => {
       <StyledHeading>Level Selection</StyledHeading>
       <SelectContainer>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
-        <StepSlider level={learningCheckpoint.level} onSelectStep={handleSelectStep} stepLength={steps.length} progressStep={learningCheckpoint.step} />
+        <StepSliderV2 stepLength={steps.length} />
       </SelectContainer>
     </StudyContainer>
   );

@@ -13,14 +13,17 @@ const SelectLevelContainer = styled.div`
   align-items: center;
   margin-top: 1.6rem;
   box-sizing: border-box;
+
+  > :not(:last-child) {
+    margin-right: 1rem;
+  }
 `;
 
-const LevelButton = styled.button<{ $nowProgress?: boolean; isLast?: boolean }>`
+const LevelButton = styled.button<{ $nowProgress: boolean; }>`
   background: #E6EAED;
   border: none;
   border-radius: 0.5rem;
   padding: 1rem 2.5rem;
-  margin-right: ${props => (props.isLast ? '0' : '1rem')};
   cursor: pointer;
   font-size: 1rem;
   box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
@@ -49,7 +52,6 @@ const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, progre
         <LevelButton
           key={index}
           $nowProgress={nowProgress === level}
-          isLast={index === levels.length - 1}
           onClick={() => handleLevelClick(level)}
         >
           {level}
