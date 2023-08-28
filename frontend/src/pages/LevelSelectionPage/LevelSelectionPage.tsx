@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
-import StepSliderV2 from 'components/StepSliderV2/StepSliderV2';
+import StepSliderV2 from 'components/StepRangeSlider';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];

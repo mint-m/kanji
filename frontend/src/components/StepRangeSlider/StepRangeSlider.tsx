@@ -23,7 +23,7 @@ interface Range {
   max: number;
 }
 
-const StepSliderV2 = (props: StepSliderProps) => {
+const StepRangeSlider = (props: StepSliderProps) => {
   const [range, setRange] = useState<Range>({ min: 0, max: 0 });
 
   return (
@@ -59,4 +59,4 @@ const StepSliderV2 = (props: StepSliderProps) => {
   );
 }
 
-export default StepSliderV2;
+export default StepRangeSlider;
