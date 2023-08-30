@@ -4,13 +4,16 @@ import "rc-slider/assets/index.css";
 
 export const SliderContainer = styled.div`
   margin-top: 1rem;
-  padding: 1rem;
+  padding: 2rem;
   border-radius: 0.5rem;
   background-color: #e6eaed;
   box-shadow: inset 2px 2px 8px #bebebe, inset -2px -2px 8px #ffffff;
 `;
 
 export const StyledSlider = styled(Slider)`
+  .rc-slider {
+    height: 2rem !important;
+  }
   .rc-slider-rail {
     height: 1rem;
     border-radius: 0.5rem;
@@ -31,7 +34,6 @@ export const StyledSlider = styled(Slider)`
     height: 1.5rem;
     border: none;
     opacity: 1;
-
     background: #e6eaed;
     box-shadow: 6px 6px 12px rgba(163, 177, 198),
       -6px -6px 12px rgba(255, 255, 255);
@@ -41,6 +43,10 @@ export const StyledSlider = styled(Slider)`
         -6px -6px 12px rgba(255, 255, 255);
     }
   }
+  .rc-slider-handle-dragging.rc-slider-handle-dragging.rc-slider-handle-dragging {
+    border: none;
+    box-shadow: 4px 4px 10px #bebebe, -4px -4px 10px #ffffff;
+  }
   .rc-slider-tooltip-inner {
     min-height: auto;
   }
@@ -49,15 +55,4 @@ export const StyledSlider = styled(Slider)`
       border-top-color: #4527a0;
     }
   }
-  .rc-slider-tooltip-placement-topLeft,
-  .rc-slider-tooltip-placement-topRight {
-    &::before {
-      border-color: transparent transparent #4527a0 transparent;
-    }
-  }
-`;
-
-export const Handle = styled.div`
-  border-color: #4527a0;
-  border-width: 1rem;
 `;

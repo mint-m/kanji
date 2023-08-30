@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SliderContainer, StyledSlider, Handle } from './SliderStyles';
+import { SliderContainer, StyledSlider } from './SliderStyles';
 import Tooltip from 'rc-tooltip';
 import 'rc-tooltip/assets/bootstrap_white.css';
 
@@ -24,6 +24,7 @@ const StepRangeSlider: React.FC<StepSliderProps> = (props) => {
         max={10}
         step={1}
         defaultValue={[0, 0]}
+        style={{ height: "1rem", padding: "0" }}
         onChange={(value) => {
           const [min, max] = value as number[];
           setRange({ min, max });
