@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
-import StepSliderV2 from 'components/StepRangeSlider';
+import SelectStep from 'components/SelectStep';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];
@@ -44,7 +44,7 @@ const Study = () => {
       <StyledHeading>Level Selection</StyledHeading>
       <SelectContainer>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
-        <StepSliderV2 stepLength={steps.length} />
+        <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} />
       </SelectContainer>
     </StudyContainer>
   );

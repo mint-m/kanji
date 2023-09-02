@@ -3,7 +3,6 @@ import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 
 export const SliderContainer = styled.div`
-  margin-top: 1rem;
   padding: 2rem;
   border-radius: 0.5rem;
   background-color: #e6eaed;

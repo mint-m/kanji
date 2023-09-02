@@ -12,7 +12,7 @@ interface Range {
   max: number;
 }
 
-const StepRangeSlider: React.FC<StepSliderProps> = (props) => {
+const StepRangeSlider: React.FC<StepSliderProps> = (props: StepSliderProps) => {
   const [range, setRange] = useState<Range>({ min: 0, max: 0 });
 
   return (
@@ -20,10 +20,10 @@ const StepRangeSlider: React.FC<StepSliderProps> = (props) => {
       <StyledSlider
         range
         allowCross={false}
-        min={0}
-        max={10}
+        min={1}
+        max={props.stepLength}
         step={1}
-        defaultValue={[0, 0]}
+        defaultValue={[1, 1]}
         style={{ height: "1rem", padding: "0" }}
         onChange={(value) => {
           const [min, max] = value as number[];
