@@ -5,6 +5,7 @@ import 'rc-tooltip/assets/bootstrap_white.css';
 
 interface StepSliderProps {
   stepLength: number;
+  onSelectStep: Function;
 }
 
 interface Range {
@@ -28,6 +29,7 @@ const StepRangeSlider: React.FC<StepSliderProps> = (props: StepSliderProps) => {
         onChange={(value) => {
           const [min, max] = value as number[];
           setRange({ min, max });
+          props.onSelectStep({ min, max });
         }}
         handleRender={(node, handleProps) => {
           return (

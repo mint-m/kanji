@@ -14,6 +14,10 @@ const StyledHeading = styled.h1`
   text-align: center;
 `;
 
+const SubPage = styled.div`
+  height: 100vh;
+`
+
 const StudyContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -22,7 +26,15 @@ const StudyContainer = styled.div`
   margin-top: 25vh;
 `;
 
-const SelectContainer = styled.div`
+const StartButton = styled.button`
+  background: #E6EAED;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 1rem 2.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
+              -6px -6px 12px rgba(255, 255, 255, 0.5);
 `
 
 const Study = () => {
@@ -34,18 +46,24 @@ const Study = () => {
     dispatch(userActions.setLevelCheckpoint(selectedLevel));
   }, [dispatch]);
 
-  const handleSelectStep = React.useCallback((selectedStep: number) => {
+  const handleSelectStep = React.useCallback((selectedStep: number[]) => {
     dispatch(userActions.setStepCheckpoint(selectedStep));
-    // navigate(`/flash-cards`);
-  }, [dispatch, navigate]);
+  }, [dispatch]);
 
   return (
     <StudyContainer>
-      <StyledHeading>Level Selection</StyledHeading>
-      <SelectContainer>
+      <SubPage>
+        <StyledHeading>Level Selection</StyledHeading>
+      </SubPage>
+      <SubPage>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
-        <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} />
-      </SelectContainer>
+      </SubPage>
+      <SubPage>
+        <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} onSelectStep={handleSelectStep} />
+      </SubPage>
+      <SubPage>
+        <StartButton onClick={() => navigate('/flash-cards')}>Start</StartButton>
+      </SubPage>
     </StudyContainer>
   );
 };

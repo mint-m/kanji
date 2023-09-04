@@ -5,9 +5,11 @@ import { styled } from 'styled-components';
 interface SelectStepProps {
   progressLevel: string;
   stepLength: number;
+  onSelectStep: Function;
 }
 
-const SelectStepHeader = styled.div`
+const SelectStepContainer = styled.div`
+  width: 40rem;
 `
 
 const AlignedHeading = styled.h1`
@@ -16,15 +18,15 @@ const AlignedHeading = styled.h1`
   display: inline-block;
 `
 
-const SelectStep: React.FC<SelectStepProps> = ({ progressLevel, stepLength }) => {
+const SelectStep: React.FC<SelectStepProps> = ({ progressLevel, stepLength, onSelectStep }) => {
   return (
-    <div>
-      <SelectStepHeader>
+    <SelectStepContainer>
+      <div>
         <AlignedHeading>{progressLevel}</AlignedHeading>
         <AlignedHeading as="h2">STEPS</AlignedHeading>
-      </SelectStepHeader>
-      <StepRangeSlider stepLength={stepLength} />
-    </div>
+      </div>
+      <StepRangeSlider stepLength={stepLength} onSelectStep={onSelectStep} />
+    </SelectStepContainer>
   );
 };
 

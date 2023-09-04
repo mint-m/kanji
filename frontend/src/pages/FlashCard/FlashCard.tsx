@@ -26,7 +26,7 @@ const FlashCard = () => {
 
   return (
     <FlashCardWrap>
-      <Title>JLPT{level} / {step}</Title>
+      <Title>{level} / {step.min} ~ {step.max}</Title>
       <Kanji />
       {deck && <WordCardContainer deck={deck} />}
     </FlashCardWrap>

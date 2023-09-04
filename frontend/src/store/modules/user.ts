@@ -10,7 +10,12 @@ interface UserState {
 
 interface CheckPoint {
   level: string;
-  step: number;
+  step: StepType;
+}
+
+interface StepType {
+  min: number;
+  max: number;
 }
 
 // actionType
@@ -29,7 +34,7 @@ export const setLearningCheckpoint = createAction<CheckPoint>(
 export const setLevelCheckpoint = createAction<string>(
   userActionTypes.setLevelCheckpoint
 );
-export const setStepCheckpoint = createAction<number>(
+export const setStepCheckpoint = createAction<number[]>(
   userActionTypes.setStepCheckpoint
 );
 
@@ -37,7 +42,7 @@ const initialState: UserState = {
   isLoggin: false,
   loginStatusType: null,
   email: null,
-  learningCheckpoint: { level: "N5", step: 1 },
+  learningCheckpoint: { level: "N5", step: { min: 1, max: 1 } },
 };
 
 const userReducer = handleActions<UserState, any>(
@@ -61,7 +66,7 @@ const userReducer = handleActions<UserState, any>(
         level: action.payload,
       },
     }),
-    [userActionTypes.setStepCheckpoint]: (state, action: Action<number>) => ({
+    [userActionTypes.setStepCheckpoint]: (state, action: Action<StepType>) => ({
       ...state,
       learningCheckpoint: {
         ...state.learningCheckpoint,

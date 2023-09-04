@@ -8,7 +8,6 @@ import User from "./models/user";
 import passport from "passport";
 import { Strategy as GoogleOAuth2Strategy } from "passport-google-oauth20";
 import session from "express-session";
-import { IUser } from "./interfaces/IUser";
 
 const {
   MONGO_URI,
