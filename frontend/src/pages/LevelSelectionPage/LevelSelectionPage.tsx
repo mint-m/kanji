@@ -53,9 +53,7 @@ const Study = () => {
   return (
     <StudyContainer>
       <SubPage>
-        <StyledHeading>Level Selection</StyledHeading>
-      </SubPage>
-      <SubPage>
+        <h1>Level</h1>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
       </SubPage>
       <SubPage>

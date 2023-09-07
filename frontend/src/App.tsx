@@ -3,7 +3,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Navbar from 'components/Navbar';
 import { ThemeProvider } from 'styled-components';
-import { GlobalStyle } from 'GlobalStyle';
+import { GlobalStyle } from 'styles/GlobalStyle';
+import theme from "styles/theme";
 
 const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
@@ -13,14 +14,8 @@ const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCard'));
 
 const App = () => {
-
-  const lightTheme = {
-    textColor: '#5A5A5A',
-    backgroundColor: '#E6EAED'
-  };
-
   return (
-    <ThemeProvider theme={lightTheme}>
+    <ThemeProvider theme={theme}>
       <GlobalStyle />
       <BrowserRouter>
         <Navbar />
