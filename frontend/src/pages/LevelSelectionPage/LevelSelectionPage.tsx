@@ -6,13 +6,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
 import SelectStep from 'components/SelectStep';
+import DefaultButton from 'components/DefaultButton';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];
-
-const StyledHeading = styled.h1`
-  text-align: center;
-`;
 
 const SubPage = styled.div`
   height: 100vh;
@@ -25,17 +22,6 @@ const StudyContainer = styled.div`
   justify-content: center;
   margin-top: 25vh;
 `;
-
-const StartButton = styled.button`
-  background: #E6EAED;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 1rem 2.5rem;
-  cursor: pointer;
-  font-size: 1rem;
-  box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
-              -6px -6px 12px rgba(255, 255, 255, 0.5);
-`
 
 const Study = () => {
   const navigate = useNavigate();
@@ -60,7 +46,7 @@ const Study = () => {
         <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} onSelectStep={handleSelectStep} />
       </SubPage>
       <SubPage>
-        <StartButton onClick={() => navigate('/flash-cards')}>Start</StartButton>
+        <DefaultButton onClick={() => navigate('/flash-cards')}>Start</DefaultButton>
       </SubPage>
     </StudyContainer>
   );

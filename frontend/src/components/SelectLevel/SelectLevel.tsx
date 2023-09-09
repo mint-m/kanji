@@ -1,3 +1,4 @@
+import DefaultButton from 'components/DefaultButton';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -26,26 +27,8 @@ const SelectLevelContainer = styled.div`
   }
 `;
 
-const LevelButton = styled.button<{ $nowProgress: boolean; }>`
-  background: #E6EAED;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 1rem 2.5rem;
-  cursor: pointer;
-  font-size: 1rem;
-  box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
-              -6px -6px 12px rgba(255, 255, 255, 0.5);
-
-  &:hover {
-    background-color: ${props => (!props.$nowProgress ? '#eeeeee' : '#E6EAED')};
-  }
-
-  ${props =>
-    props.$nowProgress &&
-    `
-    box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6),
-                inset -6px -6px 12px rgba(255, 255, 255, 0.5);
-  `}
+const LevelButton = styled(DefaultButton) <{ $nowProgress: boolean; }>`
+  ${props => props.$nowProgress && props.theme.innerShadow}
 `;
 
 const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, progressLevel: nowProgress }) => {

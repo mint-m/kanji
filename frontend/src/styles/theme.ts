@@ -1,13 +1,3 @@
-const lightTheme = {
-  innerShadow: {},
-  outerShadow: {},
-};
-
-const darkTheme = {
-  innerShadow: {},
-  outerShadow: {},
-};
-
 const fontSize = {
   xs: "0.5rem",
   sm: "0.75rem",
@@ -16,12 +6,18 @@ const fontSize = {
   lg: "1.5rem",
 };
 
-const theme = {
-  lightTheme,
-  darkTheme,
+export const lightTheme = {
+  innerShadow: `
+    box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.6),
+                inset -6px -6px 12px rgba(255, 255, 255, 0.5);`,
+  outerShadow: `
+    box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
+                -6px -6px 12px rgba(255, 255, 255, 0.5);`,
   fontSize,
 };
 
-type ThemeType = typeof theme;
-
-export default theme as ThemeType;
+export const darkTheme = {
+  innerShadow: {},
+  outerShadow: {},
+  fontSize,
+};

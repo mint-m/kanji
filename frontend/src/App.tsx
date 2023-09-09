@@ -1,10 +1,10 @@
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Navbar from 'components/Navbar';
 import { ThemeProvider } from 'styled-components';
 import { GlobalStyle } from 'styles/GlobalStyle';
-import theme from "styles/theme";
+import { darkTheme, lightTheme } from './styles/theme';
 
 const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
@@ -14,8 +14,10 @@ const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCard'));
 
 const App = () => {
+  const [isDrkMode, setDarkMode] = useState<boolean>(false);
+
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={isDrkMode ? darkTheme : lightTheme}>
       <GlobalStyle />
       <BrowserRouter>
         <Navbar />
