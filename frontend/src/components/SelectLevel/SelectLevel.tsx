@@ -1,4 +1,5 @@
-import DefaultButton from 'components/DefaultButton';
+import DefaultButton from 'components/CommonStyled/DefaultButton';
+import HeaderSection from 'components/HeaderSection/HeaderSection';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -12,7 +13,6 @@ const SelectLevelContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 1.6rem;
   box-sizing: border-box;
   
   padding: 2rem;
@@ -37,17 +37,20 @@ const SelectLevel: React.FC<SelectLevelProps> = ({ levels, onSelectLevel, progre
   };
 
   return (
-    <SelectLevelContainer>
-      {levels.map((level, index) => (
-        <LevelButton
-          key={index}
-          $nowProgress={nowProgress === level}
-          onClick={() => handleLevelClick(level)}
-        >
-          {level}
-        </LevelButton>
-      ))}
-    </SelectLevelContainer>
+    <div>
+      <HeaderSection title="JLPT" subtitle="LEVELS" />
+      <SelectLevelContainer>
+        {levels.map((level, index) => (
+          <LevelButton
+            key={index}
+            $nowProgress={nowProgress === level}
+            onClick={() => handleLevelClick(level)}
+          >
+            {level}
+          </LevelButton>
+        ))}
+      </SelectLevelContainer>
+    </div>
   );
 };
 

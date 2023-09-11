@@ -1,10 +1,14 @@
-const fontSize = {
+const fontSize: { [key: string]: string } = {
   xs: "0.5rem",
-  sm: "0.75rem",
-  base: "1rem",
-  md: "1.25rem",
-  lg: "1.5rem",
+  sm: "1rem",
+  base: "1.25rem",
+  md: "1.5rem",
+  lg: "2rem",
+  xlg: "3rem",
+  xxlg: "3rem",
 };
+
+const fontWeight = {};
 
 export const lightTheme = {
   innerShadow: `
@@ -14,10 +18,14 @@ export const lightTheme = {
     box-shadow: 6px 6px 12px rgba(163, 177, 198, 0.6),
                 -6px -6px 12px rgba(255, 255, 255, 0.5);`,
   fontSize,
+  fontWeight,
 };
 
 export const darkTheme = {
-  innerShadow: {},
-  outerShadow: {},
+  innerShadow: ``,
+  outerShadow: ``,
   fontSize,
+  fontWeight,
 };
+
+export type Theme = typeof lightTheme;

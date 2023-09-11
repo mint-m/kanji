@@ -6,13 +6,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
 import SelectStep from 'components/SelectStep';
-import DefaultButton from 'components/DefaultButton';
+import DefaultButton from 'components/CommonStyled/DefaultButton';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];
 
-const SubPage = styled.div`
+const ScrollablePage = styled.div`
   height: 100vh;
+  align-items: center;
+  display: flex;
 `
 
 const StudyContainer = styled.div`
@@ -20,7 +22,6 @@ const StudyContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 25vh;
 `;
 
 const Study = () => {
@@ -38,16 +39,15 @@ const Study = () => {
 
   return (
     <StudyContainer>
-      <SubPage>
-        <h1>Level</h1>
+      <ScrollablePage>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
-      </SubPage>
-      <SubPage>
+      </ScrollablePage>
+      <ScrollablePage>
         <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} onSelectStep={handleSelectStep} />
-      </SubPage>
-      <SubPage>
+      </ScrollablePage>
+      <ScrollablePage>
         <DefaultButton onClick={() => navigate('/flash-cards')}>Start</DefaultButton>
-      </SubPage>
+      </ScrollablePage>
     </StudyContainer>
   );
 };

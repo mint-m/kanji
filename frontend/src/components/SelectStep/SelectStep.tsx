@@ -1,6 +1,7 @@
 import React from 'react';
 import StepRangeSlider from 'components/StepRangeSlider';
 import { styled } from 'styled-components';
+import HeaderSection from 'components/HeaderSection/HeaderSection';
 
 interface SelectStepProps {
   progressLevel: string;
@@ -12,19 +13,24 @@ const SelectStepContainer = styled.div`
   width: 40rem;
 `
 
-const AlignedHeading = styled.h1`
-  margin-top: 0;
-  margin-bottom: 0;
-  display: inline-block;
+const LevelHeader = styled.span<{ $fontSize: string; }>`
+  font-size: ${(props) => props.theme.fontSize[props.$fontSize]};
+`
+
+const Header = styled.div`
+  > :not(:last-child) {
+    margin-right: 0.25rem;
+  }
+
+  > :first-child {
+    font-weight: bold;
+  }
 `
 
 const SelectStep: React.FC<SelectStepProps> = ({ progressLevel, stepLength, onSelectStep }) => {
   return (
     <SelectStepContainer>
-      <div>
-        <AlignedHeading>{progressLevel}</AlignedHeading>
-        <AlignedHeading as="h2">STEPS</AlignedHeading>
-      </div>
+      <HeaderSection title={progressLevel} subtitle="STEPS" />
       <StepRangeSlider stepLength={stepLength} onSelectStep={onSelectStep} />
     </SelectStepContainer>
   );
