@@ -1,5 +1,5 @@
 import DefaultButton from 'components/CommonStyled/DefaultButton';
-import HeaderSection from 'components/HeaderSection/HeaderSection';
+import HeaderSection from 'components/HeaderSection';
 import React from 'react';
 import styled from 'styled-components';
 
