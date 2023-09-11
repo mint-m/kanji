@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import type { ShowType } from 'components/WordCard';
+import type { ShowType } from 'components/FlashCard';
+import DefaultButton from 'components/CommonStyled/DefaultButton';
 
 interface ControlPanelProps {
   onShowClick: (type: ShowType['type']) => void;
@@ -40,23 +41,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 export default ControlPanel;
 
 const ControlPanelContainer = styled.div`
-  margin: 0 auto;
-  padding: 1rem;
   display: grid;
   grid-template-columns: 2fr 2fr;
 `;
 
-const StyledButton = styled.button`
-  display: flex;
-  margin: 1rem;
-  padding: 0.5rem 1rem;
-  border: solid 1px #6495ED;
-  border-radius: 0.5rem;
-  justify-content: center;
-  font-size: 1rem;
-  background-color: aliceblue;
-`;
-
-const VisibleButton = styled(StyledButton) <StyledVisibleProps>`
-  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
+const VisibleButton = styled(DefaultButton) <StyledVisibleProps>`
+  ${props => !props.$isVisible && props.theme.innerShadow}
+  margin: 0.75rem 2rem;
 `;

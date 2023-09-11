@@ -1,7 +1,6 @@
 import React from 'react';
 import KanjiExample from './KanjiExample';
 import KanjiEnter from './KanjiEnter';
-import { styled } from 'styled-components';
 import { RootState } from 'store';
 import { useSelector } from 'react-redux';
 
@@ -9,7 +8,7 @@ const Kanji = () => {
   const kanjiData = useSelector((state: RootState) => state.kanji.kanji);
 
   return (
-    <KanjiStyle>
+    <div>
       {kanjiData && (
         <KanjiEnter
           kanji={kanjiData.kanji}
@@ -21,11 +20,8 @@ const Kanji = () => {
           <KanjiExample />
         </KanjiEnter>
       )}
-    </KanjiStyle>
+    </div>
   );
 };
 
 export default Kanji;
-
-const KanjiStyle = styled.div`
-`;

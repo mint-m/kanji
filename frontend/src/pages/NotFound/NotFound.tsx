@@ -1,7 +1,7 @@
-import WordCard from 'components/WordCard';
+import WordCard from 'components/FlashCard';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Word } from 'components/WordCard/WordCard';
+import { Word } from 'components/FlashCard/FlashCard';
 
 
 const NotFound = () => {

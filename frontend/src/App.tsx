@@ -11,7 +11,7 @@ const NotFound = lazy(() => import('pages/NotFound'));
 const Login = lazy(() => import('pages/Login'));
 const Regist = lazy(() => import('pages/Regist'));
 const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
-const FlashCard = lazy(() => import('pages/FlashCard'));
+const FlashCard = lazy(() => import('pages/FlashCardPage'));
 
 const App = () => {
   const [isDrkMode, setDarkMode] = useState<boolean>(false);

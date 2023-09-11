@@ -1,16 +1,15 @@
 import React, { useCallback, useState } from 'react';
 import { debounce } from 'lodash';
-import WordCard, { ShowType } from 'components/WordCard/WordCard';
-import { styled } from 'styled-components';
+import FlashCard, { ShowType } from 'components/FlashCard';
 import { WordType } from 'store/modules/deck';
 import { useDispatch } from 'react-redux';
 import * as kanjiActions from 'store/modules/kanji';
 
-interface WordCardContainerProps {
+interface FlashCardContainerProps {
     deck: WordType[];
 }
 
-const WordCardContainer = React.memo((props: WordCardContainerProps) => {
+const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props: FlashCardContainerProps) => {
     const [wordIndex, setWordIndex] = useState<number>(0);
     const [showMean, setShowMean] = useState<boolean>(false);
     const [showHiragana, setShowHiragana] = useState<boolean>(false);
@@ -37,9 +36,9 @@ const WordCardContainer = React.memo((props: WordCardContainerProps) => {
     }, []);
 
     return (
-        <Container>
+        <>
             {deck.length > 0 && (
-                <WordCard
+                <FlashCard
                     onKnowClick={handleKnowClick}
                     onShowClick={handleShowClick}
                     word={deck[wordIndex]}
@@ -47,12 +46,8 @@ const WordCardContainer = React.memo((props: WordCardContainerProps) => {
                     showHiragana={showHiragana}
                 />
             )}
-        </Container>
+        </>
     );
 });
 
-export default WordCardContainer;
-
-const Container = styled.div`
-  height: 100vh;
-`;
+export default FlashCardContainer;
