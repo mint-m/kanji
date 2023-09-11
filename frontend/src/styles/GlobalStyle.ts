@@ -6,5 +6,6 @@ export const GlobalStyle = createGlobalStyle`
     padding: 0;
     background-color: #E6EAED;
     color: #5A5A5A;
+    box-sizing: border-box;
   }
 `;

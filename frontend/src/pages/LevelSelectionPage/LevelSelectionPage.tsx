@@ -7,6 +7,7 @@ import { RootState } from 'store';
 import * as userActions from 'store/modules/user';
 import SelectStep from 'components/SelectStep';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
+import { FullPage, Slide } from 'react-full-page';
 
 const levels = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const steps = [1, 2, 3, 4, 5, 6];
@@ -38,17 +39,17 @@ const Study = () => {
   }, [dispatch]);
 
   return (
-    <StudyContainer>
-      <ScrollablePage>
+    <FullPage>
+      <Slide>
         <SelectLevel levels={levels} onSelectLevel={handleSelectLevel} progressLevel={learningCheckpoint.level} />
-      </ScrollablePage>
-      <ScrollablePage>
+      </Slide>
+      <Slide>
         <SelectStep progressLevel={learningCheckpoint.level} stepLength={steps.length} onSelectStep={handleSelectStep} />
-      </ScrollablePage>
-      <ScrollablePage>
+      </Slide>
+      <Slide>
         <DefaultButton onClick={() => navigate('/flash-cards')}>Start</DefaultButton>
-      </ScrollablePage>
-    </StudyContainer>
+      </Slide>
+    </FullPage>
   );
 };
 
