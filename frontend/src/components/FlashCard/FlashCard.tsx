@@ -1,7 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
 import OriginWord from 'components/OriginWord';
-import ControlPanel from 'components/ControlPanel';
 
 export interface ShowType {
   type: 'Mean' | 'Hiragana';
@@ -15,8 +14,6 @@ export interface Word {
 }
 
 interface FlashCardProps {
-  onKnowClick: (know: boolean) => void;
-  onShowClick: (type: ShowType['type']) => void;
   word: Word;
   showHiragana: boolean;
   showMean: boolean;
@@ -27,11 +24,11 @@ interface StyledVisibleProps {
 }
 
 const FlashCard = React.memo((props: FlashCardProps) => {
-  const { word, showHiragana, showMean, onShowClick, onKnowClick } = props;
+  const { word, showHiragana, showMean } = props;
 
   return (
-    <CardContainer>
-      <Container>
+    <Container>
+      <CardContainer>
         <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
         {<OriginWord word={word.pron ? word.pron : word.entry} />}
         {word.means.map((mean, index) => (
@@ -39,26 +36,20 @@ const FlashCard = React.memo((props: FlashCardProps) => {
             {mean}
           </WordMean>
         ))}
-      </Container>
-      <ControlPanel
-        onShowClick={onShowClick}
-        onKnowClick={onKnowClick}
-        showMean={!showMean}
-        showHiragana={!showHiragana}
-      />
-    </CardContainer>
+      </CardContainer>
+    </Container>
   );
 });
 
 export default FlashCard;
 
-const CardContainer = styled.div`
+const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
 `;
 
-const Container = styled.div`
+const CardContainer = styled.div`
   width: 24rem;
   height: 24rem;
   padding: 4rem;

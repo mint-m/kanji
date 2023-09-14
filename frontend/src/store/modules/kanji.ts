@@ -1,7 +1,7 @@
 import { Action, createAction, handleActions } from "redux-actions";
 
 interface kanjiStoreState {
-  kanji: KanjiDataType | null;
+  kanjis: KanjiDataType[] | null;
 }
 
 export interface Mean {
@@ -21,18 +21,18 @@ export interface KanjiDataType {
 
 // actionType
 const kanjiActionType = {
-  setKanji: "kanji/SET_KANJI",
+  addKanji: "kanji/ADD_KANJI",
   reset: "kanji/RESET",
 } as const;
 
 // action
-export const setKanji = createAction<KanjiDataType>(kanjiActionType.setKanji);
+export const addKanji = createAction<KanjiDataType>(kanjiActionType.addKanji);
 export const reset = createAction<void>(kanjiActionType.reset, () => ({
   ...initialState,
 }));
 
 const initialState = {
-  kanji: null,
+  kanjis: null,
 };
 
 // reducer
@@ -41,9 +41,11 @@ const kanjiReducer = handleActions<kanjiStoreState, any>(
     [kanjiActionType.reset]: (_state) => ({
       ...initialState,
     }),
-    [kanjiActionType.setKanji]: (state, action: Action<KanjiDataType>) => ({
+    [kanjiActionType.addKanji]: (state, action: Action<KanjiDataType>) => ({
       ...state,
-      kanji: action.payload,
+      kanjis: state.kanjis
+        ? [...state.kanjis, action.payload]
+        : [action.payload],
     }),
   },
   initialState

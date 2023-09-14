@@ -22,8 +22,6 @@ const NotFound = () => {
         <div>
             <WordCard
                 word={word}
-                onKnowClick={() => { }}
-                onShowClick={() => { }}
                 showMean={false}
                 showHiragana={false}
             />

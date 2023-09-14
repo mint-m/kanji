@@ -5,21 +5,26 @@ import { RootState } from 'store';
 import { useSelector } from 'react-redux';
 
 const Kanji = () => {
-  const kanjiData = useSelector((state: RootState) => state.kanji.kanji);
+  const kanjiData = useSelector((state: RootState) => state.kanji.kanjis);
+
+  const kanjis = kanjiData?.map((kanji, index) => {
+    return (
+      <KanjiEnter
+        key={index}
+        kanji={kanji.kanji}
+        level={kanji.level}
+        koreanPron={kanji.koreanPron}
+        onRead={kanji.onRead}
+        kunRead={kanji.kunRead}
+      >
+        <KanjiExample />
+      </KanjiEnter>
+    )
+  })
 
   return (
     <div>
-      {kanjiData && (
-        <KanjiEnter
-          kanji={kanjiData.kanji}
-          level={kanjiData.level}
-          koreanPron={kanjiData.koreanPron}
-          onRead={kanjiData.onRead}
-          kunRead={kanjiData.kunRead}
-        >
-          <KanjiExample />
-        </KanjiEnter>
-      )}
+      {kanjis}
     </div>
   );
 };

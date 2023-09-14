@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { styled } from 'styled-components';
 import * as kanjiActions from 'store/modules/kanji';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import kanjiFilter from './kanjiDataFilter';
+import { RootState } from 'store';
 
 interface KanjiCharacterProps {
   kanji: string;
@@ -10,7 +11,13 @@ interface KanjiCharacterProps {
 
 const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
   const dispatch = useDispatch();
+  const kanjis = useSelector((state: RootState) => state.kanji.kanjis);
   const [kanjiData, setKanjiData] = useState<kanjiActions.KanjiDataType | null>(null);
+
+  const isKanjiIncluded = React.useCallback((kanji: string): boolean => {
+    const kanjiList = kanjis?.map((item) => item.kanji) ?? [];
+    return kanjiList.includes(kanji);
+  }, [kanjis]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,17 +28,24 @@ const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
         console.log(err);
       }
     };
-    fetchData();
-  }, [props.kanji]);
 
-  const handleOnClick = React.useCallback((kanji: string) => {
-    kanjiData && dispatch(kanjiActions.setKanji(kanjiData));
-  }, [dispatch, kanjiData]);
+    if (kanjiData === null) {
+      fetchData();
+    }
+  }, [props.kanji, kanjiData]);
+
+  const handleOnClick = React.useCallback(() => {
+    if (kanjiData && !isKanjiIncluded(kanjiData.kanji)) {
+      dispatch(kanjiActions.addKanji(kanjiData));
+    }
+  }, [dispatch, kanjiData, isKanjiIncluded]);
 
   return (
-    kanjiData && <KanjiDiv onClick={() => handleOnClick(kanjiData.kanji)}>
-      {props.kanji}
-    </KanjiDiv>
+    kanjiData && (
+      <KanjiDiv onClick={handleOnClick}>
+        {props.kanji}
+      </KanjiDiv>
+    )
   )
 };
 

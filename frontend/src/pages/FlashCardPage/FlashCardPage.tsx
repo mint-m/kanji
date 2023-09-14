@@ -6,6 +6,8 @@ import { WordType } from 'store/modules/deck';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
+import styled from 'styled-components';
+import CenterDiv from 'components/CommonStyled/CenterDiv';
 
 const FlashCardPage = () => {
   const level = useSelector((state: RootState) => state.user.learningCheckpoint.level);
@@ -25,12 +27,25 @@ const FlashCardPage = () => {
   }, [level]);
 
   return (
-    <div>
-      <HeaderSection title={level} subtitle={`${step.min} ~ ${step.max}`} />
+    <FlashCardWrap>
       <Kanji />
-      {deck && <FlashCardContainer deck={deck} />}
-    </div>
+      <CenterDiv2>
+        <HeaderSection title={level} subtitle={`${step.min} ~ ${step.max}`} />
+        {deck && <FlashCardContainer deck={deck} />}
+      </CenterDiv2>
+    </FlashCardWrap>
   );
 };
 
 export default FlashCardPage;
+
+const FlashCardWrap = styled.div`
+  display: grid;
+  height: 100vh;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+`;
+
+const CenterDiv2 = styled(CenterDiv)`
+  align-items: flex-start;
+`

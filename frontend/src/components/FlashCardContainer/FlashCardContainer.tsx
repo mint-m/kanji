@@ -4,6 +4,7 @@ import FlashCard, { ShowType } from 'components/FlashCard';
 import { WordType } from 'store/modules/deck';
 import { useDispatch } from 'react-redux';
 import * as kanjiActions from 'store/modules/kanji';
+import ControlPanel from 'components/ControlPanel';
 
 interface FlashCardContainerProps {
     deck: WordType[];
@@ -39,13 +40,18 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
         <>
             {deck.length > 0 && (
                 <FlashCard
-                    onKnowClick={handleKnowClick}
-                    onShowClick={handleShowClick}
                     word={deck[wordIndex]}
                     showMean={showMean}
                     showHiragana={showHiragana}
                 />
+
             )}
+            <ControlPanel
+                onShowClick={handleShowClick}
+                onKnowClick={handleKnowClick}
+                showMean={!showMean}
+                showHiragana={!showHiragana}
+            />
         </>
     );
 });
