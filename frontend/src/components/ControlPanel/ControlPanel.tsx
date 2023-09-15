@@ -43,9 +43,19 @@ export default ControlPanel;
 const ControlPanelContainer = styled.div`
   display: grid;
   grid-template-columns: 2fr 2fr;
+  width: 100%;
+  margin-top: 1rem;
+
+  > :nth-child(odd) {
+    margin-right: 1rem;
+  }
+
+  > :nth-child(-n+2) {
+    margin-bottom: 0.5rem;
+  }
 `;
 
 const VisibleButton = styled(DefaultButton) <StyledVisibleProps>`
   ${props => !props.$isVisible && props.theme.innerShadow}
-  margin: 0.75rem 2rem;
+  width: auto;
 `;

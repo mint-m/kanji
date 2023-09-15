@@ -15,7 +15,7 @@ const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
   const [kanjiData, setKanjiData] = useState<kanjiActions.KanjiDataType | null>(null);
 
   const isKanjiIncluded = React.useCallback((kanji: string): boolean => {
-    const kanjiList = kanjis?.map((item) => item.kanji) ?? [];
+    const kanjiList = kanjis?.map((item) => item.kanji);
     return kanjiList.includes(kanji);
   }, [kanjis]);
 

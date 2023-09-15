@@ -1,7 +1,7 @@
 import React, { PropsWithChildren } from "react";
 import styled from "styled-components";
 
-interface KanjiEnterProps extends PropsWithChildren {
+interface KanjiCardProps extends PropsWithChildren {
   level: string;
   kanji: string;
   onRead?: string;
@@ -9,60 +9,63 @@ interface KanjiEnterProps extends PropsWithChildren {
   koreanPron: string;
 }
 
-const KanjiEnter: React.FC<KanjiEnterProps> = (props) => {
+const KanjiCard: React.FC<KanjiCardProps> = (props) => {
   return (
-    <KanjiWarp>
-      <KanjiDisplay>{props.kanji}</KanjiDisplay>
-      <KanjiPorn>
-        <KanjiKoreanPorn >{props.koreanPron}</KanjiKoreanPorn>
-        <KanjiRead >음독{props.onRead} 훈독{props.kunRead}</KanjiRead>
-      </KanjiPorn>
-      <KanjiLevel >{props.level}</KanjiLevel>
-    </KanjiWarp>
+    <KanjiCardWrapper>
+      <KanjiCharacter>{props.kanji}</KanjiCharacter>
+      <KanjiInfo>
+        <KoreanPronunciation>{props.koreanPron}</KoreanPronunciation>
+        <ReadingInfo>
+          <ReadingLabel>음</ReadingLabel>
+          {props.onRead}
+          <ReadingLabel>훈</ReadingLabel>
+          {props.kunRead}
+        </ReadingInfo>
+      </KanjiInfo>
+      <LevelBadge>N{props.level}</LevelBadge>
+    </KanjiCardWrapper>
   );
 };
 
-export default KanjiEnter;
+export default KanjiCard;
 
-const KanjiWarp = styled.div`
-  margin: 0 auto;
-  margin-top: 1rem;
+const KanjiCardWrapper = styled.div`
+  margin: 1rem auto;
   width: 80%;
   max-width: 40rem;
   display: flex;
   padding: 0.5rem;
+  align-items: center;
 `;
 
-const KanjiDisplay = styled.div`
-  height: 5rem;
-  width: 5rem;
+const KanjiCharacter = styled.div`
+  flex: 1;
   margin-right: 0.5rem;
   font-size: 5rem;
 `;
 
-const KanjiPorn = styled.div`
-  width: 60%;
-  height: 100%;
+const KanjiInfo = styled.div`
+  flex: 2;
 `;
 
-const KanjiKoreanPorn = styled.div`
-  height: 2rem;
-  width: 100%;
+const KoreanPronunciation = styled.div`
   font-size: 2rem;
 `;
 
-const KanjiRead = styled.div`
-  height: 2.5rem;
-  width: 100%;
+const ReadingInfo = styled.div`
   margin-top: 0.5rem;
-  font-size: 2.5rem;
+  font-size: 1.5rem;
 `;
 
-const KanjiLevel = styled.div`
-  height: 2rem;
+const ReadingLabel = styled.span`
+  border: solid black 1px;
+  padding: 5px 8px;
+  font-size: 1.25rem;
+  margin: 0.25rem;
+`;
+
+const LevelBadge = styled.div`
   width: 2rem;
   margin-left: auto;
-  font-size: 2rem;
-
-  alt: "dd";
+  font-size: 1.25rem;
 `;
