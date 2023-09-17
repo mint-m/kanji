@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { styled } from 'styled-components';
 import * as kanjiActions from 'store/modules/kanji';
 import { useDispatch, useSelector } from 'react-redux';
-import kanjiFilter from './kanjiDataFilter';
+import kanjiDataFilter from './kanjiDataFilter';
 import { RootState } from 'store';
 
 interface KanjiCharacterProps {
@@ -19,20 +19,19 @@ const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
     return kanjiList.includes(kanji);
   }, [kanjis]);
 
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await kanjiFilter(props.kanji);
+        const data = await kanjiDataFilter(props.kanji);
+
         setKanjiData(data);
       } catch (err) {
         console.log(err);
       }
     };
-
-    if (kanjiData === null) {
-      fetchData();
-    }
-  }, [props.kanji, kanjiData]);
+    fetchData();
+  }, [props.kanji]);
 
   const handleOnClick = React.useCallback(() => {
     if (kanjiData && !isKanjiIncluded(kanjiData.kanji)) {

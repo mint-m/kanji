@@ -23,13 +23,13 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
             const nextIndex = prevIndex + 1;
             return nextIndex >= deck.length ? prevIndex : nextIndex;
         });
+        dispatch(kanjiActions.reset());
         setShowMean(false);
         setShowHiragana(false);
-        dispatch(kanjiActions.reset());
     }, 200);
 
-    const handleKnowClick = useCallback(() => {
-        debouncedHandleKnowClick(true);
+    const handleKnowClick = useCallback((know: boolean) => {
+        debouncedHandleKnowClick(know);
     }, [debouncedHandleKnowClick]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {

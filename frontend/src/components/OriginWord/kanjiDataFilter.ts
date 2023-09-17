@@ -1,7 +1,9 @@
 import axios from "axios";
 import { KanjiDataType, Mean } from "store/modules/kanji";
 
-const kanjiFilter = async (kanji: string): Promise<KanjiDataType | null> => {
+const kanjiDataFilter = async (
+  kanji: string
+): Promise<KanjiDataType | null> => {
   try {
     const response = await axios.get("api/kanjiSearch", { params: { kanji } });
     const { searchResult } = response.data;
@@ -33,4 +35,4 @@ const kanjiFilter = async (kanji: string): Promise<KanjiDataType | null> => {
   }
 };
 
-export default kanjiFilter;
+export default kanjiDataFilter;

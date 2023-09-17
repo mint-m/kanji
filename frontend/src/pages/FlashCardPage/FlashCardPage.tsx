@@ -17,14 +17,15 @@ const FlashCardPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`api/word/level/4`);
-        setDeck(response.data);
+        const numbersOnlyLevel = level.replace(/\D/g, "");
+        const responseDeck = await axios.get(`api/word/level/${numbersOnlyLevel}`);
+        setDeck(responseDeck.data);
       } catch (error) {
         console.log(error);
       }
     };
-    fetchData();
-  }, [level]);
+    deck === null && fetchData();
+  }, [deck, level]);
 
   return (
     <FlashCardWrap>

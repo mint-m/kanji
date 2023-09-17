@@ -10,62 +10,85 @@ interface KanjiCardProps extends PropsWithChildren {
 }
 
 const KanjiCard: React.FC<KanjiCardProps> = (props) => {
+  const {
+    kanji,
+    koreanPron,
+    onRead,
+    kunRead,
+    level
+  } = props;
+
   return (
     <KanjiCardWrapper>
-      <KanjiCharacter>{props.kanji}</KanjiCharacter>
+      <KanjiMain>
+        <KanjiCharacter>{kanji}</KanjiCharacter>
+        <KoreanPronunciation>{koreanPron}</KoreanPronunciation>
+      </KanjiMain>
       <KanjiInfo>
-        <KoreanPronunciation>{props.koreanPron}</KoreanPronunciation>
         <ReadingInfo>
-          <ReadingLabel>음</ReadingLabel>
-          {props.onRead}
-          <ReadingLabel>훈</ReadingLabel>
-          {props.kunRead}
+          {onRead && (
+            <>
+              <ReadingLabel>음</ReadingLabel>
+              {onRead}
+            </>
+          )}
+          {kunRead && (
+            <>
+              <ReadingLabel>훈</ReadingLabel>
+              {kunRead}
+            </>
+          )}
         </ReadingInfo>
       </KanjiInfo>
-      <LevelBadge>N{props.level}</LevelBadge>
+      <LevelBadge>N{level}</LevelBadge>
     </KanjiCardWrapper>
   );
 };
 
 export default KanjiCard;
 
+const KanjiMain = styled.div`
+  flex: 1;
+  margin-right: 0.5rem;
+`
+
 const KanjiCardWrapper = styled.div`
   margin: 1rem auto;
-  width: 80%;
-  max-width: 40rem;
+  width: 85%;
   display: flex;
-  padding: 0.5rem;
-  align-items: center;
+  padding: 0.25rem 0.75rem;
+  ${props => props.theme.outerShadow}
+  border-radius: 0.5rem;
 `;
 
 const KanjiCharacter = styled.div`
-  flex: 1;
-  margin-right: 0.5rem;
   font-size: 5rem;
 `;
 
 const KanjiInfo = styled.div`
-  flex: 2;
+  flex: 5;
 `;
 
 const KoreanPronunciation = styled.div`
-  font-size: 2rem;
+  font-size: 1.25rem;
+  font-weight: bold;
 `;
 
 const ReadingInfo = styled.div`
+justify-content: start;
+  flex-direction: column;
   margin-top: 0.5rem;
   font-size: 1.5rem;
 `;
 
 const ReadingLabel = styled.span`
-  border: solid black 1px;
-  padding: 5px 8px;
-  font-size: 1.25rem;
+  border: 1px solid black;
+  padding: 3px 5px;
+  font-size: 1rem;
   margin: 0.25rem;
 `;
 
 const LevelBadge = styled.div`
-  width: 2rem;
   margin-left: auto;
   font-size: 1.25rem;
 `;
