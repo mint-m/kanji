@@ -3,6 +3,7 @@ import KanjiExample from './KanjiExample';
 import KanjiEnter from './KanjiEnter';
 import { RootState } from 'store';
 import { useSelector } from 'react-redux';
+import styled from 'styled-components';
 
 const Kanji = () => {
   const kanjiData = useSelector((state: RootState) => state.kanji.kanjis);
@@ -23,10 +24,14 @@ const Kanji = () => {
   })
 
   return (
-    <div>
+    <KanjisWarp>
       {kanjis}
-    </div>
+    </KanjisWarp>
   );
 };
 
 export default Kanji;
+
+const KanjisWarp = styled.div`
+  margin-top: 4rem;
+`
