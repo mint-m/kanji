@@ -5,6 +5,13 @@ interface OriginWordProps {
   word: string;
 }
 
+const calculateFontSize = (stringLength: number) => {
+  const maxSize = 30; // 부모 요소의 최대 크기, 여유 공간 계산(28rem)
+  const minSize = 6; // 최소 폰트 크기 (6rem)
+  const fontSize = Math.min(maxSize / stringLength, minSize);
+  return `${fontSize}rem`;
+};
+
 const OriginWord = (props: OriginWordProps) => {
   const split = Array.from(props.word);
   const isKanjiRegex = /[一-龥]/;
@@ -14,14 +21,18 @@ const OriginWord = (props: OriginWordProps) => {
       <div key={index}>{char}</div>
   });
 
-  return <OriginWordWarp>{wordObj}</OriginWordWarp>;
+  return <OriginWordWarp $stringLength={wordObj.length}>{wordObj}</OriginWordWarp>;
 };
 
 export default OriginWord;
 
-const OriginWordWarp = styled.div`
+const OriginWordWarp = styled.div<{ $stringLength: number }>`
   display: flex;
   flex-direction: row;
-  font-size: 6rem;
+  font-size: ${(props) => calculateFontSize(props.$stringLength)};
   justify-content: center;
+  align-items: center;
+  height: fit-content;
+
+  font-family: 'Noto Sans JP';
 `

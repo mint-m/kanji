@@ -26,43 +26,40 @@ interface StyledVisibleProps {
 const FlashCard = React.memo((props: FlashCardProps) => {
   const { word, showHiragana, showMean } = props;
 
+  const means = word.means.map((mean, index) => (
+    <WordMean key={index} $isVisible={showMean}>
+      {mean}
+    </WordMean>
+  ))
+
+
   return (
-    <Container>
-      <CardContainer>
-        <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
-        {<OriginWord word={word.pron ? word.pron : word.entry} />}
-        {word.means.map((mean, index) => (
-          <WordMean key={index} $isVisible={showMean}>
-            {mean}
-          </WordMean>
-        ))}
-      </CardContainer>
-    </Container>
+    <CardContainer>
+      <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
+      {<OriginWord word={word.pron ? word.pron : word.entry} />}
+      <div>
+        {means}
+      </div>
+    </CardContainer>
   );
 });
 
 export default FlashCard;
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
 const CardContainer = styled.div`
-  width: 24rem;
-  height: 24rem;
-  padding: 4rem;
+  width: 30rem;
+  height: 30rem;
+  text-align: center;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
 
   border-radius: 0.5rem;
   ${props => props.theme.innerShadow}
 `;
 
 const Hiragana = styled.div<StyledVisibleProps>`
+  height: 35%;
   font-size: 2rem;
   visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;

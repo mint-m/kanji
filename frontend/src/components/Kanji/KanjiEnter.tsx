@@ -18,6 +18,25 @@ const KanjiCard: React.FC<KanjiCardProps> = (props) => {
     level
   } = props;
 
+  const onReadText = onRead && onRead.replaceAll('·', '\n')
+  const kunReadText = kunRead && kunRead.replaceAll('·', `\n`)
+
+  const onReadInfo = onReadText && (
+    <ReadingInfoKind>
+      <ReadingLabel>음</ReadingLabel>
+      <span>
+        {onReadText}
+      </span>
+    </ReadingInfoKind>
+  )
+
+  const kunReadInfo = kunReadText && (
+    <ReadingInfoKind>
+      <ReadingLabel>훈</ReadingLabel>
+      {kunReadText}
+    </ReadingInfoKind>
+  )
+
   return (
     <KanjiCardWrapper>
       <KanjiMain>
@@ -26,18 +45,8 @@ const KanjiCard: React.FC<KanjiCardProps> = (props) => {
       </KanjiMain>
       <KanjiInfo>
         <ReadingInfo>
-          {onRead && (
-            <>
-              <ReadingLabel>음</ReadingLabel>
-              {onRead}
-            </>
-          )}
-          {kunRead && (
-            <>
-              <ReadingLabel>훈</ReadingLabel>
-              {kunRead}
-            </>
-          )}
+          {onReadInfo}
+          {kunReadInfo}
         </ReadingInfo>
       </KanjiInfo>
       <LevelBadge>N{level}</LevelBadge>
@@ -50,6 +59,7 @@ export default KanjiCard;
 const KanjiMain = styled.div`
   flex: 1;
   margin-right: 0.5rem;
+  width: max-content;
 `
 
 const KanjiCardWrapper = styled.div`
@@ -66,7 +76,7 @@ const KanjiCharacter = styled.div`
 `;
 
 const KanjiInfo = styled.div`
-  flex: 5;
+  flex: 6;
 `;
 
 const KoreanPronunciation = styled.div`
@@ -75,10 +85,15 @@ const KoreanPronunciation = styled.div`
 `;
 
 const ReadingInfo = styled.div`
-justify-content: start;
-  flex-direction: column;
-  margin-top: 0.5rem;
+  padding: 5px;
   font-size: 1.5rem;
+  display: flex;
+`;
+
+const ReadingInfoKind = styled.div`
+  white-space: pre-line;
+  flex: 1;
+  display: flex;
 `;
 
 const ReadingLabel = styled.span`
@@ -86,6 +101,8 @@ const ReadingLabel = styled.span`
   padding: 3px 5px;
   font-size: 1rem;
   margin: 0.25rem;
+  width: fit-content;
+  height: fit-content;
 `;
 
 const LevelBadge = styled.div`
