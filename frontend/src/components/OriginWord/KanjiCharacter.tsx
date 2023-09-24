@@ -19,12 +19,10 @@ const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
     return kanjiList.includes(kanji);
   }, [kanjis]);
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await kanjiDataFilter(props.kanji);
-
         setKanjiData(data);
       } catch (err) {
         console.log(err);
@@ -40,16 +38,14 @@ const KanjiCharacter: React.FC<KanjiCharacterProps> = (props) => {
   }, [dispatch, kanjiData, isKanjiIncluded]);
 
   return (
-    kanjiData && (
-      <KanjiDiv onClick={handleOnClick}>
-        {props.kanji}
-      </KanjiDiv>
-    )
+    <KanjiDiv onClick={handleOnClick} $isKanjiData={kanjiData !== null}>
+      {props.kanji}
+    </KanjiDiv>
   )
 };
 
 export default KanjiCharacter;
 
-const KanjiDiv = styled.div`
-  cursor: pointer;
+const KanjiDiv = styled.div<{ $isKanjiData: boolean }>`
+  cursor: ${(props) => props.$isKanjiData ? 'pointer' : 'default'};
 `;
