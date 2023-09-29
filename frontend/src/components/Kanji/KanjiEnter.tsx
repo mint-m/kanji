@@ -66,7 +66,7 @@ const KanjiCardWrapper = styled.div`
   margin: 1rem auto;
   width: 85%;
   display: flex;
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   ${props => props.theme.outerShadow}
   border-radius: 0.5rem;
 `;
