@@ -60,6 +60,9 @@ const CardContainer = styled.div`
 
 const Hiragana = styled.div<StyledVisibleProps>`
   height: 35%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
   font-size: 2rem;
   visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
 `;
