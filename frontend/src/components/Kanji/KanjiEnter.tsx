@@ -41,7 +41,7 @@ const KanjiCard: React.FC<KanjiCardProps> = (props) => {
     <KanjiCardWrapper>
       <KanjiMain>
         <KanjiCharacter>{kanji}</KanjiCharacter>
-        <KoreanPronunciation>{koreanPron}</KoreanPronunciation>
+        <KoreanPronunciation>{koreanPron.replace(/[,/]/g, '\n')}</KoreanPronunciation>
       </KanjiMain>
       <KanjiInfo>
         <ReadingInfo>
@@ -57,9 +57,9 @@ const KanjiCard: React.FC<KanjiCardProps> = (props) => {
 export default KanjiCard;
 
 const KanjiMain = styled.div`
-  flex: 1;
+  flex: 2;
   margin-right: 0.5rem;
-  width: max-content;
+  text-align: center;
 `
 
 const KanjiCardWrapper = styled.div`
@@ -82,6 +82,7 @@ const KanjiInfo = styled.div`
 const KoreanPronunciation = styled.div`
   font-size: 1.25rem;
   font-weight: bold;
+  white-space: break-spaces;
 `;
 
 const ReadingInfo = styled.div`
