@@ -13,7 +13,6 @@ const Navbar = () => {
     <NavbarDiv>
       <Button onClick={() => handleOnClick('')}>홈</Button>
       <Button onClick={() => handleOnClick('login')}>로그인</Button>
-      <Button onClick={() => handleOnClick('regist')}>회원가입</Button>
     </NavbarDiv>
   );
 };

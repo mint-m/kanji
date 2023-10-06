@@ -9,7 +9,6 @@ import { darkTheme, lightTheme } from './styles/theme';
 const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
 const Login = lazy(() => import('pages/Login'));
-const Regist = lazy(() => import('pages/Regist'));
 const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCardPage'));
 
@@ -24,7 +23,6 @@ const App = () => {
         <Suspense fallback={<Main />}>
           <Routes>
             <Route path='/' element={<Main />} />
-            <Route path='/regist' element={<Regist />} />
             <Route path='/login' element={<Login />} />
             <Route path='/select-level' element={<SelectLevel />} />
             <Route path='/flash-cards' element={<FlashCard />} />
