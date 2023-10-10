@@ -1,28 +1,26 @@
 import React from 'react';
-import { useGoogleLogin, TokenResponse } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { styled } from 'styled-components';
-import { useDispatch } from 'react-redux';
-import * as userActions from 'store/modules/user';
-
 
 const GoogleLoginButton = () => {
-    const dispatch = useDispatch();
-    const login = useGoogleLogin({
-        onSuccess: tokenResponse => loginSuccess(tokenResponse),
-    })
+    const googleSocialLogin = useGoogleLogin({
+        scope: "email profile",
+        onSuccess: ({ code }) => loginSuccess({ code }),
+        onError: (errorResponse) => console.error(errorResponse),
+        flow: "auth-code",
+    });
 
-    const loginSuccess = async (accessToken: TokenResponse) => {
-        try {
-            const res = await axios.post(`/auth/google`, { accessToken: accessToken.access_token });
-            dispatch(userActions.setUser(res.data));
-        } catch (error) {
-            console.error("Google login error : ", error);
-        }
+    const loginSuccess = async ({ code }: { code: string }) => {
+        axios
+            .post("/auth/google/callback", { code })
+            .then(({ data }) => {
+                console.log(data);
+            });
     }
 
     return (
-        <LoginButton onClick={() => login()}>
+        <LoginButton onClick={() => googleSocialLogin()}>
             Sign in with Google 🚀
         </LoginButton>
     )

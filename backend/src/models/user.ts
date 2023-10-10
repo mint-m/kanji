@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { IUser } from '../interfaces/IUser';
+import mongoose from "mongoose";
+import { IUser } from "../interfaces/IUser";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -7,11 +7,12 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     name: { type: String, required: false },
     learningCheckpoint: { type: Object, required: false },
-  }, {
-  timestamps: true,
-}
+  },
+  {
+    timestamps: true,
+  }
 );
 
-const User = mongoose.model<IUser>('User', UserSchema, 'user');
+const User = mongoose.model<IUser>("User", UserSchema, "user");
 
 export default User;

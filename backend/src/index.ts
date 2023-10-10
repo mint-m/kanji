@@ -5,9 +5,8 @@ import mongoose from "mongoose";
 import config from "./config";
 import Word from "./models/word";
 import User from "./models/user";
-import passport from "passport";
-import { Strategy as GoogleOAuth2Strategy } from "passport-google-oauth20";
 import session from "express-session";
+import { OAuth2Client } from "google-auth-library";
 
 const {
   MONGO_URI,
@@ -39,53 +38,8 @@ app.use(
   })
 );
 
-passport.use(
-  new GoogleOAuth2Strategy(
-    {
-      clientID: GOOGLE_CLIENT_ID as string,
-      clientSecret: GOOGLE_CLIENT_SECRET as string,
-      callbackURL: `http://localhost:8000/auth/google/callback`,
-      passReqToCallback: true,
-    },
-    async (req, accessToken, refreshToken, profile, done) => {
-      try {
-        const existingUser = await User.findOne({ email: profile.id });
-
-        if (existingUser) {
-          // 이미 존재하는 사용자라면 이름만 업데이트
-          existingUser.name = profile.displayName;
-          await existingUser.save();
-          return done(null, existingUser);
-        } else {
-          // 새로운 사용자라면 MongoDB에 저장
-          const newUser = new User({
-            email: profile.id,
-            name: profile.displayName,
-          });
-
-          await newUser.save();
-          return done(null, newUser);
-        }
-      } catch (error) {
-        return done(error as Error);
-      }
-    }
-  )
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((id: string, done) => {
-  done(null, id);
-});
-
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) return res.redirect("/login");
+  if (!req.session) return res.redirect("/login");
 });
 
 app.get(
@@ -123,55 +77,42 @@ app.get(
   }
 );
 
-app.post("/auth/google", async (req, res) => {
-  const { accessToken } = req.body;
+const oAuth2Client = new OAuth2Client(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  "postmessage"
+);
 
-  try {
-    const tokenInfoResponse = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`
-    );
-    const tokenInfo = tokenInfoResponse.data;
+app.post("/auth/google/callback", async (req, res) => {
+  const { tokens } = await oAuth2Client.getToken(req.body.code);
 
-    (async () => {
-      try {
-        const existingUser = await User.findOne({ email: tokenInfo.email });
+  if (tokens.access_token) {
+    const userInfo = await oAuth2Client.getTokenInfo(tokens.access_token);
 
-        if (!existingUser) {
-          const newUser = new User({
-            type: "google",
-            userid: tokenInfo.email,
-            email: tokenInfo.email,
-            name: tokenInfo.email,
-          });
-          await newUser.save();
-          console.log("New user saved successfully");
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        res.json({ success: false, error: "New user save err" });
+    try {
+      const existingUser = await User.findOne({ email: userInfo.email });
+      if (!existingUser) {
+        // 새로운 사용자라면 MongoDB에 저장
+        const newUser = new User({
+          type: "google",
+          email: userInfo.email,
+          name: userInfo.email?.split("@")[0],
+        });
+
+        await newUser.save();
       }
-    })();
-
-    if (tokenInfo && tokenInfo.user_id) {
-      req.logIn(tokenInfo, (err) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ success: false, error: "로그인에 실패했습니다." });
-        }
-        return res.status(200).json({ success: true, user: tokenInfo });
-      });
-    } else {
-      return res
-        .status(401)
-        .json({ success: false, error: "토큰이 유효하지 않습니다." });
+    } catch (error) {
+      console.error(error);
     }
-  } catch (error) {
-    console.error("Google token validation error:", error);
-    return res
-      .status(500)
-      .json({ success: false, error: "서버 오류가 발생했습니다." });
   }
+
+  res.send(tokens);
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/");
+  });
 });
 
 app.listen(PORT, () => {
