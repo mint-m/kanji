@@ -4,6 +4,8 @@ import styled, { css } from 'styled-components';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const userInfoString = localStorage.getItem('user_info');
+  const userInfoJson = userInfoString && JSON.parse(userInfoString);
 
   const handleOnClick = useCallback((path: string) => {
     navigate(`/${path}`);
@@ -12,7 +14,9 @@ const Navbar = () => {
   return (
     <NavbarDiv>
       <Button onClick={() => handleOnClick('')}>홈</Button>
-      <Button onClick={() => handleOnClick('login')}>로그인</Button>
+      <Button onClick={() => handleOnClick('login')}>
+        {(userInfoJson && userInfoJson.name) || "로그인"}
+      </Button>
     </NavbarDiv>
   );
 };

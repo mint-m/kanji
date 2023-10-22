@@ -29,6 +29,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
     }, 200);
 
     const handleKnowClick = useCallback((know: boolean) => {
+        // axios.patch(`/api/checkpoint/:${user}/:${know}/:${wordIndex}`)
         debouncedHandleKnowClick(know);
     }, [debouncedHandleKnowClick]);
 

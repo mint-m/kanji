@@ -1,19 +1,20 @@
 import React from 'react';
 import styled from 'styled-components';
 import GoogleLoginButton from 'components/LoginButton/GoogleLoginButton';
+import LogoutButton from 'components/LoginButton/LogoutButton';
 
 const Container = styled.div`
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  margin-top: 40vh;
+  align-items: center;
+  height: 100vh;
 `;
 
 const Login = () => {
+  const user = localStorage.getItem('user_info');
   return (
     <Container>
-      <GoogleLoginButton />
+      {user ? <LogoutButton /> : <GoogleLoginButton />}
     </Container>
   );
 };

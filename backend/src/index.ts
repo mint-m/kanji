@@ -7,6 +7,7 @@ import Word from "./models/word";
 import User from "./models/user";
 import session from "express-session";
 import { OAuth2Client } from "google-auth-library";
+import { google } from "googleapis";
 
 const {
   MONGO_URI,
@@ -14,6 +15,7 @@ const {
   SESSION_SECREST,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
+  REDIRECT_URI,
 } = config;
 
 const app = express();
@@ -80,23 +82,31 @@ app.get(
 const oAuth2Client = new OAuth2Client(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  "postmessage"
+  REDIRECT_URI
 );
 
 app.post("/auth/google/callback", async (req, res) => {
   const { tokens } = await oAuth2Client.getToken(req.body.code);
+  oAuth2Client.setCredentials({ access_token: tokens.access_token });
+
+  const oauth2 = google.oauth2({
+    auth: oAuth2Client,
+    version: "v2",
+  });
+
+  const userInfoData = (await oauth2.userinfo.get()).data;
 
   if (tokens.access_token) {
-    const userInfo = await oAuth2Client.getTokenInfo(tokens.access_token);
-
     try {
-      const existingUser = await User.findOne({ email: userInfo.email });
-      if (!existingUser) {
+      const existingUser = await User.findOne({ email: userInfoData.email });
+      if (existingUser) {
+        // 기존 유저 확인
+      } else {
         // 새로운 사용자라면 MongoDB에 저장
         const newUser = new User({
           type: "google",
-          email: userInfo.email,
-          name: userInfo.email?.split("@")[0],
+          email: userInfoData.email,
+          name: userInfoData.name,
         });
 
         await newUser.save();
@@ -105,14 +115,53 @@ app.post("/auth/google/callback", async (req, res) => {
       console.error(error);
     }
   }
+  res.send({ tokens, userInfoData: userInfoData });
+});
 
-  res.send(tokens);
+app.get("/auth/user_info", async (req, res) => {
+  const tokens = req.body;
+  oAuth2Client.setCredentials({ access_token: tokens.access_token });
+
+  const oauth2 = google.oauth2({
+    auth: oAuth2Client,
+    version: "v2",
+  });
+
+  const userInfo = await oauth2.userinfo.get();
+  return userInfo;
 });
 
 app.get("/logout", (req, res) => {
   req.session.destroy(() => {
     res.redirect("/");
   });
+});
+
+app.patch("/api/checkpoint/:userId/:wordIndex", async (req, res) => {
+  const { userId } = req.params;
+  const { checkpoint, wordIndex } = req.body;
+
+  console.log(checkpoint, wordIndex);
+
+  try {
+    const existingUser = await User.findById(userId);
+
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update or add 'checkpoint' field
+    if (checkpoint) {
+      existingUser.learningCheckpoint = checkpoint;
+    }
+
+    await existingUser.save();
+
+    res.json(existingUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.listen(PORT, () => {
