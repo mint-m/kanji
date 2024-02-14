@@ -3,7 +3,9 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Navbar from 'components/Navbar';
 import { GlobalStyle } from 'styles/GlobalStyle';
+import { lightTheme } from './styles/theme';
 import ProtectedRoute from 'ProtectedRoute';
+import { ThemeProvider } from 'styled-components';
 
 const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
@@ -13,7 +15,7 @@ const FlashCard = lazy(() => import('pages/FlashCardPage'));
 
 const App = () => {
   return (
-    <>
+    <ThemeProvider theme={lightTheme}>
       <GlobalStyle />
       <BrowserRouter>
         <Navbar />
@@ -27,7 +29,7 @@ const App = () => {
           </Routes>
         </Suspense>
       </BrowserRouter>
-    </>
+    </ThemeProvider>
   );
 }
 
