@@ -14,7 +14,7 @@ interface Range {
 }
 
 const StepRangeSlider: React.FC<StepSliderProps> = (props: StepSliderProps) => {
-  const [range, setRange] = useState<Range>({ min: 0, max: 0 });
+  const [range, setRange] = useState<Range>({ min: 1, max: 1 });
 
   return (
     <SliderContainer>
@@ -24,7 +24,7 @@ const StepRangeSlider: React.FC<StepSliderProps> = (props: StepSliderProps) => {
         min={1}
         max={props.stepLength}
         step={1}
-        defaultValue={[1, 1]}
+        defaultValue={[range.min, range.max]}
         style={{ height: "1rem", padding: "0" }}
         onChange={(value) => {
           const [min, max] = value as number[];
