@@ -1,3 +1,4 @@
+import DefaultButton from 'components/CommonStyled/DefaultButton';
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -23,22 +24,18 @@ const Navbar = () => {
 
 export default Navbar;
 
-const Button = styled.button`
+const Button = styled(DefaultButton)`
   /* 공통 스타일 */
   ${css`
-    width: 6rem;
-    height: 2rem;
-    justify-content: center;
-    align-items: center;
-    outline: none;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: 96d2d7b8;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    margin-left: 0.5rem;
+    line-height: 100%;
+    width: 4rem;
+    height: 2.5rem;
     font-size: 1em;
+    border-radius: 2rem;
+    padding: 0 0.5rem;
+    margin-left: 1rem;
+    color: gray;
+    font-size: 0.9rem;
   `}
 `;
 
