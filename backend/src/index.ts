@@ -18,6 +18,7 @@ const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI,
+  JWT_SECRET,
 } = config;
 
 const app = express();
@@ -127,7 +128,7 @@ app.post("/auth/google/callback", async (req, res) => {
     id: userInfoData.id,
     email: userInfoData.email,
     name: userInfoData.name,
-  }, 'your_secret_key', { expiresIn: '1h' });
+  }, JWT_SECRET!, { expiresIn: '4h' });
   
   res.json(token);
 });
