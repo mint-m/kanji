@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import axios from "axios";
 import cors from "cors";
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import config from "./config";
 import Word from "./models/word";
@@ -9,10 +10,11 @@ import session from "express-session";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 
+
 const {
   MONGO_URI,
   PORT,
-  SESSION_SECREST,
+  SESSION_SECRET,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI,
@@ -26,11 +28,16 @@ mongoose
   .catch((e) => console.log(e));
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+      credentials: true,
+      origin : 'http://127.0.0.1:4200',
+  })
+);
 
 app.use(
   session({
-    secret: SESSION_SECREST as string,
+    secret: SESSION_SECRET as string,
     resave: true,
     saveUninitialized: true,
     cookie: {
@@ -115,7 +122,14 @@ app.post("/auth/google/callback", async (req, res) => {
       console.error(error);
     }
   }
-  res.send({ tokens, userInfoData: userInfoData });
+
+  const token = jwt.sign({
+    id: userInfoData.id,
+    email: userInfoData.email,
+    name: userInfoData.name,
+  }, 'your_secret_key', { expiresIn: '1h' });
+  
+  res.json(token);
 });
 
 app.get("/auth/user_info", async (req, res) => {
