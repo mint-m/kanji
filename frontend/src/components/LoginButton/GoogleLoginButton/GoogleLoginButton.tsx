@@ -4,6 +4,7 @@ import axios from 'axios';
 import { styled } from 'styled-components';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
+import { saveTokenLocally } from 'services/authService';
 
 const GoogleLoginButton = () => {
     const navigate = useNavigate();
@@ -16,13 +17,14 @@ const GoogleLoginButton = () => {
     });
 
     const loginSuccess = async ({ code }: { code: string }) => {
-        axios
-            .post("/auth/google/callback", { code })
-            .then(({ data }) => {
-                localStorage.setItem('access_token', data.tokens.access_token)
-                localStorage.setItem('user_info', JSON.stringify(data.userInfoData))
-                navigate('/');
-            });
+        try {
+            const response = await axios.post("/auth/google/callback", { code });
+            const token = response.data.token;
+            saveTokenLocally(token);
+            navigate('/');
+        } catch (error) {
+            console.error('Google login callback error:', error);
+        }
     }
 
     return (

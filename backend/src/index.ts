@@ -9,6 +9,7 @@ import User from "./models/user";
 import session from "express-session";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
+import { verifyToken, generateToken } from "./services/auth";
 
 
 const {
@@ -31,8 +32,8 @@ mongoose
 app.use(express.json());
 app.use(
   cors({
-      credentials: true,
-      origin : 'http://127.0.0.1:4200',
+    credentials: true,
+    origin: 'http://127.0.0.1:4200',
   })
 );
 
@@ -93,45 +94,53 @@ const oAuth2Client = new OAuth2Client(
   REDIRECT_URI
 );
 
-app.post("/auth/google/callback", async (req, res) => {
-  const { tokens } = await oAuth2Client.getToken(req.body.code);
-  oAuth2Client.setCredentials({ access_token: tokens.access_token });
-
-  const oauth2 = google.oauth2({
-    auth: oAuth2Client,
-    version: "v2",
-  });
-
-  const userInfoData = (await oauth2.userinfo.get()).data;
-
-  if (tokens.access_token) {
-    try {
-      const existingUser = await User.findOne({ email: userInfoData.email });
-      if (existingUser) {
-        // 기존 유저 확인
-      } else {
-        // 새로운 사용자라면 MongoDB에 저장
-        const newUser = new User({
-          type: "google",
-          email: userInfoData.email,
-          name: userInfoData.name,
-        });
-
-        await newUser.save();
-      }
-    } catch (error) {
-      console.error(error);
+app.post("/auth/google/access-token", async (req, res) => {
+  try {
+    if (!req.body.code) {
+      return res.status(400).send("Error: Code is missing.");
     }
-  }
 
-  const token = jwt.sign({
-    id: userInfoData.id,
-    email: userInfoData.email,
-    name: userInfoData.name,
-  }, JWT_SECRET!, { expiresIn: '4h' });
-  
-  res.json(token);
+    const { tokens } = await oAuth2Client.getToken(req.body.code);
+    if (!tokens || !tokens.access_token) {
+      return res.status(500).send("Error: Unable to retrieve access token.");
+    }
+
+    res.status(200).send(tokens.access_token);
+  } catch (error) {
+    console.error("Error while retrieving Google access token:", error);
+    res.status(500).send("Error: Internal server error.");
+  }
 });
+
+app.post("/auth/google-login", async (req: Request, res: Response) => {
+  try {
+    const { tokenId } = req.body;
+    const payload: any = await verifyToken(tokenId);
+
+    let user = await User.findOne({
+      email: payload.email,
+      name: payload.name
+    });
+
+    if (!user) {
+      // If user doesn't exist, create a new user
+      const newUser = new User({ 
+        type: 'google', 
+        email: payload.email, 
+        name: payload.name 
+      });
+      user = await newUser.save();
+    }
+
+    // Generate JWT token for the user
+    const token = generateToken(user);
+    res.json({ token });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 
 app.get("/auth/user_info", async (req, res) => {
   const tokens = req.body;
