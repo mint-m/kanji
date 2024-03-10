@@ -18,9 +18,8 @@ const GoogleLoginButton = () => {
 
     const loginSuccess = async ({ code }: { code: string }) => {
         try {
-            const response = await axios.post("/auth/google/callback", { code });
-            const token = response.data.token;
-            saveTokenLocally(token);
+            const response = await axios.post("/auth/google/access-token", { code });
+            saveTokenLocally(response.data);
             navigate('/');
         } catch (error) {
             console.error('Google login callback error:', error);
