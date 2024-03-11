@@ -13,3 +13,23 @@ export const saveTokenLocally = (token: string) => {
 export const getTokenLocally = () => {
     return localStorage.getItem('token');
 };
+
+export const requestUserInfoAndStoreLocally = async (token: string) => {
+    try {
+      // Make a GET request to the /auth/user_info endpoint, passing the JWT token in the Authorization header
+      const response = await axios.get(`${API_URL}/profile`, {
+        headers: {
+          Authorization: `Bearer ${JSON.stringify(token)}`
+        }
+      });
+  
+      // Extract user information from the response
+      const userInfo = response.data;
+  
+      // Store user information in local storage
+      localStorage.setItem('profile', JSON.stringify(userInfo));
+    } catch (error) {
+      console.error('Error requesting user information:', error);
+      // Handle error as needed
+    }
+  };

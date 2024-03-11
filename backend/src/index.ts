@@ -1,16 +1,15 @@
 import express, { Request, Response, NextFunction } from "express";
 import axios from "axios";
 import cors from "cors";
-import jwt from "jsonwebtoken";
+import jwt, { Secret } from "jsonwebtoken";
 import mongoose from "mongoose";
 import config from "./config";
 import Word from "./models/word";
 import User from "./models/user";
 import session from "express-session";
 import { OAuth2Client } from "google-auth-library";
-import { google } from "googleapis";
 import { verifyToken, generateToken } from "./services/auth";
-
+import { google } from "googleapis";
 
 const {
   MONGO_URI,
@@ -30,6 +29,8 @@ mongoose
   .catch((e) => console.log(e));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 app.use(
   cors({
     credentials: true,
@@ -91,7 +92,7 @@ app.get(
 const oAuth2Client = new OAuth2Client(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  REDIRECT_URI
+  REDIRECT_URI,
 );
 
 app.post("/auth/google/access-token", async (req, res) => {
@@ -112,22 +113,21 @@ app.post("/auth/google/access-token", async (req, res) => {
   }
 });
 
-app.post("/auth/google-login", async (req: Request, res: Response) => {
+app.post("/auth/google-login", async (req: any, res: Response) => {
   try {
-    const { tokenId } = req.body;
-    const payload: any = await verifyToken(tokenId);
+    const { accessToken } = req.body;
+    const userInfo = await getUserInfoWithToken(accessToken);
 
     let user = await User.findOne({
-      email: payload.email,
-      name: payload.name
+      email: userInfo.email
     });
 
     if (!user) {
       // If user doesn't exist, create a new user
-      const newUser = new User({ 
-        type: 'google', 
-        email: payload.email, 
-        name: payload.name 
+      const newUser = new User({
+        email: userInfo.email,
+        name: userInfo.name,
+        type: 'google',
       });
       user = await newUser.save();
     }
@@ -141,24 +141,62 @@ app.post("/auth/google-login", async (req: Request, res: Response) => {
   }
 });
 
-
-app.get("/auth/user_info", async (req, res) => {
-  const tokens = req.body;
-  oAuth2Client.setCredentials({ access_token: tokens.access_token });
-
+const getUserInfoWithToken = async (tokens: string) => {
+  oAuth2Client.setCredentials({ access_token: tokens });
   const oauth2 = google.oauth2({
     auth: oAuth2Client,
     version: "v2",
   });
+  const userInfo = (await oauth2.userinfo.get()).data;
 
-  const userInfo = await oauth2.userinfo.get();
   return userInfo;
+}
+
+
+app.get("/auth/profile", async (req, res) => {
+  const authHeader = req.headers.authorization;
+
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization header missing or not in the expected format' });
+  }
+  interface JwtPayload {
+    userId: string
+  }
+
+  const tokenString = authHeader.split(' ')[1];
+  const token = JSON.parse(tokenString).token;
+
+  const decodedToken: JwtPayload = jwt.verify(token, JWT_SECRET as Secret) as JwtPayload;
+
+  const userInfo = {
+    userId: decodedToken.userId,
+  };
+
+
+  res.json(userInfo);
 });
 
-app.get("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.redirect("/");
-  });
+app.post("/auth/logout", (req, res) => {
+  try {
+    // Extract the JWT token from the Authorization header
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authorization header missing or not in the expected format' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Invalidate the JWT token by adding it to a blacklist (optional)
+    // Here, you can implement your own logic to blacklist tokens in a database or cache
+
+    // Respond with a successful logout message
+    res.json({ message: 'Successfully logged out' });
+  } catch (error) {
+    console.error('Error logging out:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 app.patch("/api/checkpoint/:userId/:wordIndex", async (req, res) => {
