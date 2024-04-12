@@ -1,4 +1,4 @@
 const loginCheck = () => {
-  return !!localStorage.getItem("access_token");
+  return !!localStorage.getItem("token");
 };
 export default loginCheck;

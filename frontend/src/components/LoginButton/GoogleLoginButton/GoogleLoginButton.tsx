@@ -25,16 +25,15 @@ const GoogleLoginButton = () => {
             saveTokenLocally(loginResponse.data.token);
 
             // Requesting user information and storing it locally
-            await requestUserInfoAndStoreLocally(loginResponse.data);
+            await requestUserInfoAndStoreLocally(loginResponse.data.token);
 
             // Navigating to the home page after successful login
-            // navigate('/');
+            navigate('/');
         } catch (error) {
             console.error('Google login callback error:', error);
             // Handle error (e.g., display error message to user)
         }
     }
-
 
     return (
         <LoginButton onClick={() => googleSocialLogin()}>

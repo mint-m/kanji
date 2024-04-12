@@ -23,11 +23,8 @@ export const requestUserInfoAndStoreLocally = async (token: string) => {
         }
       });
   
-      // Extract user information from the response
-      const userInfo = response.data;
-  
       // Store user information in local storage
-      localStorage.setItem('profile', JSON.stringify(userInfo));
+      localStorage.setItem('profile', JSON.stringify(response.data));      
     } catch (error) {
       console.error('Error requesting user information:', error);
       // Handle error as needed
