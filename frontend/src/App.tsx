@@ -22,7 +22,7 @@ const App = () => {
         <Suspense fallback={<Main />}>
           <Routes>
             <Route path='/' element={<Main />} />
-            <Route path='/login' element={<Login />} />
+            <Route path='/login' element={<Login />} /> /** need to check protect in login */
             <Route path='/select-level' element={<ProtectedRoute><SelectLevel /></ProtectedRoute>} />
             <Route path='/flash-cards' element={<ProtectedRoute><FlashCard /></ProtectedRoute>} />
             <Route path='*' element={<NotFound />} />

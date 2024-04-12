@@ -8,7 +8,7 @@ import Word from "./models/word";
 import User from "./models/user";
 import session from "express-session";
 import { OAuth2Client } from "google-auth-library";
-import { verifyToken, generateToken } from "./services/auth";
+import { generateToken } from "./services/auth";
 import { google } from "googleapis";
 
 const {
@@ -152,10 +152,8 @@ const getUserInfoWithToken = async (tokens: string) => {
   return userInfo;
 }
 
-
 app.get("/auth/profile", async (req, res) => {
   const authHeader = req.headers.authorization;
-
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Authorization header missing or not in the expected format' });
@@ -164,17 +162,10 @@ app.get("/auth/profile", async (req, res) => {
     userId: string
   }
 
-  const tokenString = authHeader.split(' ')[1];
-  const token = JSON.parse(tokenString).token;
-
-  const decodedToken: JwtPayload = jwt.verify(token, JWT_SECRET as Secret) as JwtPayload;
-
-  const userInfo = {
-    userId: decodedToken.userId,
-  };
-
-
-  res.json(userInfo);
+  const tokenString = authHeader.split(' ')[1].replace(/\"/gi, "");;
+  const decodedToken: JwtPayload = jwt.verify(tokenString, JWT_SECRET as Secret) as JwtPayload;
+  
+  res.json({...decodedToken});
 });
 
 app.post("/auth/logout", (req, res) => {
