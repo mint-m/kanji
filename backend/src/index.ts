@@ -195,8 +195,6 @@ app.patch("/api/checkpoint/:userId/:wordIndex", async (req, res) => {
   const { userId } = req.params;
   const { checkpoint, wordIndex } = req.body;
 
-  console.log(checkpoint, wordIndex);
-
   try {
     const existingUser = await User.findById(userId);
 
