@@ -42,6 +42,7 @@ export default FlashCardPage;
 
 const FlashCardWrap = styled.div`
   display: grid;
+  place-items: center;
   height: 100vh;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
@@ -49,4 +50,5 @@ const FlashCardWrap = styled.div`
 
 const CenterDiv2 = styled(CenterDiv)`
   align-items: flex-start;
+  width: fit-content;
 `
