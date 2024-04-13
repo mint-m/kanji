@@ -164,8 +164,9 @@ app.get("/auth/profile", async (req, res) => {
 
   const tokenString = authHeader.split(' ')[1].replace(/\"/gi, "");;
   const decodedToken: JwtPayload = jwt.verify(tokenString, JWT_SECRET as Secret) as JwtPayload;
-  
-  res.json({...decodedToken});
+
+  const user = await User.findOne({_id:decodedToken.userId});
+  res.json(user);
 });
 
 app.post("/auth/logout", (req, res) => {

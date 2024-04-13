@@ -9,11 +9,12 @@ const Navbar = () => {
   const handleOnClick = useCallback((path: string) => {
     navigate(`/${path}`);
   }, [navigate]);
+  const userProfile = localStorage.getItem('profile');
 
   return (
     <NavbarDiv>
       <Button onClick={() => handleOnClick('')}>홈</Button>
-      <Button onClick={() => handleOnClick('login')}>로그인</Button>
+      {userProfile ? <Button onClick={() => navigate('/login')}>{JSON.parse(localStorage.getItem('profile')!).name}</Button> : <Button onClick={() => handleOnClick('login')}>로그인</Button>}
     </NavbarDiv>
   );
 };
