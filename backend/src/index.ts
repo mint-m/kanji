@@ -128,6 +128,13 @@ app.post("/auth/google-login", async (req: any, res: Response) => {
         email: userInfo.email,
         name: userInfo.name,
         type: 'google',
+        learningCheckpoint: {
+          level: 5,
+          step: {
+            min: 1,
+            max: 2
+          }
+        },
       });
       user = await newUser.save();
     }
@@ -165,7 +172,7 @@ app.get("/auth/profile", async (req, res) => {
   const tokenString = authHeader.split(' ')[1].replace(/\"/gi, "");;
   const decodedToken: JwtPayload = jwt.verify(tokenString, JWT_SECRET as Secret) as JwtPayload;
 
-  const user = await User.findOne({_id:decodedToken.userId});
+  const user = await User.findOne({ _id: decodedToken.userId });
   res.json(user);
 });
 

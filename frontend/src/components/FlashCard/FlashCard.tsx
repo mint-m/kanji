@@ -47,8 +47,8 @@ const FlashCard = React.memo((props: FlashCardProps) => {
 export default FlashCard;
 
 const CardContainer = styled.div`
-  width: 30rem;
-  height: 30rem;
+  width: 35rem;
+  height: 35rem;
   text-align: center;
 
   display: flex;

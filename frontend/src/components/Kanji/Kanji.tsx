@@ -34,4 +34,6 @@ export default Kanji;
 
 const KanjisWarp = styled.div`
   margin-top: 4rem;
+  width: 100%;
+  align-self: start;
 `
