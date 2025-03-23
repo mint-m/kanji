@@ -18,8 +18,12 @@ const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI,
-  JWT_SECRET,
+  JWT_SECRET
 } = config;
+
+interface GoogleAuthRequest {
+  code: string;
+}
 
 const app = express();
 
@@ -30,13 +34,7 @@ mongoose
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-app.use(
-  cors({
-    credentials: true,
-    origin: 'http://127.0.0.1:4200',
-  })
-);
+app.use(cors({ credentials: true, origin: true }));
 
 app.use(
   session({
@@ -92,30 +90,29 @@ app.get(
 const oAuth2Client = new OAuth2Client(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  REDIRECT_URI,
-);
+  REDIRECT_URI
+  );
 
-app.post("/auth/google/access-token", async (req, res) => {
+app.post("/auth/google/access-token", async (req: Request, res: Response) => {
   try {
-    if (!req.body.code) {
-      return res.status(400).send("Error: Code is missing.");
-    }
-
-    const { tokens } = await oAuth2Client.getToken(req.body.code);
-    if (!tokens || !tokens.access_token) {
-      return res.status(500).send("Error: Unable to retrieve access token.");
-    }
-
-    res.status(200).send(tokens.access_token);
+    const { code } = req.body as GoogleAuthRequest;
+    const { tokens } = await oAuth2Client.getToken({
+      code: code,
+      redirect_uri: REDIRECT_URI
+    });
+    
+    
+    res.json({ accessToken: tokens.access_token });
   } catch (error) {
-    console.error("Error while retrieving Google access token:", error);
-    res.status(500).send("Error: Internal server error.");
+    // 에러 처리
+    res.status(500).json({ message: 'Token Error' });
   }
 });
 
 app.post("/auth/google-login", async (req: any, res: Response) => {
   try {
-    const { accessToken } = req.body;
+    const { accessToken } = req.body; // req tokenResponse.data.accessToken
+    
     const userInfo = await getUserInfoWithToken(accessToken);
 
     let user = await User.findOne({
