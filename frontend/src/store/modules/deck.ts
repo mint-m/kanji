@@ -7,10 +7,13 @@ interface deckState {
 }
 
 export interface WordType {
+  origin_entry_id: string;
+  level: string;
   tryNum?: number;
   pron: string;
   means: string[];
   entry: string;
+  step?: number;
 }
 
 // actionType
