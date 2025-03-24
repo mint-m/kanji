@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@fullpage/react-fullpage": "^0.1.48",
     "@react-oauth/google": "^0.11.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -20,7 +19,6 @@
     "react": "^18.2.0",
     "react-awesome-slider": "^4.1.0",
     "react-dom": "^18.2.0",
-    "react-fullpage": "^0.1.19",
     "react-page-scroller": "^3.0.1",
     "react-redux": "^8.1.1",
     "react-router-dom": "^6.13.0",

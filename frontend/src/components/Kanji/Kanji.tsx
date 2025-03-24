@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import KanjiExample from './KanjiExample';
 import KanjiEnter from './KanjiEnter';
 import { RootState } from 'store';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
+import { reset } from 'store/modules/kanji'; // kanji 액션 import
 
 const Kanji = () => {
+  const dispatch = useDispatch();
   const kanjiData = useSelector((state: RootState) => state.kanji.kanjis);
+
+  // 컴포넌트 언마운트 시 kanji 데이터 초기화
+  useEffect(() => {
+    // 컴포넌트가 언마운트될 때 실행되는 클린업 함수
+    return () => {
+      dispatch(reset());
+    };
+  }, [dispatch]);
 
   const kanjis = kanjiData?.map((kanji, index) => {
     return (
