@@ -16,9 +16,10 @@ const Navbar = () => {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setShowUserMenu(false);
+
     navigate('/');
-    // You might want to add additional logout logic here
-    // such as clearing other local storage items or calling a logout API
   }, [navigate]);
 
   // Close the menu when clicking outside
@@ -35,19 +36,26 @@ const Navbar = () => {
     };
   }, []);
 
+  // 로그인 상태가 변경될 때 메뉴 상태 초기화
+  useEffect(() => {
+    if (!userProfile) {
+      setShowUserMenu(false);
+    }
+  }, [userProfile]);
+
   return (
     <NavbarDiv>
       <Button onClick={() => handleOnClick('')}>홈</Button>
-      
+
       {userProfile ? (
         <UserSection ref={menuRef}>
-          <ProfileButton 
+          <ProfileButton
             onClick={() => setShowUserMenu(!showUserMenu)}
             isActive={showUserMenu}
           >
             {userProfile.name}
           </ProfileButton>
-          
+
           {showUserMenu && (
             <UserMenu>
               <MenuItem onClick={() => handleOnClick('profile')}>
@@ -85,7 +93,7 @@ const Button = styled(DefaultButton)`
   `}
 `;
 
-const ProfileButton = styled(Button)<{ isActive: boolean }>`
+const ProfileButton = styled(Button) <{ isActive: boolean }>`
   ${props => props.isActive && css`
     background-color: #f0f0f0;
   `}
