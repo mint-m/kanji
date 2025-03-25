@@ -2,7 +2,6 @@
 import { Request, Response, NextFunction } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
-import jwt, { Secret } from "jsonwebtoken";
 import config from "../config";
 import User from "../models/user";
 import { generateToken } from "../services/auth";
@@ -12,7 +11,6 @@ const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI,
-  JWT_SECRET
 } = config;
 
 // OAuth 클라이언트 초기화

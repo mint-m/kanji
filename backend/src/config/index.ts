@@ -9,5 +9,5 @@ export default {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   REDIRECT_URI: process.env.REDIRECT_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRY: process.env.JWT_EXPIRY
+  JWT_EXPIRY: process.env.JWT_EXPIRY || "1d",
 };

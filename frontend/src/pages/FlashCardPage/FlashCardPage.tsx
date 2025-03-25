@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
 import axios from 'axios';
@@ -23,7 +23,7 @@ const FlashCardPage: React.FC = () => {
     // 현재 레벨에서 다음 레벨을 예측
     const numbersOnlyLevel = level.replace(/\D/g, "");
     const nextLevel = (parseInt(numbersOnlyLevel) + 1).toString();
-    
+
     // 다음 레벨 데이터가 캐시에 없을 경우 미리 로드
     if (!deckCache[nextLevel]) {
       axios.get<WordType[]>(`api/word/level/${nextLevel}`)
@@ -39,7 +39,7 @@ const FlashCardPage: React.FC = () => {
   // API 호출 함수를 useCallback으로 메모이제이션
   const fetchDeck = useCallback(async () => {
     const numbersOnlyLevel = level.replace(/\D/g, "");
-    
+
     // 이미 캐시된 데이터가 있는지 확인
     if (deckCache[numbersOnlyLevel]) {
       setDeck(deckCache[numbersOnlyLevel]);
@@ -51,23 +51,23 @@ const FlashCardPage: React.FC = () => {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // API 요청 타임아웃 설정 (3초)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
-      
+
       const response = await axios.get<WordType[]>(
         `api/word/level/${numbersOnlyLevel}`,
         { signal: controller.signal }
       );
-      
+
       clearTimeout(timeoutId);
-      
+
       // 캐시에 저장
       deckCache[numbersOnlyLevel] = response.data;
       setDeck(response.data);
-      
+
       // 다음 레벨 데이터 미리 로드
       preloadNextLevelData();
     } catch (error: any) {
@@ -105,9 +105,9 @@ const FlashCardPage: React.FC = () => {
     <FlashCardWrap>
       <Kanji />
       <ContentContainer>
-        <HeaderSection 
-          title={level} 
-          subtitle={`${step.min} ~ ${step.max}`} 
+        <HeaderSection
+          title={level}
+          subtitle={`${step.min} ~ ${step.max}`}
         />
         {renderContent()}
       </ContentContainer>

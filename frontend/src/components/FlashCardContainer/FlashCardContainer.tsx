@@ -23,7 +23,7 @@ const sendLearningDataToServer = async (): Promise<void> => {
   if (learningQueue.length === 0) return;
   
   try {
-    await fetch('/api/learning-progress/batch', {
+    await fetch('/api/checkpoint', {
       method: 'POST',
       body: JSON.stringify({ items: learningQueue }),
       headers: { 'Content-Type': 'application/json' }
