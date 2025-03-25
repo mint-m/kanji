@@ -148,7 +148,7 @@ export const logout = (
 ) => {
   try {
     // JWT 토큰 블랙리스트는 Redis나 다른 저장소를 사용하여 구현할 수 있습니다
-    // 여기서는 간단히 성공 응답만 반환합니다
+    // 성공 응답만 반환 이후 특정 보안 필요 업데이트가 있을때 구현 예정
     res.json({ message: 'Successfully logged out' });
   } catch (error) {
     next(new InternalServerError("Logout failed"));

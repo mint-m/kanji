@@ -1,25 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import styled from 'styled-components';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
+import { 
+  REDIRECT_URI, 
+  exchangeCodeForToken, 
+  loginWithGoogleToken, 
+  saveTokenLocally, 
+  saveUserLocally,
+  fetchUserProfile 
+} from 'services/authService';
 
 interface GoogleLoginButtonProps {
   onLoginError?: (error: Error) => void;
+  onLoginSuccess?: () => void;
   className?: string;
+  redirectPath?: string;
+  buttonText?: string;
+  loadingText?: string;
 }
+
+// 에러 타입 정의
+type LoginError = Error | { response?: { data?: { message?: string; error?: string } } };
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ 
   onLoginError,
-  className 
+  onLoginSuccess,
+  className,
+  redirectPath = '/',
+  buttonText = 'Sign in with Google 🚀',
+  loadingText = 'Signing in...'
 }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isComponentMounted, setIsComponentMounted] = useState(true);
 
-  // Google OAuth redirect URI must match the one registered in Google Cloud Console
-  const REDIRECT_URI = 'http://127.0.0.1:4200';
+  // 컴포넌트 마운트 상태 추적
+  useEffect(() => {
+    setIsComponentMounted(true);
+    return () => setIsComponentMounted(false);
+  }, []);
+
+  // 통합된 에러 핸들링 함수
+  const handleError = (error: LoginError, errorMessage: string) => {
+    console.error(errorMessage, error);
+    
+    let displayError = 'Login process failed. Please try again.';
+    
+    if (axios.isAxiosError(error) && error.response?.data) {
+      const { message, error: errorText } = error.response.data;
+      displayError = `Login failed: ${message || errorText || 'Unknown error'}`;
+    }
+    
+    if (isComponentMounted) {
+      setError(displayError);
+      setIsLoading(false);
+    }
+    
+    if (onLoginError && error instanceof Error) {
+      onLoginError(error);
+    }
+  };
+
+  const handleAuthCodeSuccess = async (code: string) => {
+    if (!isComponentMounted) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Step 1: Exchange auth code for access token
+      const tokenResponse = await exchangeCodeForToken(code);
+      
+      // Step 2: Login with the access token
+      const loginResponse = await loginWithGoogleToken(tokenResponse.accessToken);
+      
+      // Step 3: Save JWT token to local storage
+      saveTokenLocally(loginResponse.token);
+      
+      // Step 4: Get user profile info
+      const userProfile = await fetchUserProfile(loginResponse.token);
+      
+      // Step 5: Save user info to local storage
+      saveUserLocally(userProfile);
+
+      // 성공 콜백 호출
+      if (onLoginSuccess && isComponentMounted) {
+        onLoginSuccess();
+      }
+      
+      // Step 6: Navigate to destination page (only if component is still mounted)
+      if (isComponentMounted) {
+        navigate(redirectPath);
+      }
+    } catch (error) {
+      handleError(error as LoginError, 'Login process error:');
+    } finally {
+      if (isComponentMounted) {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const googleSocialLogin = useGoogleLogin({
     flow: "auth-code",
@@ -27,59 +111,9 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     redirect_uri: REDIRECT_URI,
     onSuccess: (response) => handleAuthCodeSuccess(response.code),
     onError: (errorResponse) => {
-      console.error('Google OAuth error:', errorResponse);
-      setError('Failed to authenticate with Google');
-      setIsLoading(false);
+      handleError(new Error(errorResponse.error_description || 'OAuth error'), 'Google OAuth error:');
     }
   });
-
-  const handleAuthCodeSuccess = async (code: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Step 1: Exchange auth code for access token
-      const tokenResponse = await axios.post('/auth/google/access-token', {
-        code,
-        redirect_uri: REDIRECT_URI
-      });
-      
-      // Step 2: Login with the access token
-      const loginResponse = await axios.post('/auth/google-login', {
-        accessToken: tokenResponse.data.accessToken
-      });
-      
-      // Step 3: Save JWT token to local storage
-      localStorage.setItem('token', loginResponse.data.token);
-      
-      // Step 4: Get user profile info
-      const userResponse = await axios.get('/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${loginResponse.data.token}`
-        }
-      });
-      
-      // Step 5: Save user info to local storage
-      localStorage.setItem('user', JSON.stringify(userResponse.data));
-      
-      // Step 6: Navigate to home page
-      navigate('/');
-    } catch (error) {
-      console.error('Login process error:', error);
-      
-      if (axios.isAxiosError(error) && error.response) {
-        setError(`Login failed: ${error.response.data.message || error.response.data.error || 'Unknown error'}`);
-      } else {
-        setError('Login process failed. Please try again.');
-      }
-      
-      if (onLoginError && error instanceof Error) {
-        onLoginError(error);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div>
@@ -87,11 +121,13 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         onClick={() => !isLoading && googleSocialLogin()} 
         disabled={isLoading}
         className={className}
+        type="button"
+        aria-busy={isLoading}
       >
-        {isLoading ? 'Signing in...' : 'Sign in with Google 🚀'}
+        {isLoading ? loadingText : buttonText}
       </LoginButton>
       
-      {error && <ErrorMessage>{error}</ErrorMessage>}
+      {error && <ErrorMessage role="alert">{error}</ErrorMessage>}
     </div>
   );
 };

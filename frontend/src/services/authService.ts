@@ -1,33 +1,157 @@
 // src/services/authService.ts
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
-const API_URL = `http://localhost:8000/auth`;
+// 환경 변수에서 API URL 가져오기 (빈 문자열이면 상대 경로 사용)
+export const API_URL = process.env.REACT_APP_API_URL || '';
+export const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI || 'http://127.0.0.1:4200';
 
-export const loginWithGoogle = (tokenId: string) => {
-    return axios.post(`${API_URL}/google-login`, { tokenId });
+// 사용자 정보 타입 정의
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  picture?: string;
+  [key: string]: any; // 추가 필드를 위한 인덱스 시그니처
+}
+
+// 로그인 응답 타입 정의
+export interface LoginResponse {
+  token: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}
+
+// 토큰 관리 함수들
+export const saveTokenLocally = (token: string): void => {
+  localStorage.setItem('token', token);
 };
 
-export const saveTokenLocally = (token: string) => {
-    localStorage.setItem('token', token);
+export const getTokenLocally = (): string | null => {
+  return localStorage.getItem('token');
 };
 
-export const getTokenLocally = () => {
-    return localStorage.getItem('token');
+export const removeTokenLocally = (): void => {
+  localStorage.removeItem('token');
 };
 
-export const requestUserInfoAndStoreLocally = async (token: string) => {
-    try {
-      // Make a GET request to the /auth/user_info endpoint, passing the JWT token in the Authorization header
-      const response = await axios.get(`${API_URL}/profile`, {
-        headers: {
-          Authorization: `Bearer ${JSON.stringify(token)}`
-        }
-      });
-  
-      // Store user information in local storage
-      localStorage.setItem('profile', JSON.stringify(response.data));      
-    } catch (error) {
-      console.error('Error requesting user information:', error);
-      // Handle error as needed
+// 사용자 정보 관리 함수들
+export const saveUserLocally = (user: UserProfile): void => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
+
+export const getUserLocally = (): UserProfile | null => {
+  const userData = localStorage.getItem('user');
+  return userData ? JSON.parse(userData) : null;
+};
+
+export const removeUserLocally = (): void => {
+  localStorage.removeItem('user');
+};
+
+// API 호출에 사용할 공통 헤더 생성
+export const getAuthHeaders = (token = getTokenLocally()): Record<string, string> => {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// API URL 가져오기
+const getBaseUrl = (): string => API_URL || '';
+
+// 공통 에러 핸들링
+export const handleApiError = (error: unknown): never => {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+    const errorMessage = 
+      axiosError.response?.data?.message || 
+      axiosError.response?.data?.error || 
+      axiosError.message || 
+      'Unknown API error';
+    
+    // 401 Unauthorized 에러 발생 시 로그아웃 처리
+    if (axiosError.response?.status === 401) {
+      logout();
     }
-  };
+    
+    throw new Error(errorMessage);
+  }
+  
+  throw error instanceof Error ? error : new Error('Unknown error occurred');
+};
+
+// API 요청 함수들
+export const exchangeCodeForToken = async (code: string, redirectUri: string = REDIRECT_URI): Promise<{ accessToken: string; idToken?: string }> => {
+  try {
+    const response = await axios.post(`${getBaseUrl()}/auth/google/access-token`, {
+      code,
+      redirect_uri: redirectUri
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse> => {
+  try {
+    const response = await axios.post(`${getBaseUrl()}/auth/google-login`, {
+      accessToken
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
+  try {
+    const response = await axios.get(`${getBaseUrl()}/auth/profile`, {
+      headers: getAuthHeaders(token)
+    });
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+// 로그아웃
+export const logout = (): void => {
+  removeTokenLocally();
+  removeUserLocally();
+  
+  // 추가: 프론트엔드에서만 로그아웃하는 대신 백엔드에도 로그아웃 요청 가능
+  // 세션 무효화를 위해 백엔드에 로그아웃 알림 >> 보안 업데이트 필요시 개발 예정
+  /* try {
+    const token = getTokenLocally();
+    if (token) {
+      // 비동기 요청이지만 사용자 경험을 위해 await 하지 않음
+      axios.post(`${getBaseUrl()}/auth/logout`, {}, { headers: getAuthHeaders(token) })
+        .catch(err => console.warn('Logout notification failed:', err));
+    }
+  } catch (e) {
+    console.warn('Error during logout:', e);
+  }
+  */
+  
+  window.location.href = '/';
+};
+
+// 인증 상태 확인
+export const isAuthenticated = (): boolean => {
+  return !!getTokenLocally();
+};
+
+// 인증 여부에 따라 콜백 실행 (라우터 가드 등에서 사용)
+export const withAuth = <T>(callback: (user: UserProfile) => T, fallback?: () => T): T => {
+  const token = getTokenLocally();
+  const user = getUserLocally();
+  
+  if (token && user) {
+    return callback(user);
+  }
+  
+  if (fallback) {
+    return fallback();
+  }
+  
+  // 인증 실패 시 로그인 페이지로 리다이렉트 등의 기본 동작 추가 가능
+  throw new Error('Authentication required');
+};
