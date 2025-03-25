@@ -1,9 +1,8 @@
 import React from "react";
-import loginCheck from "components/auth/loginCheck";
 import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-    const isLogin = loginCheck();
+    const isLogin = localStorage.getItem("user");
     return !isLogin ? <Navigate to="/login" replace /> : children;
 };
 
