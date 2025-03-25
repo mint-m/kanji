@@ -7,7 +7,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const profileData = localStorage.getItem('profile');
+  const profileData = localStorage.getItem('user');
   const userProfile = profileData ? JSON.parse(profileData) : null;
 
   const handleOnClick = useCallback((path: string) => {
@@ -15,7 +15,7 @@ const Navbar = () => {
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('profile');
+    localStorage.removeItem('user');
     navigate('/');
     // You might want to add additional logout logic here
     // such as clearing other local storage items or calling a logout API
