@@ -5,7 +5,7 @@ const kanjiDataFilter = async (
   kanji: string
 ): Promise<KanjiDataType | null> => {
   try {
-    const response = await axios.get("api/kanjiSearch", { params: { kanji } });
+    const response = await axios.get("api/word/kanjiSearch", { params: { kanji } });
     const { searchResult } = response.data;
 
     if (searchResult.length > 0) {

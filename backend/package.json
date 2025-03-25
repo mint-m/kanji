@@ -24,7 +24,7 @@
     "typescript": "^5.1.6"
   },
   "scripts": {
-    "start": "node src/index.ts",
-    "dev": "nodemon src/index.ts"
+    "start": "node src/server.ts",
+    "dev": "nodemon src/server.ts"
   }
 }
