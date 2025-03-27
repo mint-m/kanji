@@ -133,5 +133,5 @@ const NavbarDiv = styled.div`
   align-items: center;
   justify-content: flex-end;
   top: 1vh;
-  right: 1vh;
+  right: 1.5vh;
 `;
