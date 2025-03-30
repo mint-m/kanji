@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import KanjiExample from './KanjiExample';
-import KanjiEnter from './KanjiEnter';
+import KanjiEnter from './KanjiCard';
 import { RootState } from 'store';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { reset } from 'store/modules/kanji'; // kanji 액션 import
+import { reset } from 'store/modules/kanji';
 
 const Kanji = () => {
   const dispatch = useDispatch();
