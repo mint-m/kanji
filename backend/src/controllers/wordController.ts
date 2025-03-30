@@ -38,6 +38,27 @@ export const getWordsByLevel = async (
   }
 };
 
+
+export const getStepsForLevel = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const level = req.params.level;
+    // Count total words for this level
+    const wordCount = await Word.countDocuments({ level: level });
+    
+    // Calculate step count (assuming 10 words per step)
+    const wordsPerStep = 10;
+    const stepCount = Math.ceil(wordCount / wordsPerStep);
+    
+    res.json({ level, totalSteps: stepCount, wordsPerStep });
+  } catch (error) {
+    next(new InternalServerError("Failed to fetch steps for level"));
+  }
+};
+
 // 한자 검색 (네이버 API 활용)
 export const searchKanji = async (
   req: Request,

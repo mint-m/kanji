@@ -90,12 +90,61 @@ export const exchangeCodeForToken = async (code: string, redirectUri: string = R
   }
 };
 
-export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse> => {
+// 사용자 프로필 가져오기와 리덕스 스토어 업데이트
+export const fetchUserData = async (token: string): Promise<UserProfile & { learningStats?: any }> => {
   try {
-    const response = await axios.post(`${getBaseUrl()}/auth/google-login`, {
+    // 기본 프로필 정보 가져오기
+    const profileResponse = await axios.get(`${getBaseUrl()}/auth/profile`, {
+      headers: getAuthHeaders(token)
+    });
+    
+    const userData = profileResponse.data;
+    
+    // 학습 통계 가져오기 (선택적으로 실패해도 기본 프로필은 반환)
+    try {
+      const statsResponse = await axios.get(
+        `${getBaseUrl()}/api/users/${userData._id}/stats`,
+        { headers: getAuthHeaders(token) }
+      );
+      
+      userData.learningStats = statsResponse.data;
+      
+    } catch (statsError) {
+      console.warn('학습 통계를 가져오는데 실패했습니다:', statsError);
+      // 기본 빈 배열 설정
+      userData.learningStats = [];
+    }
+    
+    return userData;
+    
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse & { user?: UserProfile }> => {
+  try {
+    // 로그인 API 호출
+    const loginResponse = await axios.post(`${getBaseUrl()}/auth/google-login`, {
       accessToken
     });
-    return response.data;
+    
+    // 토큰 저장
+    const token = loginResponse.data.token;
+    saveTokenLocally(token);
+    
+    // 사용자 프로필 정보 가져오기
+    const userProfile = await fetchUserData(token);
+    
+    // 사용자 정보 저장
+    saveUserLocally(userProfile);
+    
+    // 응답에 사용자 정보 추가
+    return {
+      ...loginResponse.data,
+      user: userProfile
+    };
+    
   } catch (error) {
     return handleApiError(error);
   }

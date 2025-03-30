@@ -18,58 +18,37 @@ const FlashCardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 데이터 미리 로드 함수 (다음 레벨 등)
-  const preloadNextLevelData = useCallback(() => {
-    // 현재 레벨에서 다음 레벨을 예측
-    const numbersOnlyLevel = level.replace(/\D/g, "");
-    const nextLevel = (parseInt(numbersOnlyLevel) + 1).toString();
-
-    // 다음 레벨 데이터가 캐시에 없을 경우 미리 로드
-    if (!deckCache[nextLevel]) {
-      axios.get<WordType[]>(`api/word/level/${nextLevel}`)
-        .then(response => {
-          deckCache[nextLevel] = response.data;
-        })
-        .catch(error => {
-          console.log('Next level preload failed, but this is okay:', error);
-        });
-    }
-  }, [level]);
-
   // API 호출 함수를 useCallback으로 메모이제이션
   const fetchDeck = useCallback(async () => {
     const numbersOnlyLevel = level.replace(/\D/g, "");
-
+    const cacheKey = numbersOnlyLevel;
+  
     // 이미 캐시된 데이터가 있는지 확인
-    if (deckCache[numbersOnlyLevel]) {
-      setDeck(deckCache[numbersOnlyLevel]);
+    if (deckCache[cacheKey]) {
+      setDeck(deckCache[cacheKey]);
       setIsLoading(false);
-      // 다음 레벨 데이터 미리 로드
-      preloadNextLevelData();
       return;
     }
-
+  
     setIsLoading(true);
     setError(null);
-
+  
     try {
       // API 요청 타임아웃 설정 (3초)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
-
+  
+      // API 경로 확인 및 일관성 유지
       const response = await axios.get<WordType[]>(
-        `api/word/level/${numbersOnlyLevel}`,
+        `api/words/level/${numbersOnlyLevel}`,
         { signal: controller.signal }
       );
-
+  
       clearTimeout(timeoutId);
-
+  
       // 캐시에 저장
-      deckCache[numbersOnlyLevel] = response.data;
+      deckCache[cacheKey] = response.data;
       setDeck(response.data);
-
-      // 다음 레벨 데이터 미리 로드
-      preloadNextLevelData();
     } catch (error: any) {
       console.error('Failed to fetch deck:', error);
       if (error.name === 'AbortError') {
@@ -80,14 +59,14 @@ const FlashCardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [level, preloadNextLevelData]);
+  }, [level]);
 
   // 컴포넌트가 마운트되거나 level이 변경될 때 데이터 불러오기
   useEffect(() => {
     fetchDeck();
   }, [level, fetchDeck]);
 
-  // 로딩 상태에 따라 스켈레톤 UI 표시
+  // 로딩 상태에 따라 스켈레톤 UI 표시 또는 컨텐츠 표시
   const renderContent = () => {
     if (error) {
       return <ErrorMessage>{error}</ErrorMessage>;
