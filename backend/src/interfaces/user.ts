@@ -1,24 +1,134 @@
 import { Document, Model } from 'mongoose';
+import mongoose from 'mongoose';
 
-// 사용자 인증 타입
+// User authentication types
 export type UserAuthType = 'google' | 'kakao' | 'local';
 
-// 사용자 학습 체크포인트 인터페이스
+// Learning levels
+export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+
+// Legacy learning checkpoint interface (for migration)
 export interface LearningCheckpoint {
   level: number;
   step: number;
 }
 
-// 사용자 문서 인터페이스
-export interface UserDocument extends Document {
-  type: UserAuthType;
-  _id: string;
-  email: string;
-  name: string;
-  learningCheckpoint: LearningCheckpoint;
+// User preferences interface
+export interface UserPreferences {
+  studyReminders: boolean;
+  reminderTime?: string; // HH:MM format
+  dailyGoal: number; // words per day
+  theme: 'light' | 'dark' | 'auto';
+  language: 'ko' | 'en' | 'ja';
+  soundEffects: boolean;
+  autoPlayAudio: boolean;
 }
 
-// 사용자 모델 인터페이스
-export interface UserModel extends Model<UserDocument> { }
+// User statistics interface
+export interface UserStats {
+  totalWordsStudied: number;
+  totalTimeSpent: number; // milliseconds
+  currentStreak: number;
+  longestStreak: number;
+  levelsCompleted: LearningLevel[];
+  averageSessionTime: number;
+  studyDaysCount: number;
+  favoriteStudyTime?: string; // Most common study hour
+}
+
+// User profile interface
+export interface UserProfile {
+  displayName?: string;
+  profilePicture?: string;
+  bio?: string;
+  studyGoals?: string[];
+  joinedAt: Date;
+  lastActiveAt?: Date;
+  timezone?: string;
+}
+
+// User document interface
+export interface UserDocument extends Document {
+  type: UserAuthType;
+  email: string;
+  name: string;
+  learningCheckpoint?: LearningCheckpoint; // Legacy field (for migration)
+  preferences: UserPreferences;
+  profile: UserProfile;
+  statistics: UserStats;
+  isActive: boolean;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Instance methods
+  getDisplayName(): string;
+  updateLastActive(): void;
+  incrementStreak(): void;
+  resetStreak(): void;
+  updateStudyStats(timeSpent: number, wordsStudied: number): void;
+  getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
+  hasLearningCheckpoint(): boolean;
+  getPreferredStudyTime(): string | null;
+  canReceiveReminders(): boolean;
+  isNewUser(): boolean;
+  getDaysSinceJoined(): number;
+}
+
+// User model interface with static methods
+export interface UserModel extends Model<UserDocument> {
+  // Authentication methods
+  findByEmail(email: string): Promise<UserDocument | null>;
+  
+  findOrCreateFromOAuth(
+    authData: {
+      type: UserAuthType;
+      email: string;
+      name: string;
+      profilePicture?: string;
+    }
+  ): Promise<UserDocument>;
+
+  // User management
+  deactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
+  
+  reactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
+
+  updatePreferences(
+    userId: mongoose.Types.ObjectId, 
+    preferences: Partial<UserPreferences>
+  ): Promise<UserDocument | null>;
+
+  updateProfile(
+    userId: mongoose.Types.ObjectId,
+    profile: Partial<UserProfile>
+  ): Promise<UserDocument | null>;
+
+  // Statistics and analytics
+  getUsersWithLearningCheckpoint(): Promise<UserDocument[]>;
+
+  getActiveUsers(days?: number): Promise<UserDocument[]>;
+
+  getUserStats(userId: mongoose.Types.ObjectId): Promise<UserStats | null>;
+
+  getTopUsers(
+    metric: 'streak' | 'wordsStudied' | 'timeSpent',
+    limit?: number
+  ): Promise<UserDocument[]>;
+
+  getUsersByStudyLevel(level: 'beginner' | 'intermediate' | 'advanced'): Promise<UserDocument[]>;
+
+  // Maintenance operations
+  cleanupInactiveUsers(daysSinceLastActive: number): Promise<{ deactivated: number; errors: any[] }>;
+
+  updateUserStatistics(userId: mongoose.Types.ObjectId): Promise<void>;
+
+  sendStudyReminders(): Promise<{ sent: number; errors: any[] }>;
+
+  // Migration utilities
+  migrateUsersWithCheckpoints(): Promise<{ migrated: number; errors: any[] }>;
+
+  getUsersNeedingMigration(): Promise<UserDocument[]>;
+}
 
 export default UserModel;
