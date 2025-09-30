@@ -112,20 +112,11 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     type: ProgressType
   ): Promise<WordProgressDocument>;
 
-  getCompletedWords(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<WordProgressDocument[]>;
+  getCompletedWords(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<WordProgressDocument[]>;
 
-  getIncompleteWords(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<WordProgressDocument[]>;
+  getIncompleteWords(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<WordProgressDocument[]>;
 
-  getBookmarkedWords(
-    userId: mongoose.Types.ObjectId,
-    tags?: string[]
-  ): Promise<WordProgressDocument[]>;
+  getBookmarkedWords(userId: mongoose.Types.ObjectId, tags?: string[]): Promise<WordProgressDocument[]>;
 
   getWordsNeedingReview(
     userId: mongoose.Types.ObjectId,
@@ -133,30 +124,15 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     daysSince?: number
   ): Promise<WordProgressDocument[]>;
 
-  getUserWordProgress(
-    userId: mongoose.Types.ObjectId,
-    type?: ProgressType
-  ): Promise<WordProgressDocument[]>;
+  getUserWordProgress(userId: mongoose.Types.ObjectId, type?: ProgressType): Promise<WordProgressDocument[]>;
 
-  getStudyStats(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<any>;
+  getStudyStats(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<any>;
 
-  getLevelProgress(
-    userId: mongoose.Types.ObjectId,
-    level: LearningLevel,
-    type: ProgressType
-  ): Promise<any>;
+  getLevelProgress(userId: mongoose.Types.ObjectId, level: LearningLevel, type: ProgressType): Promise<any>;
 
-  getStudyStreak(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<number>;
+  getStudyStreak(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<number>;
 
-  bulkUpdateProgress(
-    operation: BulkWordOperation
-  ): Promise<{ modified: number; errors: any[] }>;
+  bulkUpdateProgress(operation: BulkWordOperation): Promise<{ modified: number; errors: any[] }>;
 
   generateStudySessionSummary(
     userId: mongoose.Types.ObjectId,
@@ -164,11 +140,7 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     type: ProgressType
   ): Promise<StudySessionSummary>;
 
-  getWeakestWords(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType,
-    limit?: number
-  ): Promise<WordProgressDocument[]>;
+  getWeakestWords(userId: mongoose.Types.ObjectId, type: ProgressType, limit?: number): Promise<WordProgressDocument[]>;
 
   getStrongestWords(
     userId: mongoose.Types.ObjectId,
@@ -176,17 +148,15 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     limit?: number
   ): Promise<WordProgressDocument[]>;
 
-  analyzeStudyPatterns(
-    userId: mongoose.Types.ObjectId,
-    type: ProgressType,
-    days?: number
-  ): Promise<any>;
+  analyzeStudyPatterns(userId: mongoose.Types.ObjectId, type: ProgressType, days?: number): Promise<any>;
 
   predictOptimalReviewTime(
     userId: mongoose.Types.ObjectId,
     wordId: mongoose.Types.ObjectId,
     type: ProgressType
   ): Promise<number>;
+
+  getBookmarkAnalytics(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<any>;
 }
 
 export default WordProgressModel;
