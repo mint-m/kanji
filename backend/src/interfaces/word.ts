@@ -5,12 +5,12 @@ import mongoose from 'mongoose';
 export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
 
 // Parts of speech types
-export type PartOfSpeech = 
-  | 'noun' 
-  | 'verb' 
-  | 'adjective' 
-  | 'adverb' 
-  | 'particle' 
+export type PartOfSpeech =
+  | 'noun'
+  | 'verb'
+  | 'adjective'
+  | 'adverb'
+  | 'particle'
   | 'conjunction'
   | 'pronoun'
   | 'interjection'
@@ -67,11 +67,7 @@ export interface WordDocument extends Document {
 // Word model interface with static methods
 export interface WordModel extends Model<WordDocument> {
   // Sliding window queries
-  getWordsInStepRange(
-    level: LearningLevel, 
-    startStep: number, 
-    endStep: number
-  ): Promise<WordDocument[]>;
+  getWordsInStepRange(level: LearningLevel, startStep: number, endStep: number): Promise<WordDocument[]>;
 
   getWordsByLevel(level: LearningLevel): Promise<WordDocument[]>;
 
@@ -87,16 +83,12 @@ export interface WordModel extends Model<WordDocument> {
   // Search functionality
   searchWords(filters: WordSearchFilters, limit?: number): Promise<WordDocument[]>;
 
-  searchByText(
-    searchTerm: string, 
-    level?: LearningLevel, 
-    limit?: number
-  ): Promise<WordDocument[]>;
+  searchByText(searchTerm: string, level?: LearningLevel, limit?: number): Promise<WordDocument[]>;
 
   // Random selection
   getRandomWords(
-    level?: LearningLevel, 
-    count?: number, 
+    level?: LearningLevel,
+    count?: number,
     stepRange?: { start: number; end: number }
   ): Promise<WordDocument[]>;
 
@@ -115,10 +107,7 @@ export interface WordModel extends Model<WordDocument> {
   // Import/Export utilities
   importWords(words: Partial<WordDocument>[]): Promise<{ created: number; errors: any[] }>;
 
-  exportWords(
-    level?: LearningLevel, 
-    format?: 'json' | 'csv'
-  ): Promise<WordDocument[] | string>;
+  exportWords(level?: LearningLevel, format?: 'json' | 'csv'): Promise<WordDocument[] | string>;
 
   // Maintenance operations
   findDuplicateEntries(): Promise<{ entry: string; count: number; ids: mongoose.Types.ObjectId[] }[]>;

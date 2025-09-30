@@ -1,7 +1,15 @@
 import mongoose from 'mongoose';
-import { UserProgressDocument, UserProgressModel, ProgressType, LearningLevel, StepRange, SessionStats, DeckGenerationOptions } from '../interfaces/userProgress';
+import {
+  UserProgressDocument,
+  UserProgressModel,
+  ProgressType,
+  LearningLevel,
+  StepRange,
+  SessionStats,
+  DeckGenerationOptions,
+} from '../interfaces/userProgress';
 
-// UserProgress - Learning session state  
+// UserProgress - Learning session state
 // Tracks user's current position in sliding window deck system
 const userProgressSchema = new mongoose.Schema<UserProgressDocument>(
   {
@@ -118,21 +126,21 @@ userProgressSchema.methods.getSessionStats = function (this: UserProgressDocumen
     progressPercentage,
     averageWordsPerStep,
     currentStep: Math.min(currentStep, this.steps.end),
-    totalSteps
+    totalSteps,
   };
 };
 
 userProgressSchema.methods.canMoveToNextWindow = async function (this: UserProgressDocument): Promise<boolean> {
   // Check if current deck is completed and if there are more steps available
   if (!this.isCompleted()) return false;
-  
+
   // Import Word model dynamically to avoid circular dependency
   const Word = mongoose.model('Word');
   const maxStepResult = await Word.aggregate([
     { $match: { level: this.current_level } },
-    { $group: { _id: null, maxStep: { $max: '$step' } } }
+    { $group: { _id: null, maxStep: { $max: '$step' } } },
   ]);
-  
+
   const maxStep = maxStepResult.length > 0 ? maxStepResult[0].maxStep : 10;
   return this.steps.end < maxStep;
 };
@@ -144,17 +152,15 @@ userProgressSchema.methods.generateNextSlidingWindow = async function (this: Use
   // Calculate next sliding window (shift by 1 step)
   const nextSteps: StepRange = {
     start: this.steps.start + 1,
-    end: this.steps.end + 1
+    end: this.steps.end + 1,
   };
 
   // Generate new deck
   const UserProgressModel = mongoose.model<UserProgressDocument, UserProgressModel>('UserProgress');
-  const newDeck = await UserProgressModel.generateSlidingWindowDeck(
-    this.current_level,
-    nextSteps,
-    this.user_id,
-    { excludeCompleted: true, shuffleOrder: true }
-  );
+  const newDeck = await UserProgressModel.generateSlidingWindowDeck(this.current_level, nextSteps, this.user_id, {
+    excludeCompleted: true,
+    shuffleOrder: true,
+  });
 
   // Update current session
   this.steps = nextSteps;
@@ -164,7 +170,6 @@ userProgressSchema.methods.generateNextSlidingWindow = async function (this: Use
 
 // Static methods
 userProgressSchema.statics.findByUserAndType = function (
-  this: UserProgressModel,
   userId: mongoose.Types.ObjectId,
   type: ProgressType
 ): Promise<UserProgressDocument | null> {
@@ -172,23 +177,21 @@ userProgressSchema.statics.findByUserAndType = function (
 };
 
 userProgressSchema.statics.getActiveProgressForUser = function (
-  this: UserProgressModel,
   userId: mongoose.Types.ObjectId
 ): Promise<UserProgressDocument[]> {
   return this.find({ user_id: userId });
 };
 
 userProgressSchema.statics.createNewSession = async function (
-  this: UserProgressModel,
   userId: mongoose.Types.ObjectId,
   type: ProgressType,
   level: LearningLevel,
   steps: StepRange
 ): Promise<UserProgressDocument> {
   // Generate initial deck
-  const shuffledOrder = await this.generateSlidingWindowDeck(level, steps, userId, {
+  const shuffledOrder = await (this as UserProgressModel).generateSlidingWindowDeck(level, steps, userId, {
     excludeCompleted: true,
-    shuffleOrder: true
+    shuffleOrder: true,
   });
 
   // Create new session
@@ -198,25 +201,19 @@ userProgressSchema.statics.createNewSession = async function (
     current_level: level,
     steps,
     shuffled_order: shuffledOrder,
-    current_index: 0
+    current_index: 0,
   });
 
   return await session.save();
 };
 
 userProgressSchema.statics.generateSlidingWindowDeck = async function (
-  this: UserProgressModel,
   level: LearningLevel,
   steps: StepRange,
   userId: mongoose.Types.ObjectId,
   options: DeckGenerationOptions = {}
 ): Promise<mongoose.Types.ObjectId[]> {
-  const {
-    excludeCompleted = true,
-    prioritizeBookmarked = false,
-    shuffleOrder = true,
-    maxWords
-  } = options;
+  const { excludeCompleted = true, prioritizeBookmarked = false, shuffleOrder = true, maxWords } = options;
 
   // Import models dynamically to avoid circular dependency
   const Word = mongoose.model('Word');
@@ -225,7 +222,7 @@ userProgressSchema.statics.generateSlidingWindowDeck = async function (
   // Get words in step range
   let wordIds = await Word.find({
     level: level,
-    step: { $gte: steps.start, $lte: steps.end }
+    step: { $gte: steps.start, $lte: steps.end },
   }).select('_id');
 
   // Filter out completed words if requested
@@ -233,26 +230,24 @@ userProgressSchema.statics.generateSlidingWindowDeck = async function (
     const completedWordIds = await WordProgress.find({
       user_id: userId,
       progress_type: 'main', // Use main progress for filtering
-      is_completed: true
+      is_completed: true,
     }).distinct('word_id');
 
-    wordIds = wordIds.filter(word => 
-      !completedWordIds.some(completedId => completedId.equals(word._id))
-    );
+    wordIds = wordIds.filter((word) => !completedWordIds.some((completedId) => completedId.equals(word._id)));
   }
 
   // Prioritize bookmarked words if requested
   if (prioritizeBookmarked) {
     const bookmarkedWordIds = await WordProgress.find({
       user_id: userId,
-      is_bookmarked: true
+      is_bookmarked: true,
     }).distinct('word_id');
 
-    const bookmarkedWords = wordIds.filter(word =>
-      bookmarkedWordIds.some(bookmarkedId => bookmarkedId.equals(word._id))
+    const bookmarkedWords = wordIds.filter((word) =>
+      bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(word._id))
     );
-    const nonBookmarkedWords = wordIds.filter(word =>
-      !bookmarkedWordIds.some(bookmarkedId => bookmarkedId.equals(word._id))
+    const nonBookmarkedWords = wordIds.filter(
+      (word) => !bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(word._id))
     );
 
     wordIds = [...bookmarkedWords, ...nonBookmarkedWords];
@@ -268,11 +263,10 @@ userProgressSchema.statics.generateSlidingWindowDeck = async function (
     wordIds.sort(() => Math.random() - 0.5);
   }
 
-  return wordIds.map(word => word._id);
+  return wordIds.map((word) => word._id);
 };
 
 userProgressSchema.statics.getNextSlidingWindow = async function (
-  this: UserProgressModel,
   currentSteps: StepRange,
   level: LearningLevel
 ): Promise<StepRange | null> {
@@ -280,7 +274,7 @@ userProgressSchema.statics.getNextSlidingWindow = async function (
   const Word = mongoose.model('Word');
   const maxStepResult = await Word.aggregate([
     { $match: { level: level } },
-    { $group: { _id: null, maxStep: { $max: '$step' } } }
+    { $group: { _id: null, maxStep: { $max: '$step' } } },
   ]);
 
   const maxStep = maxStepResult.length > 0 ? maxStepResult[0].maxStep : 10;
@@ -294,14 +288,11 @@ userProgressSchema.statics.getNextSlidingWindow = async function (
 
   return {
     start: nextStart,
-    end: Math.min(nextEnd, maxStep)
+    end: Math.min(nextEnd, maxStep),
   };
 };
 
-userProgressSchema.statics.getUserLearningStats = async function (
-  this: UserProgressModel,
-  userId: mongoose.Types.ObjectId
-): Promise<any> {
+userProgressSchema.statics.getUserLearningStats = async function (userId: mongoose.Types.ObjectId): Promise<any> {
   const stats = await this.aggregate([
     { $match: { user_id: userId } },
     {
@@ -309,8 +300,8 @@ userProgressSchema.statics.getUserLearningStats = async function (
         from: 'word_progress',
         localField: 'user_id',
         foreignField: 'user_id',
-        as: 'wordProgress'
-      }
+        as: 'wordProgress',
+      },
     },
     {
       $group: {
@@ -319,23 +310,27 @@ userProgressSchema.statics.getUserLearningStats = async function (
         totalWords: { $sum: { $size: '$shuffled_order' } },
         completedWords: { $sum: '$current_index' },
         levels: { $addToSet: '$current_level' },
-        avgProgress: { 
-          $avg: { 
+        avgProgress: {
+          $avg: {
             $cond: [
               { $gt: [{ $size: '$shuffled_order' }, 0] },
               { $divide: ['$current_index', { $size: '$shuffled_order' }] },
-              0
-            ]
-          }
-        }
-      }
-    }
+              0,
+            ],
+          },
+        },
+      },
+    },
   ]);
 
   return stats;
 };
 
 // Create and export model
-const UserProgress = mongoose.model<UserProgressDocument, UserProgressModel>('UserProgress', userProgressSchema, 'user_progress');
+const UserProgress = mongoose.model<UserProgressDocument, UserProgressModel>(
+  'UserProgress',
+  userProgressSchema,
+  'user_progress'
+);
 
 export default UserProgress;
