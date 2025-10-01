@@ -71,8 +71,27 @@ export interface UserProgressModel extends Model<UserProgressDocument> {
     userId: mongoose.Types.ObjectId,
     options?: DeckGenerationOptions
   ): Promise<mongoose.Types.ObjectId[]>;
+  filterDeckByUserProgress(
+    wordIds: mongoose.Types.ObjectId[],
+    userId: mongoose.Types.ObjectId,
+    progressType: ProgressType,
+    options?: DeckGenerationOptions
+  ): Promise<mongoose.Types.ObjectId[]>;
   getNextSlidingWindow(currentSteps: StepRange, level: LearningLevel): Promise<StepRange | null>;
   getUserLearningStats(userId: mongoose.Types.ObjectId): Promise<any>;
+  
+  // Checkpoint management methods
+  saveCheckpoint(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
+  restoreFromCheckpoint(
+    userId: mongoose.Types.ObjectId,
+    progressType: ProgressType,
+    checkpointId?: string
+  ): Promise<UserProgressDocument | null>;
+  
+  // Enhanced sliding window methods
+  getAvailableWindows(level: LearningLevel): Promise<StepRange[]>;
+  getWindowStatistics(level: LearningLevel): any;
+  generateWindowTransitionMap(level: LearningLevel): any;
 }
 
 export default UserProgressModel;
