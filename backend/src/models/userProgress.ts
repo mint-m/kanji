@@ -324,7 +324,7 @@ userProgressSchema.statics.getNextSlidingWindow = async function (
   const maxStep = maxStepResult.length > 0 ? maxStepResult[0].maxStep : 10;
 
   // Use SlidingWindowService for getting next window
-  return SlidingWindowService.getNextWindow(currentSteps, level);
+  return await SlidingWindowService.getNextWindow(currentSteps, level);
 };
 
 userProgressSchema.statics.getUserLearningStats = async function (userId: mongoose.Types.ObjectId): Promise<any> {
