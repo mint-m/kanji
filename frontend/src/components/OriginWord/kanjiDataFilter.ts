@@ -3,8 +3,7 @@ import { KanjiDataType, Mean } from 'store/modules/kanji';
 
 const kanjiDataFilter = async (kanji: string): Promise<KanjiDataType | null> => {
   try {
-    // 수정된 API 경로 사용
-    const response = await axios.get('api/words/kanjiSearch', { params: { kanji } });
+    const response = await axios.get('/api/words/kanjiSearch', { params: { kanji } });
     const { searchResult } = response.data;
 
     if (searchResult.length > 0) {

@@ -23,8 +23,6 @@ const wordSchema = new mongoose.Schema<WordDocument>(
     step: {
       type: Number,
       required: true,
-      min: 1,
-      max: 10,
     }, // Step within level (1-10) for sliding window
     means: {
       type: [String],

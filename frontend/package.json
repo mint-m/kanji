@@ -13,6 +13,7 @@
     "@types/react-dom": "^18.2.5",
     "@types/react-redux": "^7.1.25",
     "axios": "^1.4.0",
+    "http-proxy-middleware": "2.0.6",
     "lodash": "^4.17.21",
     "rc-slider": "10.2.1",
     "rc-tooltip": "^6.0.1",
@@ -58,6 +59,5 @@
     "@types/lodash": "^4.14.195",
     "@types/redux-actions": "^2.6.2",
     "react-scripts": "5.0.1"
-  },
-  "proxy": "http://localhost:8000"
+  }
 }
