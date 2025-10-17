@@ -4,13 +4,9 @@ import axios from 'axios';
 import styled from 'styled-components';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
-import { 
-  REDIRECT_URI, 
-  exchangeCodeForToken, 
-  loginWithGoogleToken, 
-  saveTokenLocally, 
-  saveUserLocally,
-  fetchUserProfile 
+import {
+  exchangeCodeForToken,
+  loginWithGoogleToken,
 } from 'services/authService';
 
 interface GoogleLoginButtonProps {
@@ -25,7 +21,7 @@ interface GoogleLoginButtonProps {
 // 에러 타입 정의
 type LoginError = Error | { response?: { data?: { message?: string; error?: string } } };
 
-const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ 
+const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   onLoginError,
   onLoginSuccess,
   className,
@@ -37,6 +33,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isComponentMounted, setIsComponentMounted] = useState(true);
+  const redirect_url = process.env['REACT_APP_GOOGLE_REDIRECT_URI'];
 
   // 컴포넌트 마운트 상태 추적
   useEffect(() => {
@@ -47,56 +44,62 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   // 통합된 에러 핸들링 함수
   const handleError = (error: LoginError, errorMessage: string) => {
     console.error(errorMessage, error);
-    
+
     let displayError = 'Login process failed. Please try again.';
-    
+
     if (axios.isAxiosError(error) && error.response?.data) {
       const { message, error: errorText } = error.response.data;
       displayError = `Login failed: ${message || errorText || 'Unknown error'}`;
     }
-    
+
     if (isComponentMounted) {
       setError(displayError);
       setIsLoading(false);
     }
-    
+
     if (onLoginError && error instanceof Error) {
       onLoginError(error);
     }
   };
 
   const handleAuthCodeSuccess = async (code: string) => {
+    console.log('🔍 handleAuthCodeSuccess called');
+    console.log('🔍 code:', code?.substring(0, 20) + '...');
+    console.log('🔍 redirect_url:', redirect_url);
     if (!isComponentMounted) return;
-    
     setIsLoading(true);
     setError(null);
-    
+
     try {
+      console.log('🔍 Calling exchangeCodeForToken...');
+
       // Step 1: Exchange auth code for access token
-      const tokenResponse = await exchangeCodeForToken(code);
-      
-      // Step 2: Login with the access token
+      const tokenResponse = await exchangeCodeForToken(code, redirect_url);
+      console.log('🔍 tokenResponse:', tokenResponse);
+
+      if (!tokenResponse.accessToken) {
+        throw new Error('Failed to get access token from Google');
+      }
+
+      // Step 2: Login with the access token (already includes user profile)
       const loginResponse = await loginWithGoogleToken(tokenResponse.accessToken);
-      
-      // Step 3: Save JWT token to local storage
-      saveTokenLocally(loginResponse.token);
-      
-      // Step 4: Get user profile info
-      const userProfile = await fetchUserProfile(loginResponse.token);
-      
-      // Step 5: Save user info to local storage
-      saveUserLocally(userProfile);
+
+      if (!loginResponse.token || !loginResponse.user) {
+        throw new Error('Login failed - missing token or user data');
+      }
 
       // 성공 콜백 호출
       if (onLoginSuccess && isComponentMounted) {
         onLoginSuccess();
       }
-      
-      // Step 6: Navigate to destination page (only if component is still mounted)
+
+      // Step 3: Navigate to destination page (only if component is still mounted)
       if (isComponentMounted) {
         navigate(redirectPath);
       }
     } catch (error) {
+      console.error('❌ Error in handleAuthCodeSuccess:', error);
+
       handleError(error as LoginError, 'Login process error:');
     } finally {
       if (isComponentMounted) {
@@ -108,8 +111,11 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   const googleSocialLogin = useGoogleLogin({
     flow: "auth-code",
     scope: "email profile",
-    redirect_uri: REDIRECT_URI,
-    onSuccess: (response) => handleAuthCodeSuccess(response.code),
+    redirect_uri: 'postmessage',
+    onSuccess: (response) => {
+      console.log("죽는다  ... ..  . ", redirect_url);
+      handleAuthCodeSuccess(response.code)
+    },
     onError: (errorResponse) => {
       handleError(new Error(errorResponse.error_description || 'OAuth error'), 'Google OAuth error:');
     }
@@ -117,8 +123,8 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
 
   return (
     <div>
-      <LoginButton 
-        onClick={() => !isLoading && googleSocialLogin()} 
+      <LoginButton
+        onClick={() => !isLoading && googleSocialLogin()}
         disabled={isLoading}
         className={className}
         type="button"
@@ -126,7 +132,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       >
         {isLoading ? loadingText : buttonText}
       </LoginButton>
-      
+
       {error && <ErrorMessage role="alert">{error}</ErrorMessage>}
     </div>
   );

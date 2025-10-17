@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Full Stack Development
 
 - `yarn start` - Runs both frontend and backend concurrently
-- Frontend runs on http://localhost:3000 (proxy to backend on port 8000)
+- Frontend runs on http://localhost:4200 (proxy to backend on port 8000)
 - Backend runs on http://localhost:8000
 
 ### Frontend (React with TypeScript)
