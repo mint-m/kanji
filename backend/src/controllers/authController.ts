@@ -8,14 +8,15 @@ import { generateToken } from '../services/auth';
 import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI } = config;
+const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = config;
 
 // OAuth 클라이언트 초기화
-const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
+const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
 
 // Google 인증 요청 인터페이스
 interface GoogleAuthCodeRequest {
   code: string;
+  redirect_uri?: string;
 }
 
 // Google 로그인 요청 인터페이스
@@ -23,7 +24,6 @@ interface GoogleTokenLoginRequest {
   accessToken: string;
 }
 
-// Google 액세스 토큰 발급
 export const getGoogleAccessToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { code } = req.body as GoogleAuthCodeRequest;
@@ -32,17 +32,24 @@ export const getGoogleAccessToken = async (req: Request, res: Response, next: Ne
       return next(new UnauthorizedError('Authorization code is required'));
     }
 
-    const { tokens } = await oAuth2Client.getToken({
+    const oAuth2ClientWithRedirect = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, 'postmessage');
+
+    const { tokens } = await oAuth2ClientWithRedirect.getToken({
       code: code,
-      redirect_uri: REDIRECT_URI,
     });
 
     if (!tokens.access_token) {
       return next(new UnauthorizedError('Failed to retrieve access token'));
     }
 
-    res.json({ accessToken: tokens.access_token });
+    res.json({
+      success: true,
+      accessToken: tokens.access_token,
+      idToken: tokens.id_token,
+    });
   } catch (error) {
+    console.error('❌ Google OAuth Error:');
+    console.error(error);
     next(new InternalServerError('Failed to get Google access token'));
   }
 };
@@ -62,30 +69,12 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
       return next(new UnauthorizedError('Failed to retrieve user email'));
     }
 
-    let user = await User.findOne({ email: userInfo.email });
-
-    if (!user) {
-      // 새 사용자 생성
-      const newUser = new User({
-        email: userInfo.email,
-        name: userInfo.name || userInfo.given_name,
-        type: 'google',
-        learningCheckpoint: {
-          level: 5,
-          step: {
-            min: 1,
-            max: 2,
-          },
-        },
-        emailVerified: true, // Google accounts are pre-verified
-        isActive: true,
-      });
-      user = await newUser.save();
-    } else {
-      // Update last active time for existing users
-      user.updateLastActive();
-      await user.save();
-    }
+    // Use the new User model's findOrCreateFromOAuth method
+    const user = await User.findOrCreateFromOAuth({
+      type: 'google',
+      email: userInfo.email,
+      name: userInfo.name || userInfo.given_name || 'Google User',
+    });
 
     // Check if user account is active
     if (!user.isActive) {
@@ -95,6 +84,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     // JWT 토큰 생성
     const token = generateToken(user);
 
+    // Return comprehensive user data including profile and preferences
     res.json({
       success: true,
       token,
@@ -103,7 +93,16 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
         email: user.email,
         name: user.name,
         type: user.type,
-        isNewUser: !user.createdAt || Date.now() - user.createdAt.getTime() < 60000, // Less than 1 minute old
+        profile: {
+          displayName: user.getDisplayName(),
+          profilePicture: user.profile.profilePicture,
+          joinedAt: user.profile.joinedAt,
+          studyLevel: user.getStudyLevel(),
+        },
+        preferences: user.preferences,
+        statistics: user.statistics,
+        isNewUser: user.isNewUser(),
+        isVerified: user.emailVerified,
       },
     });
   } catch (error) {
@@ -133,22 +132,46 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
     }
 
     const user = await User.findById(req.user._id)
-      .select('-password -__v') // Exclude sensitive fields
-      .populate('statistics.streakHistory', 'date wordsStudied')
+      .select('-__v') // Exclude version field only
       .lean();
 
     if (!user) {
       return next(new NotFoundError('User not found'));
     }
 
+    // Calculate additional user info using instance methods (need to load as document)
+    const userDoc = await User.findById(req.user._id);
+    if (!userDoc) {
+      return next(new NotFoundError('User document not found'));
+    }
+
     res.json({
       success: true,
       data: {
-        user,
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        type: user.type,
+        profile: {
+          displayName: userDoc.getDisplayName(),
+          profilePicture: user.profile.profilePicture,
+          bio: user.profile.bio,
+          studyGoals: user.profile.studyGoals,
+          joinedAt: user.profile.joinedAt,
+          lastActiveAt: user.profile.lastActiveAt,
+          timezone: user.profile.timezone,
+          studyLevel: userDoc.getStudyLevel(),
+          daysSinceJoined: userDoc.getDaysSinceJoined(),
+        },
+        preferences: user.preferences,
+        statistics: user.statistics,
         authInfo: {
           lastActive: user.updatedAt,
           isVerified: user.emailVerified,
           accountType: user.type,
+          isNewUser: userDoc.isNewUser(),
+          canReceiveReminders: userDoc.canReceiveReminders(),
+          hasLearningCheckpoint: userDoc.hasLearningCheckpoint(),
         },
       },
     });

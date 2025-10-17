@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 
 export default {
@@ -7,7 +7,7 @@ export default {
   SESSION_SECRET: process.env.SESSION_SECRET,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-  REDIRECT_URI: process.env.REDIRECT_URI,
+  GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRY: process.env.JWT_EXPIRY || "1d",
+  JWT_EXPIRY: process.env.JWT_EXPIRY || '1d',
 };
