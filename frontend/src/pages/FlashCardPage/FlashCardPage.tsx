@@ -40,7 +40,7 @@ const FlashCardPage: React.FC = () => {
 
       // API 경로 확인 및 일관성 유지
       const response = await axios.get<WordType[]>(
-        `/api/words/level/N${numbersOnlyLevel}`,
+        `/api/words/level/${numbersOnlyLevel}`,
         { signal: controller.signal }
       );
 
