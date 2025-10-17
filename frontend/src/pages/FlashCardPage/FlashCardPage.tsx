@@ -22,30 +22,30 @@ const FlashCardPage: React.FC = () => {
   const fetchDeck = useCallback(async () => {
     const numbersOnlyLevel = level.replace(/\D/g, "");
     const cacheKey = numbersOnlyLevel;
-  
+
     // 이미 캐시된 데이터가 있는지 확인
     if (deckCache[cacheKey]) {
       setDeck(deckCache[cacheKey]);
       setIsLoading(false);
       return;
     }
-  
+
     setIsLoading(true);
     setError(null);
-  
+
     try {
       // API 요청 타임아웃 설정 (3초)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
-  
+
       // API 경로 확인 및 일관성 유지
       const response = await axios.get<WordType[]>(
-        `api/words/level/${numbersOnlyLevel}`,
+        `/api/words/level/N${numbersOnlyLevel}`,
         { signal: controller.signal }
       );
-  
+
       clearTimeout(timeoutId);
-  
+
       // 캐시에 저장
       deckCache[cacheKey] = response.data;
       setDeck(response.data);

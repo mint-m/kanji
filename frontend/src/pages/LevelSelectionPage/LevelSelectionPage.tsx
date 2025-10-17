@@ -45,7 +45,7 @@ const LevelSelectionPage: React.FC = () => {
       try {
         // 수정된 API 경로 사용
         const response = await axios.get<LevelStepData>(
-          `api/words/level/${learningCheckpoint.level}/steps`
+          `/api/words/level/N${learningCheckpoint.level}/steps`
         );
 
         setLevelData(response.data);

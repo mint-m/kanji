@@ -19,6 +19,7 @@ export const getWordsByLevel = async (req: Request, res: Response, next: NextFun
   try {
     const level = req.params.level;
     const words = await Word.find({ level: level });
+    console.log(words);
 
     if (words.length === 0) {
       return next(new NotFoundError(`No words found for level ${level}`));

@@ -18,7 +18,6 @@ const Navbar = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setShowUserMenu(false);
-
     navigate('/');
   }, [navigate]);
 
@@ -46,16 +45,14 @@ const Navbar = () => {
   return (
     <NavbarDiv>
       <Button onClick={() => handleOnClick('')}>홈</Button>
-
       {userProfile ? (
         <UserSection ref={menuRef}>
           <ProfileButton
             onClick={() => setShowUserMenu(!showUserMenu)}
-            isActive={showUserMenu}
+            $isActive={showUserMenu}
           >
             {userProfile.name}
           </ProfileButton>
-
           {showUserMenu && (
             <UserMenu>
               <MenuItem onClick={() => handleOnClick('profile')}>
@@ -93,8 +90,8 @@ const Button = styled(DefaultButton)`
   `}
 `;
 
-const ProfileButton = styled(Button) <{ isActive: boolean }>`
-  ${props => props.isActive && css`
+const ProfileButton = styled(Button) <{ $isActive: boolean }>`
+  ${props => props.$isActive && css`
     background-color: #f0f0f0;
   `}
 `;
@@ -121,7 +118,7 @@ const MenuItem = styled.div`
   cursor: pointer;
   font-size: 0.9rem;
   color: #333;
-  
+
   &:hover {
     background-color: #f5f5f5;
   }

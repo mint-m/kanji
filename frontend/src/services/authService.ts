@@ -2,7 +2,6 @@
 import axios, { AxiosError } from 'axios';
 
 // 환경 변수에서 API URL 가져오기 (빈 문자열이면 상대 경로 사용)
-export const API_URL = process.env['REACT_APP_API_URL'] || 'http://localhost:8000';
 export const GOOGLE_REDIRECT_URI = process.env['REACT_APP_GOOGLE_REDIRECT_URI'] as string;
 
 // 사용자 정보 타입 정의
@@ -90,9 +89,6 @@ export const getAuthHeaders = (token = getTokenLocally()): Record<string, string
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// API URL 가져오기
-const getBaseUrl = (): string => API_URL as string;
-
 // 공통 에러 핸들링
 export const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
@@ -120,14 +116,10 @@ export const exchangeCodeForToken = async (
   redirectUri: string = GOOGLE_REDIRECT_URI
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const url = `${getBaseUrl()}/auth/google/access-token`;
-    console.log('🔍 exchangeCodeForToken - URL:', url);
-    console.log('🔍 exchangeCodeForToken - redirectUri:', redirectUri);
-    const response = await axios.post(`${getBaseUrl()}/auth/google/access-token`, {
+    const response = await axios.post(`auth/google/access-token`, {
       code,
       redirect_uri: redirectUri,
     });
-    console.log('🔍 exchangeCodeForToken - response:', response.data);
 
     if (!response.data.success) {
       throw new Error('Failed to exchange code for token');
@@ -148,7 +140,7 @@ export const exchangeCodeForToken = async (
 export const fetchUserData = async (token: string): Promise<UserProfile & { learningStats?: any }> => {
   try {
     // 상세 프로필 정보 가져오기 (이미 통계 정보 포함)
-    const profileResponse = await axios.get(`${getBaseUrl()}/auth/profile`, {
+    const profileResponse = await axios.get('auth/profile', {
       headers: getAuthHeaders(token),
     });
 
@@ -160,7 +152,7 @@ export const fetchUserData = async (token: string): Promise<UserProfile & { lear
 
     // 추가 학습 통계 가져오기 (선택적)
     try {
-      const statsResponse = await axios.get(`${getBaseUrl()}/api/progress/learning-stats`, {
+      const statsResponse = await axios.get('/api/progress/learning-stats', {
         headers: getAuthHeaders(token),
       });
 
@@ -185,10 +177,7 @@ export const fetchUserData = async (token: string): Promise<UserProfile & { lear
 
 export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse & { user?: UserProfile }> => {
   try {
-    // 로그인 API 호출 - 이미 사용자 정보가 포함되어 반환됨
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!', `${getBaseUrl()}/auth/google-login`);
-
-    const loginResponse = await axios.post(`${getBaseUrl()}/auth/google-login`, {
+    const loginResponse = await axios.post('/auth/google-login', {
       accessToken,
     });
 
@@ -215,7 +204,7 @@ export const loginWithGoogleToken = async (accessToken: string): Promise<LoginRe
 
 export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
   try {
-    const response = await axios.get(`${getBaseUrl()}/auth/profile`, {
+    const response = await axios.get('auth/profile', {
       headers: getAuthHeaders(token),
     });
 
@@ -236,18 +225,6 @@ export const logout = (): void => {
 
   // 추가: 프론트엔드에서만 로그아웃하는 대신 백엔드에도 로그아웃 요청 가능
   // 세션 무효화를 위해 백엔드에 로그아웃 알림 >> 보안 업데이트 필요시 개발 예정
-  /* try {
-    const token = getTokenLocally();
-    if (token) {
-      // 비동기 요청이지만 사용자 경험을 위해 await 하지 않음
-      axios.post(`${getBaseUrl()}/auth/logout`, {}, { headers: getAuthHeaders(token) })
-        .catch(err => console.warn('Logout notification failed:', err));
-    }
-  } catch (e) {
-    console.warn('Error during logout:', e);
-  }
-  */
-
   window.location.href = '/';
 };
 
