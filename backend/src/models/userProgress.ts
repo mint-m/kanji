@@ -284,14 +284,14 @@ userProgressSchema.statics.filterDeckByUserProgress = async function (
     );
   }
 
-  // Prioritize bookmarked words if requested
+  // Enhanced bookmark prioritization with intelligent placement
   if (prioritizeBookmarked) {
     const bookmarkedWordIds = await WordProgress.find({
       user_id: userId,
-      progress_type: progressType,
-      is_bookmarked: true,
+      is_bookmarked: true, // Bookmarks are cross-session
     }).distinct('word_id');
 
+    // Separate bookmarked and non-bookmarked words
     const bookmarkedWords = filteredWordIds.filter((wordId) =>
       bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(wordId))
     );
@@ -299,7 +299,51 @@ userProgressSchema.statics.filterDeckByUserProgress = async function (
       (wordId) => !bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(wordId))
     );
 
-    filteredWordIds = [...bookmarkedWords, ...nonBookmarkedWords];
+    // Shuffle both arrays independently for variety
+    const shuffledBookmarks = (this as UserProgressModel).shuffleArray(bookmarkedWords);
+    const shuffledNonBookmarks = (this as UserProgressModel).shuffleArray(nonBookmarkedWords);
+
+    // Strategy: Distribute bookmarks in the first 40% of the deck
+    // This ensures focused review while maintaining deck flow
+    const totalWords = filteredWordIds.length;
+    const bookmarkZoneSize = Math.ceil(totalWords * 0.4);
+
+    // Calculate how many bookmarks can fit in the priority zone
+    const bookmarksInZone = Math.min(shuffledBookmarks.length, bookmarkZoneSize);
+
+    // Split bookmarks: priority zone vs. remaining
+    const priorityBookmarks = shuffledBookmarks.slice(0, bookmarksInZone);
+    const remainingBookmarks = shuffledBookmarks.slice(bookmarksInZone);
+
+    // Interleave bookmarks with some non-bookmarked words in priority zone
+    // This prevents monotony and maintains engagement
+    const priorityZone: mongoose.Types.ObjectId[] = [];
+    const bookmarksPerSlot = Math.max(1, Math.floor(priorityBookmarks.length / 3));
+
+    let bookmarkIndex = 0;
+    let nonBookmarkIndex = 0;
+
+    // Fill priority zone with weighted distribution (2 bookmarks : 1 regular)
+    while (priorityZone.length < bookmarkZoneSize && (bookmarkIndex < priorityBookmarks.length || nonBookmarkIndex < shuffledNonBookmarks.length)) {
+      // Add bookmarks (2 at a time if available)
+      for (let i = 0; i < 2 && bookmarkIndex < priorityBookmarks.length && priorityZone.length < bookmarkZoneSize; i++) {
+        priorityZone.push(priorityBookmarks[bookmarkIndex++]);
+      }
+
+      // Add 1 non-bookmark for variety
+      if (nonBookmarkIndex < shuffledNonBookmarks.length && priorityZone.length < bookmarkZoneSize) {
+        priorityZone.push(shuffledNonBookmarks[nonBookmarkIndex++]);
+      }
+    }
+
+    // Combine remaining words for the rest of the deck
+    const remainingZone = [
+      ...remainingBookmarks,
+      ...shuffledNonBookmarks.slice(nonBookmarkIndex),
+    ];
+
+    // Final deck: priority zone + remaining zone
+    filteredWordIds = [...priorityZone, ...(this as UserProgressModel).shuffleArray(remainingZone)];
   }
 
   // Limit words if maxWords is specified
@@ -308,6 +352,18 @@ userProgressSchema.statics.filterDeckByUserProgress = async function (
   }
 
   return filteredWordIds;
+};
+
+/**
+ * Utility: Fisher-Yates shuffle for array randomization
+ */
+userProgressSchema.statics.shuffleArray = function <T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 };
 
 userProgressSchema.statics.getNextSlidingWindow = async function (

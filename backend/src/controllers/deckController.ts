@@ -6,6 +6,7 @@ import Word from '../models/word';
 import User from '../models/user';
 import { ProgressType, LearningLevel, StepRange, DeckGenerationOptions } from '../interfaces/userProgress';
 import { AuthenticatedRequest } from '../middleware/auth';
+import CheckpointConfig from '../config/checkpoint';
 
 // Deck generation result interface
 interface DeckGenerationResult {
@@ -321,6 +322,24 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       await user.save();
     }
 
+    // Move to next word in progress if not at the end
+    if (progress.current_index < progress.shuffled_order.length - 1) {
+      progress.moveToNext();
+      await progress.save();
+    }
+
+    // Auto-save checkpoint based on configuration
+    // Development: every word (interval=1)
+    // Production: every 5 words or on completion (interval=5)
+    if (CheckpointConfig.shouldSaveCheckpoint(progress.current_index, progress.isCompleted())) {
+      CheckpointConfig.log(
+        `Auto-saving checkpoint for user ${userId}, type ${progressType}, index ${progress.current_index}`
+      );
+      UserProgress.saveCheckpoint(userId, progressType).catch((error) => {
+        CheckpointConfig.logError('Checkpoint auto-save failed', error);
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: isCorrect ? 'Word marked as completed' : 'Word marked as incorrect',
@@ -334,6 +353,8 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
           recommendedAction,
           isBookmarked: wordProgress.is_bookmarked,
         },
+        currentIndex: progress.current_index,
+        isSessionCompleted: progress.isCompleted(),
       },
     });
   } catch (error) {
@@ -435,6 +456,12 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
       }
       await user.save();
     }
+
+    // Auto-save checkpoint after bulk operation
+    CheckpointConfig.log(`Auto-saving checkpoint after bulk operation (${results.length} words)`);
+    UserProgress.saveCheckpoint(userId, progressType).catch((error) => {
+      CheckpointConfig.logError('Checkpoint auto-save failed after bulk operation', error);
+    });
 
     res.status(200).json({
       success: true,
@@ -597,6 +624,9 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
+    // Save checkpoint before transitioning to next window
+    await UserProgress.saveCheckpoint(userId, progressType);
+
     // Get final deck statistics
     const finalStats = progress.getSessionStats();
     const canMoveToNext = await progress.canMoveToNextWindow();
@@ -606,6 +636,10 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       try {
         await progress.generateNextSlidingWindow();
         await progress.save();
+
+        // Save checkpoint after generating next window
+        await UserProgress.saveCheckpoint(userId, progressType);
+
         nextWindow = {
           level: progress.current_level,
           steps: progress.steps,
