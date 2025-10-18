@@ -92,6 +92,9 @@ export interface UserProgressModel extends Model<UserProgressDocument> {
   getAvailableWindows(level: LearningLevel): Promise<StepRange[]>;
   getWindowStatistics(level: LearningLevel): any;
   generateWindowTransitionMap(level: LearningLevel): any;
+
+  // Utility methods
+  shuffleArray<T>(array: T[]): T[];
 }
 
 export default UserProgressModel;

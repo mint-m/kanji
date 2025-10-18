@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { LearningLevel, StepRange, ProgressType } from '../interfaces/userProgress';
 import { WindowCheckpoint, DeckWindow } from './slidingWindowService';
+import CheckpointConfig from '../config/checkpoint';
 
 export interface CheckpointData {
   userId: mongoose.Types.ObjectId;
@@ -82,10 +83,14 @@ export class CheckpointService {
 
     // Store checkpoint in database or cache
     await this.persistCheckpoint(checkpoint);
-    
+
     // Clean up old checkpoints
     await this.cleanupOldCheckpoints(userId, progressType);
-    
+
+    CheckpointConfig.log(
+      `Checkpoint saved successfully for user ${userId}, type ${progressType}, index ${currentIndex}/${shuffledOrder.length}`
+    );
+
     return checkpoint;
   }
 
@@ -135,6 +140,10 @@ export class CheckpointService {
         };
       }
 
+      CheckpointConfig.log(
+        `Checkpoint restored successfully for user ${userId}, type ${progressType}, index ${checkpoint.currentIndex}`
+      );
+
       return {
         success: true,
         checkpoint,
@@ -142,7 +151,7 @@ export class CheckpointService {
       };
 
     } catch (error) {
-      console.error('Checkpoint restoration error:', error);
+      CheckpointConfig.logError('Checkpoint restoration error', error);
       return {
         success: false,
         checkpoint: null,
@@ -353,58 +362,165 @@ export class CheckpointService {
   }
 
   /**
-   * Persist checkpoint to storage (placeholder - would implement with Redis/MongoDB)
+   * Persist checkpoint to storage using MongoDB
    */
   private static async persistCheckpoint(checkpoint: CheckpointData): Promise<void> {
-    // Implementation would store in Redis for fast access or MongoDB for persistence
-    // For now, this is a placeholder
+    // Import Checkpoint model dynamically to avoid circular dependency
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    // Deactivate old checkpoints for this user/type
+    await Checkpoint.deactivateAllForUser(checkpoint.userId, checkpoint.progressType);
+
+    // Create new checkpoint
+    await Checkpoint.createCheckpoint(
+      checkpoint.userId,
+      checkpoint.progressType,
+      checkpoint.currentWindow,
+      checkpoint.currentIndex,
+      checkpoint.shuffledOrder,
+      checkpoint.windowHistory,
+      checkpoint.completedWindows
+    );
+
     console.log(`Checkpoint saved for user ${checkpoint.userId}, type ${checkpoint.progressType}`);
   }
 
   /**
-   * Get checkpoint by ID (placeholder)
+   * Get checkpoint by ID from database
    */
   private static async getCheckpointById(checkpointId: string): Promise<CheckpointData | null> {
-    // Implementation would query storage
-    return null;
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    try {
+      const objectId = new mongoose.Types.ObjectId(checkpointId);
+      const checkpointDoc = await Checkpoint.findOne({
+        _id: objectId,
+        is_active: true,
+      });
+
+      if (!checkpointDoc) return null;
+
+      return this.convertDocumentToCheckpointData(checkpointDoc);
+    } catch (error) {
+      console.error('Error fetching checkpoint by ID:', error);
+      return null;
+    }
   }
 
   /**
-   * Get latest checkpoint for user and progress type (placeholder)
+   * Get latest checkpoint for user and progress type from database
    */
   private static async getLatestCheckpoint(
     userId: mongoose.Types.ObjectId,
     progressType: ProgressType
   ): Promise<CheckpointData | null> {
-    // Implementation would query storage
-    return null;
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    try {
+      const checkpointDoc = await Checkpoint.findLatestByUser(userId, progressType);
+
+      if (!checkpointDoc) return null;
+
+      return this.convertDocumentToCheckpointData(checkpointDoc);
+    } catch (error) {
+      console.error('Error fetching latest checkpoint:', error);
+      return null;
+    }
   }
 
   /**
-   * Clean up old checkpoints (placeholder)
+   * Clean up old checkpoints beyond MAX_CHECKPOINTS_PER_USER
    */
   private static async cleanupOldCheckpoints(
     userId: mongoose.Types.ObjectId,
     progressType: ProgressType
   ): Promise<void> {
-    // Implementation would remove old checkpoints beyond MAX_CHECKPOINTS_PER_USER
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    try {
+      const deletedCount = await Checkpoint.cleanupOldCheckpointsForUser(
+        userId,
+        progressType,
+        this.MAX_CHECKPOINTS_PER_USER
+      );
+
+      if (deletedCount > 0) {
+        CheckpointConfig.log(`Cleaned up ${deletedCount} old checkpoints for user ${userId}, type ${progressType}`);
+      }
+    } catch (error) {
+      CheckpointConfig.logError('Error cleaning up old checkpoints', error);
+    }
   }
 
   /**
-   * Delete checkpoint by ID (placeholder)
+   * Delete checkpoint by ID
    */
   private static async deleteCheckpointById(checkpointId: string): Promise<boolean> {
-    return false;
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    try {
+      const objectId = new mongoose.Types.ObjectId(checkpointId);
+      const result = await Checkpoint.deleteOne({ _id: objectId });
+      return (result.deletedCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting checkpoint by ID:', error);
+      return false;
+    }
   }
 
   /**
-   * Delete latest checkpoint (placeholder)
+   * Delete latest checkpoint
    */
   private static async deleteLatestCheckpoint(
     userId: mongoose.Types.ObjectId,
     progressType: ProgressType
   ): Promise<boolean> {
-    return false;
+    const Checkpoint = (await import('../models/checkpoint')).default;
+
+    try {
+      const checkpointDoc = await Checkpoint.findLatestByUser(userId, progressType);
+      if (!checkpointDoc) return false;
+
+      const result = await Checkpoint.deleteOne({ _id: checkpointDoc._id });
+      return (result.deletedCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting latest checkpoint:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert Checkpoint document to CheckpointData format
+   */
+  private static convertDocumentToCheckpointData(doc: any): CheckpointData {
+    return {
+      userId: doc.user_id,
+      progressType: doc.progress_type,
+      level: doc.level,
+      currentWindow: {
+        level: doc.current_window.level,
+        steps: doc.current_window.steps,
+        wordIds: doc.current_window.word_ids,
+        windowIndex: doc.current_window.window_index,
+        isCircular: doc.current_window.is_circular,
+        totalWindows: doc.current_window.total_windows,
+      },
+      currentIndex: doc.current_index,
+      windowHistory: doc.window_history,
+      completedWindows: doc.completed_windows,
+      shuffledOrder: doc.shuffled_order,
+      sessionStats: {
+        wordsCompleted: doc.session_stats.words_completed,
+        totalWords: doc.session_stats.total_words,
+        sessionStartTime: doc.session_stats.session_start_time,
+        lastActivityTime: doc.session_stats.last_activity_time,
+      },
+      metadata: {
+        version: doc.version,
+        createdAt: doc.created_at,
+        updatedAt: doc.updated_at,
+      },
+    };
   }
 
   /**

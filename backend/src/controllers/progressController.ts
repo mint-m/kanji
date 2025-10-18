@@ -32,14 +32,21 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    const progress = await UserProgress.findByUserAndType(userId, type);
+    let progress = await UserProgress.findByUserAndType(userId, type);
 
+    // Try to restore from checkpoint if no active session exists
     if (!progress) {
-      res.status(404).json({
-        success: false,
-        message: `No ${type} progress found. Create a new session first.`,
-      });
-      return;
+      const restored = await UserProgress.restoreFromCheckpoint(userId, type);
+      if (restored) {
+        progress = restored;
+        console.log(`Restored session from checkpoint for user ${userId}, type ${type}`);
+      } else {
+        res.status(404).json({
+          success: false,
+          message: `No ${type} progress found. Create a new session first.`,
+        });
+        return;
+      }
     }
 
     // Populate current word details
@@ -53,6 +60,7 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response):
         currentWord: progress.getCurrentWord(),
         remainingWords: progress.getRemainingWords().length,
         canMoveToNextWindow: await progress.canMoveToNextWindow(),
+        restoredFromCheckpoint: !progress, // Flag if restored
       },
     });
   } catch (error) {
@@ -103,7 +111,16 @@ export const createSession = async (req: AuthenticatedRequest, res: Response): P
     }
 
     // Check if session already exists
-    const existingProgress = await UserProgress.findByUserAndType(userId, type);
+    let existingProgress = await UserProgress.findByUserAndType(userId, type);
+
+    // Try to restore from checkpoint if no active session exists
+    if (!existingProgress) {
+      existingProgress = await UserProgress.restoreFromCheckpoint(userId, type);
+      if (existingProgress) {
+        console.log(`Restored existing session from checkpoint for user ${userId}, type ${type}`);
+      }
+    }
+
     if (existingProgress) {
       res.status(409).json({
         success: false,
