@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/user';
+import UserProgress from '../models/userProgress';
 import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
+import { ProgressType, LearningLevel } from '../interfaces/userProgress';
+import CheckpointService from '../services/checkpointService';
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -25,35 +29,116 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// 학습 체크포인트 업데이트
+// 학습 체크포인트 업데이트 (UserProgress 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
-    const { checkpoint, wordIndex } = req.body;
+    const {
+      checkpoint,
+      wordIndex,
+      progressType = 'main',
+      level,
+      steps,
+      currentIndex
+    } = req.body;
 
     // 인증된 사용자와 요청된 userId가 일치하는지 확인
     if (req.user?._id.toString() !== userId) {
       return next(new ForbiddenError('You can only update your own checkpoint'));
     }
 
-    // 체크포인트 데이터 검증
-    if (!checkpoint) {
-      return next(new BadRequestError('Checkpoint data is required'));
-    }
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const existingUser = await User.findById(userId);
-
+    // 사용자 확인
+    const existingUser = await User.findById(userObjectId);
     if (!existingUser) {
       return next(new NotFoundError('User not found'));
     }
 
-    // 체크포인트 업데이트
-    existingUser.learningCheckpoint = checkpoint;
+    // 1. 새로운 방식: UserProgress 테이블 업데이트
+    if (level && steps) {
+      // Validate progress type
+      if (!['main', 'sub'].includes(progressType)) {
+        return next(new BadRequestError('Invalid progress type. Must be "main" or "sub"'));
+      }
 
-    await existingUser.save();
+      // Validate level
+      if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
+        return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
+      }
 
-    res.json(existingUser);
+      // Find or create UserProgress
+      const existingProgress = await UserProgress.findOne({
+        user_id: userObjectId,
+        progress_type: progressType as ProgressType,
+      });
+
+      let userProgress;
+
+      if (!existingProgress) {
+        // Create new UserProgress session
+        userProgress = await UserProgress.createNewSession(
+          userObjectId,
+          progressType as ProgressType,
+          level as LearningLevel,
+          steps
+        );
+      } else {
+        // Update existing UserProgress
+        existingProgress.current_level = level as LearningLevel;
+        existingProgress.steps = steps;
+
+        if (typeof currentIndex === 'number') {
+          existingProgress.current_index = currentIndex;
+        }
+
+        await existingProgress.save();
+
+        // Save checkpoint
+        await CheckpointService.createCheckpointFromProgress(existingProgress);
+
+        userProgress = existingProgress;
+      }
+
+      // Update legacy checkpoint field for backward compatibility
+      existingUser.learningCheckpoint = {
+        level,
+        step: steps,
+      };
+      await existingUser.save();
+
+      res.json({
+        success: true,
+        message: 'Checkpoint updated successfully',
+        data: {
+          userProgress,
+          user: {
+            _id: existingUser._id,
+            email: existingUser.email,
+            name: existingUser.name,
+            learningCheckpoint: existingUser.learningCheckpoint,
+          },
+        },
+      });
+    }
+    // 2. 레거시 방식: User 테이블의 learningCheckpoint만 업데이트 (하위 호환성)
+    else if (checkpoint) {
+      existingUser.learningCheckpoint = checkpoint;
+      await existingUser.save();
+
+      res.json({
+        success: true,
+        message: 'Legacy checkpoint updated successfully',
+        data: {
+          user: existingUser,
+        },
+      });
+    } else {
+      return next(new BadRequestError('Either (level + steps) or checkpoint data is required'));
+    }
+
   } catch (error) {
+    console.error('Update checkpoint error:', error);
     next(new InternalServerError('Failed to update checkpoint'));
   }
 };

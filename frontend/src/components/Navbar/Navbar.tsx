@@ -93,7 +93,9 @@ const Button = styled(DefaultButton)`
 const ProfileButton = styled(Button) <{ $isActive: boolean }>`
   ${props => props.$isActive && css`
     background-color: #f0f0f0;
-  `}
+  `};
+  width: fit-content;
+  padding: 0 1rem;
 `;
 
 const UserSection = styled.div`

@@ -64,7 +64,7 @@ const LevelSelectionPage: React.FC = () => {
   const handleSelectLevel = React.useCallback((selectedLevel: string) => {
     dispatch(userActions.setLevelCheckpoint(selectedLevel));
     // Reset to default step selection when level changes
-    dispatch(userActions.setStepCheckpoint({ min: 1, max: 1 }));
+    dispatch(userActions.setStepCheckpoint({ min: 1, max: 3 }));
   }, [dispatch]);
 
   // Handler for step selection

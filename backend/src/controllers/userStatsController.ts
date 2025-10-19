@@ -2,6 +2,8 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
+import UserProgress from '../models/userProgress';
+import WordProgress from '../models/wordProgress';
 import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/errors';
 
 // Get learning stats for a user
@@ -20,63 +22,69 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    // Get models
-    const LearningProgress = mongoose.model('LearningProgress');
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Get active UserProgress sessions (main and sub)
+    const mainProgress = await UserProgress.findByUserAndType(userObjectId, 'main');
+    const subProgress = await UserProgress.findByUserAndType(userObjectId, 'sub');
+
+    // Get Word model for total word count
     const Word = mongoose.model('Word');
 
-    // Get total word counts per level from the database
-    const levelWordCounts = await Word.aggregate([{ $group: { _id: '$level', count: { $sum: 1 } } }]);
-
-    // Create a map of level to word count
-    const levelTotals: Record<string, number> = {};
-    levelWordCounts.forEach((item) => {
-      levelTotals[item._id] = item.count;
+    // Calculate overall learning progress (all levels combined)
+    const totalWordsInDatabase = await Word.countDocuments();
+    const totalCompletedWords = await WordProgress.countDocuments({
+      user_id: userObjectId,
+      is_completed: true,
     });
+    const overallProgressPercentage = totalWordsInDatabase > 0
+      ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100)
+      : 0;
 
-    // Aggregate mastered words by level
-    const wordsByLevel = await LearningProgress.aggregate([
-      { $match: { userId, status: 'mastered' } },
-      // Group by wordId to count unique words (not repeated practices)
-      { $group: { _id: { wordId: '$wordId', level: '$level' } } },
-      // Group by level to get count per level
-      { $group: { _id: '$_id.level', count: { $sum: 1 } } },
-      { $project: { level: '$_id', mastered: '$count', _id: 0 } },
-    ]);
+    // Format response
+    const response: any = {
+      overall: {
+        totalWords: totalWordsInDatabase,
+        completedWords: totalCompletedWords,
+        progressPercentage: overallProgressPercentage,
+      },
+      sessions: [],
+    };
 
-    // Build level stats with percentages
-    const levelStats = wordsByLevel.map((levelStat) => {
-      const total = levelTotals[levelStat.level] || 0;
-      return {
-        level: levelStat.level,
-        mastered: levelStat.mastered,
-        total: total,
-        percentage: total > 0 ? Math.round((levelStat.mastered / total) * 100) : 0,
-      };
-    });
+    // Add main session info if exists
+    if (mainProgress) {
+      const sessionStats = mainProgress.getSessionStats();
+      response.sessions.push({
+        type: 'main',
+        currentLevel: mainProgress.current_level,
+        steps: mainProgress.steps,
+        cycleProgress: {
+          current: sessionStats.completedWords,
+          total: sessionStats.totalWords,
+          percentage: Math.round(sessionStats.progressPercentage),
+        },
+      });
+    }
 
-    // Add levels with 0 mastery but that exist in the database
-    Object.keys(levelTotals).forEach((level) => {
-      const exists = levelStats.some((stat) => stat.level === level);
-      if (!exists && levelTotals[level] > 0) {
-        levelStats.push({
-          level,
-          mastered: 0,
-          total: levelTotals[level],
-          percentage: 0,
-        });
-      }
-    });
-
-    // Sort by level (N5 to N1)
-    levelStats.sort((a, b) => {
-      const levelA = parseInt(a.level.replace(/\D/g, ''));
-      const levelB = parseInt(b.level.replace(/\D/g, ''));
-      return levelA - levelB;
-    });
+    // Add sub session info if exists
+    if (subProgress) {
+      const sessionStats = subProgress.getSessionStats();
+      response.sessions.push({
+        type: 'sub',
+        currentLevel: subProgress.current_level,
+        steps: subProgress.steps,
+        cycleProgress: {
+          current: sessionStats.completedWords,
+          total: sessionStats.totalWords,
+          percentage: Math.round(sessionStats.progressPercentage),
+        },
+      });
+    }
 
     // Return stats
-    res.json(levelStats);
+    res.json(response);
   } catch (error) {
+    console.error('Get user stats error:', error);
     next(new InternalServerError('Failed to get user statistics'));
   }
 };
