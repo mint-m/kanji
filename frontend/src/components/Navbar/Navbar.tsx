@@ -58,8 +58,8 @@ const Navbar = () => {
               <MenuItem onClick={() => handleOnClick('profile')}>
                 프로필
               </MenuItem>
-              <MenuItem onClick={() => handleOnClick('learning')}>
-                학습완료
+              <MenuItem onClick={() => handleOnClick('bookmark')}>
+                북마크
               </MenuItem>
               <MenuItem onClick={handleLogout}>
                 로그아웃
