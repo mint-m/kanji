@@ -14,6 +14,7 @@ const Login = lazy(() => import('pages/Login'));
 const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCardPage'));
 const UserProfile = lazy(() => import('pages/UserProfilePage'));
+const Bookmark = lazy(() => import('pages/BookmarkPage'));
 
 const App = () => {
   return (
@@ -34,7 +35,13 @@ const App = () => {
                 <UserProfile />
               </ProtectedRoute>
             } />
-            
+
+            <Route path='/bookmark' element={
+              <ProtectedRoute>
+                <Bookmark />
+              </ProtectedRoute>
+            } />
+
             {/* 인증 및 학습 체크포인트 체크 라우트 */}
             <Route path='/select-level' element={
               <ProtectedRoute>
