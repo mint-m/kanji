@@ -26,8 +26,8 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   onLoginSuccess,
   className,
   redirectPath = '/',
-  buttonText = 'Sign in with Google 🚀',
-  loadingText = 'Signing in...'
+  buttonText = '구글 로그인 🚀',
+  loadingText = 'in...'
 }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -63,16 +63,11 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   };
 
   const handleAuthCodeSuccess = async (code: string) => {
-    console.log('🔍 handleAuthCodeSuccess called');
-    console.log('🔍 code:', code?.substring(0, 20) + '...');
-    console.log('🔍 redirect_url:', redirect_url);
     if (!isComponentMounted) return;
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log('🔍 Calling exchangeCodeForToken...');
-
       // Step 1: Exchange auth code for access token
       const tokenResponse = await exchangeCodeForToken(code, redirect_url);
       console.log('🔍 tokenResponse:', tokenResponse);
@@ -98,8 +93,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         navigate(redirectPath);
       }
     } catch (error) {
-      console.error('❌ Error in handleAuthCodeSuccess:', error);
-
       handleError(error as LoginError, 'Login process error:');
     } finally {
       if (isComponentMounted) {
@@ -113,7 +106,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     scope: "email profile",
     redirect_uri: 'postmessage',
     onSuccess: (response) => {
-      console.log("죽는다  ... ..  . ", redirect_url);
       handleAuthCodeSuccess(response.code)
     },
     onError: (errorResponse) => {

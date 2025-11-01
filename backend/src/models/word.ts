@@ -5,7 +5,7 @@ import {
   LearningLevel,
   WordSearchFilters,
   WordLevelStats,
-  StepRange,
+  StepRangeMinMax,
 } from '../interfaces/word';
 
 // Define Word Schema with step field for sliding window system
@@ -96,7 +96,7 @@ wordSchema.statics.getWordsByStep = function (level: LearningLevel, step: number
   return this.find({ level: level, step: step });
 };
 
-wordSchema.statics.getStepRange = function (level: LearningLevel): Promise<StepRange[]> {
+wordSchema.statics.getStepRange = function (level: LearningLevel): Promise<StepRangeMinMax[]> {
   return this.aggregate([
     { $match: { level: level } },
     {

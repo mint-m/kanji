@@ -3,10 +3,10 @@ import mongoose from 'mongoose';
 import UserProgress from '../models/userProgress';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
-import { ProgressType, LearningLevel, StepRange } from '../interfaces/userProgress';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { ProgressType, LearningLevel, StepRange } from '../types';
 
-// Interface for learning statistics
+// Interface for learning statistics aggregate result
 interface LearningStatsItem {
   _id: ProgressType;
   sessions: number;

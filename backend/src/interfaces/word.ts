@@ -1,8 +1,9 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
+import { LearningLevel } from '../types/common';
 
-// Learning levels
-export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+// Re-export for backwards compatibility
+export { LearningLevel };
 
 // Parts of speech types
 export type PartOfSpeech =
@@ -17,8 +18,9 @@ export type PartOfSpeech =
   | 'prefix'
   | 'suffix';
 
-// Step range for queries
-export interface StepRange {
+// Note: StepRange moved to types/common.ts with { start, end } fields for consistency
+// This interface kept for backwards compatibility with aggregate queries
+export interface StepRangeMinMax {
   min: number;
   max: number;
 }
@@ -74,7 +76,7 @@ export interface WordModel extends Model<WordDocument> {
   getWordsByStep(level: LearningLevel, step: number): Promise<WordDocument[]>;
 
   // Analytics and statistics
-  getStepRange(level: LearningLevel): Promise<StepRange[]>;
+  getStepRange(level: LearningLevel): Promise<StepRangeMinMax[]>;
 
   getLevelStats(level?: LearningLevel): Promise<WordLevelStats[]>;
 

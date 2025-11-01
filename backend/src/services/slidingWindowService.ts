@@ -1,34 +1,14 @@
 import mongoose from 'mongoose';
 import Word from '../models/word';
-import { LearningLevel, StepRange, ProgressType } from '../interfaces/userProgress';
+import { LearningLevel, StepRange, ProgressType } from '../types/common';
+import {
+  WindowConfig,
+  DeckWindow,
+  WindowCheckpoint,
+} from '../types/services/slidingWindow';
 
-export interface WindowConfig {
-  windowSize: number; // Default: 3 steps
-  maxStep: number; // Maximum step for the level (usually 10)
-  minStep: number; // Minimum step for the level (usually 1)
-}
-
-export interface DeckWindow {
-  level: LearningLevel;
-  steps: StepRange;
-  wordIds: mongoose.Types.ObjectId[];
-  windowIndex: number;
-  isCircular: boolean;
-  totalWindows: number;
-}
-
-export interface WindowCheckpoint {
-  userId: mongoose.Types.ObjectId;
-  progressType: ProgressType;
-  level: LearningLevel;
-  currentWindow: DeckWindow;
-  windowHistory: StepRange[];
-  completedWindows: number;
-  totalProgressWindows: number;
-  isLevelCompleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Re-export types for backwards compatibility
+export type { WindowConfig, DeckWindow, WindowCheckpoint };
 
 export class SlidingWindowService {
   private static readonly DEFAULT_CONFIG: WindowConfig = {

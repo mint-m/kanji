@@ -64,11 +64,11 @@ const LevelSelectionPage: React.FC = () => {
   const handleSelectLevel = React.useCallback((selectedLevel: string) => {
     dispatch(userActions.setLevelCheckpoint(selectedLevel));
     // Reset to default step selection when level changes
-    dispatch(userActions.setStepCheckpoint({ min: 1, max: 3 }));
+    dispatch(userActions.setStepCheckpoint({ start: 1, end: 3 }));
   }, [dispatch]);
 
   // Handler for step selection
-  const handleSelectStep = React.useCallback((selectedStep: { min: number, max: number }) => {
+  const handleSelectStep = React.useCallback((selectedStep: { start: number, end: number }) => {
     dispatch(userActions.setStepCheckpoint(selectedStep));
   }, [dispatch]);
 
@@ -152,9 +152,9 @@ const LevelSelectionPage: React.FC = () => {
           <InfoPanel>
             <h2>Selected Study Plan:</h2>
             <p>Level: {learningCheckpoint.level}</p>
-            <p>Steps: {learningCheckpoint.step.min} to {learningCheckpoint.step.max}</p>
+            <p>Steps: {learningCheckpoint.step.start} to {learningCheckpoint.step.end}</p>
             {levelData && (
-              <p>Approximately {levelData.wordsPerStep * (learningCheckpoint.step.max - learningCheckpoint.step.min + 1)} words</p>
+              <p>Approximately {levelData.wordsPerStep * (learningCheckpoint.step.end - learningCheckpoint.step.start + 1)} words</p>
             )}
           </InfoPanel>
           <StartButton onClick={handleStartLearning}>

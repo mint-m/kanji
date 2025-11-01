@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { debounce } from 'lodash';
 import FlashCard, { ShowType } from 'components/FlashCard';
-import { WordType } from 'store/modules/deck';
+import { DeckWord } from 'services/types';
 import { useDispatch, useSelector } from 'react-redux';
 import * as kanjiActions from 'store/modules/kanji';
 import ControlPanel from 'components/ControlPanel';
@@ -22,7 +22,7 @@ interface LearningItem {
 }
 
 interface FlashCardContainerProps {
-    deck: WordType[];
+    deck: DeckWord[];
 }
 
 const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props: FlashCardContainerProps) => {
@@ -78,11 +78,11 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 // Simple logic: if mastered > 80% of cards, move to next step
                 const masteryRate = masteredCount / (masteredCount + learningCount);
 
-                if (masteryRate > 0.8 && checkpoint.step.max < (deck[0].step || 1)) {
+                if (masteryRate > 0.8 && checkpoint.step.end < (deck[0].step || 1)) {
                     // Advance to next step
                     checkpoint.step = {
-                        min: checkpoint.step.max + 1,
-                        max: checkpoint.step.max + 1
+                        start: checkpoint.step.start + 1,
+                        end: checkpoint.step.end + 1
                     };
 
                     await axios.patch(
@@ -143,11 +143,11 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
 
             // Add to queue
             learningQueueRef.current.push({
-                wordId: currentWord.origin_entry_id,
+                wordId: currentWord._id,
                 timestamp: Date.now(),
                 status: learningStatus,
                 level: currentWord.level,
-                step: currentWord.step || 1
+                step: currentWord.step
             });
 
             // Send to server if queue gets large
