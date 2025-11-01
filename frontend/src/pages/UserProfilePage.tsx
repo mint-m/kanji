@@ -8,7 +8,7 @@ import axios from 'axios';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
 
-interface UserProfileProps {}
+interface UserProfileProps { }
 
 const UserProfilePage: React.FC<UserProfileProps> = () => {
   const navigate = useNavigate();
@@ -22,25 +22,25 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
     const fetchUserData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const storedUser = localStorage.getItem('user');
-        
+
         if (storedUser) {
           const userData = JSON.parse(storedUser);
           setUserData(userData);
         } else {
           // If not in local storage, try to fetch from API
           const token = localStorage.getItem('token');
-          
+
           if (!token) {
             throw new Error('Not authenticated');
           }
-          
+
           const response = await axios.get('/auth/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          
+
           setUserData(response.data);
         }
       } catch (error) {
@@ -50,7 +50,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchUserData();
   }, []);
 
@@ -94,7 +94,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
           <p>Account type: {userData.type}</p>
         </UserInfo>
       </ProfileHeader>
-      
+
       <LearningSection>
         <SectionTitle>Current Learning</SectionTitle>
         <CurrentProgress>
@@ -105,11 +105,11 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
           <ProgressItem>
             <ProgressLabel>Steps</ProgressLabel>
             <ProgressValue>
-              {user.learningCheckpoint.step.min} - {user.learningCheckpoint.step.max}
+              {user.learningCheckpoint.step.start} - {user.learningCheckpoint.step.end}
             </ProgressValue>
           </ProgressItem>
         </CurrentProgress>
-        
+
         <ButtonGroup>
           <ActionButton onClick={() => navigate('/select-level')}>
             학습 단계 변경
@@ -119,12 +119,12 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
           </ActionButton>
         </ButtonGroup>
       </LearningSection>
-      
+
       <StatsSection>
         <SectionTitle>Learning Progress</SectionTitle>
         <UserProgress userId={userData._id} />
       </StatsSection>
-      
+
       <AccountSection>
         <SectionTitle>Account</SectionTitle>
         <LogoutButton onClick={handleLogout}>

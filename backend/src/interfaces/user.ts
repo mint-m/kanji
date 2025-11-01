@@ -1,16 +1,17 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
+import { UserAuthType, LearningLevel, Theme, Language } from '../types/common';
 
-// User authentication types
-export type UserAuthType = 'google' | 'kakao' | 'local';
-
-// Learning levels
-export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+// Re-export for backwards compatibility
+export { UserAuthType, LearningLevel };
 
 // Legacy learning checkpoint interface (for migration)
 export interface LearningCheckpoint {
-  level: number;
-  step: number;
+  level: LearningLevel;
+  step: {
+    start: number;
+    end: number;
+  };
 }
 
 // User preferences interface
@@ -18,8 +19,8 @@ export interface UserPreferences {
   studyReminders: boolean;
   reminderTime?: string; // HH:MM format
   dailyGoal: number; // words per day
-  theme: 'light' | 'dark' | 'auto';
-  language: 'ko' | 'en' | 'ja';
+  theme: Theme;
+  language: Language;
   soundEffects: boolean;
   autoPlayAudio: boolean;
 }
@@ -79,30 +80,25 @@ export interface UserDocument extends Document {
 export interface UserModel extends Model<UserDocument> {
   // Authentication methods
   findByEmail(email: string): Promise<UserDocument | null>;
-  
-  findOrCreateFromOAuth(
-    authData: {
-      type: UserAuthType;
-      email: string;
-      name: string;
-      profilePicture?: string;
-    }
-  ): Promise<UserDocument>;
+
+  findOrCreateFromOAuth(authData: {
+    type: UserAuthType;
+    email: string;
+    name: string;
+    profilePicture?: string;
+  }): Promise<UserDocument>;
 
   // User management
   deactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
-  
+
   reactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
 
   updatePreferences(
-    userId: mongoose.Types.ObjectId, 
+    userId: mongoose.Types.ObjectId,
     preferences: Partial<UserPreferences>
   ): Promise<UserDocument | null>;
 
-  updateProfile(
-    userId: mongoose.Types.ObjectId,
-    profile: Partial<UserProfile>
-  ): Promise<UserDocument | null>;
+  updateProfile(userId: mongoose.Types.ObjectId, profile: Partial<UserProfile>): Promise<UserDocument | null>;
 
   // Statistics and analytics
   getUsersWithLearningCheckpoint(): Promise<UserDocument[]>;
@@ -111,10 +107,7 @@ export interface UserModel extends Model<UserDocument> {
 
   getUserStats(userId: mongoose.Types.ObjectId): Promise<UserStats | null>;
 
-  getTopUsers(
-    metric: 'streak' | 'wordsStudied' | 'timeSpent',
-    limit?: number
-  ): Promise<UserDocument[]>;
+  getTopUsers(metric: 'streak' | 'wordsStudied' | 'timeSpent', limit?: number): Promise<UserDocument[]>;
 
   getUsersByStudyLevel(level: 'beginner' | 'intermediate' | 'advanced'): Promise<UserDocument[]>;
 

@@ -1,4 +1,4 @@
-import { Action, createAction, handleActions } from "redux-actions";
+import { Action, createAction, handleActions } from 'redux-actions';
 
 // 레벨별 학습 통계 인터페이스
 interface LevelStatistics {
@@ -10,7 +10,7 @@ interface LevelStatistics {
 
 interface UserState {
   isLoggin: boolean;
-  loginStatusType: "google" | "kakao" | "local" | null;
+  loginStatusType: 'google' | 'kakao' | 'local' | null;
   email: string | null;
   name?: string;
   learningCheckpoint: CheckPoint;
@@ -24,43 +24,33 @@ interface CheckPoint {
 }
 
 interface StepType {
-  min: number;
-  max: number;
+  start: number;
+  end: number;
 }
 
 // actionType
 export const userActionTypes = {
-  setUser: "user/SET_USER",
-  setLearningCheckpoint: "user/SET_LEANINGCHECKPOINT",
-  setLevelCheckpoint: "user/SET_LEVELCHECKPOINT",
-  setStepCheckpoint: "user/SET_SETCHECKPOINT",
-  setLearningStats: "user/SET_LEARNING_STATS",
-  setLearningStreak: "user/SET_LEARNING_STREAK",
+  setUser: 'user/SET_USER',
+  setLearningCheckpoint: 'user/SET_LEANINGCHECKPOINT',
+  setLevelCheckpoint: 'user/SET_LEVELCHECKPOINT',
+  setStepCheckpoint: 'user/SET_SETCHECKPOINT',
+  setLearningStats: 'user/SET_LEARNING_STATS',
+  setLearningStreak: 'user/SET_LEARNING_STREAK',
 } as const;
 
 // action
 export const setUser = createAction<UserState>(userActionTypes.setUser);
-export const setLearningCheckpoint = createAction<CheckPoint>(
-  userActionTypes.setLearningCheckpoint
-);
-export const setLevelCheckpoint = createAction<string>(
-  userActionTypes.setLevelCheckpoint
-);
-export const setStepCheckpoint = createAction<StepType>(
-  userActionTypes.setStepCheckpoint
-);
-export const setLearningStats = createAction<LevelStatistics[]>(
-  userActionTypes.setLearningStats
-);
-export const setLearningStreak = createAction<number>(
-  userActionTypes.setLearningStreak
-);
+export const setLearningCheckpoint = createAction<CheckPoint>(userActionTypes.setLearningCheckpoint);
+export const setLevelCheckpoint = createAction<string>(userActionTypes.setLevelCheckpoint);
+export const setStepCheckpoint = createAction<StepType>(userActionTypes.setStepCheckpoint);
+export const setLearningStats = createAction<LevelStatistics[]>(userActionTypes.setLearningStats);
+export const setLearningStreak = createAction<number>(userActionTypes.setLearningStreak);
 
 const initialState: UserState = {
   isLoggin: false,
   loginStatusType: null,
   email: null,
-  learningCheckpoint: { level: "N5", step: { min: 1, max: 1 } },
+  learningCheckpoint: { level: 'N5', step: { start: 1, end: 3 } },
   learningStats: [],
   learningStreak: 0,
 };
@@ -72,10 +62,7 @@ const userReducer = handleActions<UserState, any>(
       ...action.payload,
       isLoggin: true,
     }),
-    [userActionTypes.setLearningCheckpoint]: (
-      state,
-      action: Action<CheckPoint>
-    ) => ({
+    [userActionTypes.setLearningCheckpoint]: (state, action: Action<CheckPoint>) => ({
       ...state,
       learningCheckpoint: action.payload,
     }),

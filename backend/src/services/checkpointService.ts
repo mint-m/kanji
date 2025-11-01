@@ -1,44 +1,15 @@
 import mongoose from 'mongoose';
-import { LearningLevel, StepRange, ProgressType } from '../interfaces/userProgress';
-import { WindowCheckpoint, DeckWindow } from './slidingWindowService';
+import { LearningLevel, StepRange, ProgressType } from '../types/common';
+import { DeckWindow, WindowCheckpoint } from '../types/services/slidingWindow';
+import {
+  CheckpointData,
+  CheckpointRestoreResult,
+  CheckpointValidationResult,
+} from '../types/services/checkpoint';
 import CheckpointConfig from '../config/checkpoint';
 
-export interface CheckpointData {
-  userId: mongoose.Types.ObjectId;
-  progressType: ProgressType;
-  level: LearningLevel;
-  currentWindow: DeckWindow;
-  currentIndex: number;
-  windowHistory: StepRange[];
-  completedWindows: number;
-  shuffledOrder: mongoose.Types.ObjectId[];
-  sessionStats: {
-    wordsCompleted: number;
-    totalWords: number;
-    sessionStartTime: Date;
-    lastActivityTime: Date;
-  };
-  metadata: {
-    version: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-}
-
-export interface CheckpointRestoreResult {
-  success: boolean;
-  checkpoint: CheckpointData | null;
-  message: string;
-  requiresMigration?: boolean;
-  migrationSteps?: string[];
-}
-
-export interface CheckpointValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  canRestore: boolean;
-}
+// Re-export types for backwards compatibility
+export type { CheckpointData, CheckpointRestoreResult, CheckpointValidationResult };
 
 export class CheckpointService {
   private static readonly CHECKPOINT_VERSION = '1.0.0';

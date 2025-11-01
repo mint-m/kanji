@@ -8,7 +8,7 @@ export interface ShowType {
 
 export interface Word {
   tryNum?: number;
-  pron: string;
+  pron?: string;
   means: string[];
   entry: string;
 }

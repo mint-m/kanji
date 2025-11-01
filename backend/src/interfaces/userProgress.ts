@@ -1,36 +1,15 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
+import {
+  LearningLevel,
+  ProgressType,
+  StepRange,
+  DeckGenerationOptions,
+  SessionStats,
+} from '../types/common';
 
-// Progress session types
-export type ProgressType = 'main' | 'sub';
-
-// Learning levels
-export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
-
-// Sliding window step range
-export interface StepRange {
-  start: number;
-  end: number;
-}
-
-// Deck generation options
-export interface DeckGenerationOptions {
-  excludeCompleted?: boolean;
-  prioritizeBookmarked?: boolean;
-  shuffleOrder?: boolean;
-  maxWords?: number;
-}
-
-// Learning session statistics
-export interface SessionStats {
-  totalWords: number;
-  completedWords: number;
-  remainingWords: number;
-  progressPercentage: number;
-  averageWordsPerStep: number;
-  currentStep: number;
-  totalSteps: number;
-}
+// Re-export types from common for backwards compatibility
+export { LearningLevel, ProgressType, StepRange, DeckGenerationOptions, SessionStats };
 
 // UserProgress document interface
 export interface UserProgressDocument extends Document {
@@ -79,7 +58,7 @@ export interface UserProgressModel extends Model<UserProgressDocument> {
   ): Promise<mongoose.Types.ObjectId[]>;
   getNextSlidingWindow(currentSteps: StepRange, level: LearningLevel): Promise<StepRange | null>;
   getUserLearningStats(userId: mongoose.Types.ObjectId): Promise<any>;
-  
+
   // Checkpoint management methods
   saveCheckpoint(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
   restoreFromCheckpoint(
@@ -87,7 +66,7 @@ export interface UserProgressModel extends Model<UserProgressDocument> {
     progressType: ProgressType,
     checkpointId?: string
   ): Promise<UserProgressDocument | null>;
-  
+
   // Enhanced sliding window methods
   getAvailableWindows(level: LearningLevel): Promise<StepRange[]>;
   getWindowStatistics(level: LearningLevel): any;

@@ -1,70 +1,57 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from 'store';
-import axios from 'axios';
-import { WordType } from 'store/modules/deck';
+import deckService from 'services/deckService';
+import { DeckWord } from 'services/types';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
 import styled from 'styled-components';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 
-// 캐시를 위한 객체 선언
-const deckCache: Record<string, WordType[]> = {};
-
 const FlashCardPage: React.FC = () => {
-  const { level, step } = useSelector((state: RootState) => state.user.learningCheckpoint);
-  const [deck, setDeck] = useState<WordType[] | null>(null);
+  const [deck, setDeck] = useState<DeckWord[] | null>(null);
+  const [level, setLevel] = useState<string>('');
+  const [steps, setSteps] = useState<{ start: number; end: number } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // API 호출 함수를 useCallback으로 메모이제이션
   const fetchDeck = useCallback(async () => {
-    const numbersOnlyLevel = level.replace(/\D/g, "");
-    const cacheKey = numbersOnlyLevel;
-
-    // 이미 캐시된 데이터가 있는지 확인
-    if (deckCache[cacheKey]) {
-      setDeck(deckCache[cacheKey]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      // API 요청 타임아웃 설정 (3초)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      // 새 API로 현재 덱 조회
+      const response = await deckService.getCurrentDeck('main');
 
-      // API 경로 확인 및 일관성 유지
-      const response = await axios.get<WordType[]>(
-        `/api/words/level/${numbersOnlyLevel}`,
-        { signal: controller.signal }
-      );
-
-      clearTimeout(timeoutId);
-
-      // 캐시에 저장
-      deckCache[cacheKey] = response.data;
-      setDeck(response.data);
+      if (response.success && response.data) {
+        const { words, level: deckLevel, steps: deckSteps } = response.data;
+        setDeck(words);
+        setLevel(deckLevel);
+        setSteps(deckSteps);
+      } else {
+        // API 응답이 실패한 경우
+        setError(response.message || '단어장을 불러오는데 실패했습니다.');
+      }
     } catch (error: any) {
       console.error('Failed to fetch deck:', error);
-      if (error.name === 'AbortError') {
+
+      // 404 에러: 세션이 없는 경우
+      if (error.response?.status === 404) {
+        setError('활성화된 학습 세션이 없습니다. 학습을 시작하려면 레벨을 선택해주세요.');
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         setError('요청 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.');
       } else {
-        setError('단어장을 불러오는데 실패했습니다.');
+        setError(error.response?.data?.message || '단어장을 불러오는데 실패했습니다.');
       }
     } finally {
       setIsLoading(false);
     }
-  }, [level]);
+  }, []);
 
-  // 컴포넌트가 마운트되거나 level이 변경될 때 데이터 불러오기
+  // 컴포넌트가 마운트될 때 데이터 불러오기
   useEffect(() => {
     fetchDeck();
-  }, [level, fetchDeck]);
+  }, [fetchDeck]);
 
   // 로딩 상태에 따라 스켈레톤 UI 표시 또는 컨텐츠 표시
   const renderContent = () => {
@@ -86,7 +73,7 @@ const FlashCardPage: React.FC = () => {
       <ContentContainer>
         <HeaderSection
           title={level}
-          subtitle={`${step.min} ~ ${step.max}`}
+          subtitle={steps ? `${steps.start} ~ ${steps.end}` : ''}
         />
         {renderContent()}
       </ContentContainer>

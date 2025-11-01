@@ -1,0 +1,200 @@
+/**
+ * Common Base Types
+ *
+ * Central definition of shared types used across the application.
+ * This ensures type consistency and eliminates duplication.
+ */
+
+import mongoose from 'mongoose';
+
+// ============================================================================
+// Core Learning Types
+// ============================================================================
+
+/**
+ * JLPT Learning Levels (N5 is beginner, N1 is advanced)
+ */
+export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+
+/**
+ * Progress session types
+ * - main: Systematic progression through levels
+ * - sub: Bookmark-focused review sessions
+ */
+export type ProgressType = 'main' | 'sub';
+
+/**
+ * Step range for sliding window system
+ * Each level contains steps 1-10
+ */
+export interface StepRange {
+  start: number; // 1-10
+  end: number;   // 1-10
+}
+
+// ============================================================================
+// Deck & Progress Types
+// ============================================================================
+
+/**
+ * Options for deck generation
+ */
+export interface DeckGenerationOptions {
+  excludeCompleted?: boolean;      // Filter out completed words
+  prioritizeBookmarked?: boolean;  // Place bookmarked words first
+  shuffleOrder?: boolean;          // Randomize word order
+  maxWords?: number;               // Limit number of words
+}
+
+/**
+ * Learning session statistics
+ */
+export interface SessionStats {
+  totalWords: number;
+  completedWords: number;
+  remainingWords: number;
+  progressPercentage: number;
+  averageWordsPerStep: number;
+  currentStep: number;
+  totalSteps: number;
+}
+
+// ============================================================================
+// Word Study Types
+// ============================================================================
+
+/**
+ * Difficulty rating for word completion
+ */
+export type DifficultyRating = 'easy' | 'medium' | 'hard';
+
+/**
+ * Completion status for word progress
+ */
+export type CompletionStatus =
+  | 'not_started'
+  | 'in_progress'
+  | 'completed'
+  | 'mastered'
+  | 'needs_review';
+
+/**
+ * Study result for word attempts
+ */
+export type StudyResult = 'correct' | 'incorrect' | 'partial' | 'skipped';
+
+// ============================================================================
+// User Preference Types
+// ============================================================================
+
+/**
+ * Theme preferences
+ */
+export type Theme = 'light' | 'dark' | 'auto';
+
+/**
+ * Language preferences
+ */
+export type Language = 'ko' | 'en' | 'ja';
+
+/**
+ * User authentication types
+ */
+export type UserAuthType = 'google' | 'kakao' | 'local';
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+/**
+ * MongoDB ObjectId type alias
+ */
+export type ObjectId = mongoose.Types.ObjectId;
+
+/**
+ * Timestamp fields for documents
+ */
+export interface Timestamps {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Pagination parameters
+ */
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc' | 1 | -1;
+}
+
+/**
+ * Date range filter
+ */
+export interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+// ============================================================================
+// Validation Helpers
+// ============================================================================
+
+/**
+ * Check if a value is a valid LearningLevel
+ */
+export function isValidLearningLevel(value: any): value is LearningLevel {
+  return ['N5', 'N4', 'N3', 'N2', 'N1'].includes(value);
+}
+
+/**
+ * Check if a value is a valid ProgressType
+ */
+export function isValidProgressType(value: any): value is ProgressType {
+  return ['main', 'sub'].includes(value);
+}
+
+/**
+ * Check if step range is valid
+ */
+export function isValidStepRange(range: StepRange): boolean {
+  return (
+    range.start >= 1 &&
+    range.start <= 10 &&
+    range.end >= 1 &&
+    range.end <= 10 &&
+    range.start <= range.end
+  );
+}
+
+/**
+ * Get level order index (for sorting)
+ */
+export function getLevelOrder(level: LearningLevel): number {
+  const order: Record<LearningLevel, number> = {
+    N5: 5,
+    N4: 4,
+    N3: 3,
+    N2: 2,
+    N1: 1,
+  };
+  return order[level];
+}
+
+/**
+ * Convert legacy numeric level to N-prefix format
+ * @deprecated Use for migration only
+ */
+export function convertLegacyLevel(level: number | string): LearningLevel {
+  const levelMap: Record<number, LearningLevel> = {
+    5: 'N5',
+    4: 'N4',
+    3: 'N3',
+    2: 'N2',
+    1: 'N1',
+  };
+
+  const numLevel = typeof level === 'number' ? level : parseInt(level, 10);
+  return levelMap[numLevel] || 'N5';
+}

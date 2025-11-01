@@ -30,9 +30,19 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       trim: true,
     },
     learningCheckpoint: {
-      type: Object,
-      required: false,
-    }, // Legacy field for migration
+      level: {
+        type: String,
+        enum: ['N5', 'N4', 'N3', 'N2', 'N1'],
+      },
+      step: {
+        min: {
+          type: Number,
+        },
+        max: {
+          type: Number,
+        },
+      },
+    }, // 슬라이딩 윈도우 체크포인트
     preferences: {
       studyReminders: { type: Boolean, default: true },
       reminderTime: { type: String, default: '19:00' },

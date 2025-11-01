@@ -7,22 +7,12 @@ import User from '../models/user';
 import { generateToken } from '../services/auth';
 import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { GoogleAuthCodeRequest, GoogleTokenLoginRequest } from '../types/api/requests';
 
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = config;
 
 // OAuth 클라이언트 초기화
 const oAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
-
-// Google 인증 요청 인터페이스
-interface GoogleAuthCodeRequest {
-  code: string;
-  redirect_uri?: string;
-}
-
-// Google 로그인 요청 인터페이스
-interface GoogleTokenLoginRequest {
-  accessToken: string;
-}
 
 export const getGoogleAccessToken = async (req: Request, res: Response, next: NextFunction) => {
   try {

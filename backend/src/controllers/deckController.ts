@@ -4,34 +4,16 @@ import UserProgress from '../models/userProgress';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
-import { ProgressType, LearningLevel, StepRange, DeckGenerationOptions } from '../interfaces/userProgress';
 import { AuthenticatedRequest } from '../middleware/auth';
 import CheckpointConfig from '../config/checkpoint';
-
-// Deck generation result interface
-interface DeckGenerationResult {
-  deckId: string;
-  words: any[];
-  totalWords: number;
-  level: LearningLevel;
-  steps: StepRange;
-  excludedCompleted: number;
-  prioritizedBookmarks: number;
-  options: DeckGenerationOptions;
-  generatedAt: Date;
-  estimatedStudyTime: number; // minutes
-}
-
-// Word completion result interface
-interface WordCompletionResult {
-  wordId: mongoose.Types.ObjectId;
-  isCorrect: boolean;
-  timeSpent?: number;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  previousAttempts: number;
-  newMasteryLevel?: string;
-  shouldRepeat: boolean;
-}
+import {
+  LearningLevel,
+  ProgressType,
+  StepRange,
+  DeckGenerationOptions,
+  DeckGenerationResult,
+  WordCompletionResult,
+} from '../types';
 
 /**
  * Generate new sliding window deck
@@ -165,12 +147,67 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    const progress = await UserProgress.findByUserAndType(userId, progressType);
+    let progress = await UserProgress.findByUserAndType(userId, progressType);
 
     if (!progress) {
-      res.status(404).json({
+      console.log(`[Auto-Create] No ${progressType} session found for user ${userId}`);
+
+      try {
+        const user = await User.findById(userId);
+        const checkpoint = user?.learningCheckpoint;
+
+        let level: LearningLevel;
+        let steps: { start: number; end: number };
+
+        // 신규 사용자
+        level = 'N5';
+        steps = { start: 1, end: 3 };
+
+        console.log(`[Auto-Create] New user: starting at ${level} ${steps.start}-${steps.end}`);
+
+        // 단어 조회
+        const words = await Word.find({
+          level,
+          step: { $gte: steps.start, $lte: steps.end },
+        }).lean();
+
+        if (words.length === 0) {
+          res.status(400).json({
+            success: false,
+            message: `No words found for ${level} steps ${steps.start}-${steps.end}`,
+          });
+          return;
+        }
+
+        // UserProgress 생성
+        const wordIds = words.map((w) => w._id);
+
+        progress = await UserProgress.create({
+          user_id: userId,
+          progress_type: progressType,
+          current_level: level,
+          steps,
+          shuffled_order: wordIds,
+          current_index: 0,
+        });
+
+        console.log(`[Auto-Create] ✅ Created ${progressType} session with ${wordIds.length} words`);
+      } catch (error) {
+        console.error('[Auto-Create] Failed:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Failed to create learning session',
+          error: process.env.NODE_ENV === 'development' ? error : undefined,
+        });
+        return;
+      }
+    }
+
+    // TypeScript assertion: progress is guaranteed to exist here
+    if (!progress) {
+      res.status(500).json({
         success: false,
-        message: `No active ${progressType} session found. Create a session first.`,
+        message: 'Failed to load or create learning session',
       });
       return;
     }
@@ -194,7 +231,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return {
         ...word,
         index,
-        isCurrent: index === progress.current_index,
+        isCurrent: index === progress!.current_index,
         isCompleted: wordProgress?.is_completed || false,
         isBookmarked: wordProgress?.is_bookmarked || false,
         studyStats: wordProgress?.getStudyStats(),

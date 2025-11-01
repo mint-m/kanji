@@ -11,7 +11,7 @@ const Container = styled.div`
 `;
 
 const Login = () => {
-  const user = localStorage.getItem('profile');
+  const user = localStorage.getItem('user');
   return (
     <Container>
       {user ? <LogoutButton /> : <GoogleLoginButton />}
