@@ -77,31 +77,6 @@ export const createSession = async (req: AuthenticatedRequest, res: Response): P
     };
     const userId = req.user!._id;
 
-    // Validate input
-    if (!['main', 'sub'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid progress type. Must be "main" or "sub"',
-      });
-      return;
-    }
-
-    if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid level. Must be N5, N4, N3, N2, or N1',
-      });
-      return;
-    }
-
-    if (!steps.start || !steps.end || steps.start > steps.end || steps.start < 1) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid step range. Start must be a positive integer and start <= end',
-      });
-      return;
-    }
-
     // Check if session already exists
     const existingProgress = await UserCheckpoint.findByUserAndType(userId, type);
 
