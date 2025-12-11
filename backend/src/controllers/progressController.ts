@@ -560,6 +560,9 @@ export const updateCheckpoint = async (req: AuthenticatedRequest, res: Response)
     // Save changes
     await progress.save();
 
+    // Update checkpoint timestamp
+    await progress.updateCheckpoint();
+
     res.status(200).json({
       success: true,
       message: 'Checkpoint updated successfully',
