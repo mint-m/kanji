@@ -62,6 +62,21 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
         }
     }, [isInitialized]);
 
+    /**
+     * 다음 카드로 이동하고 UI 상태를 리셋하는 헬퍼 함수
+     */
+    const moveToNextCardAndResetUI = useCallback(() => {
+        // 다음 단어로 이동
+        setWordIndex(prevIndex => {
+            const nextIndex = prevIndex + 1;
+            return nextIndex >= deckSesstion.length ? prevIndex : nextIndex;
+        });
+
+        // UI 상태 리셋
+        dispatch(kanjiActions.reset());
+        setShowMean(false);
+        setShowHiragana(false);
+    }, [deckSesstion.length, dispatch]);
 
     /**
      * "알아요" / "모르겠어요" 버튼 클릭 핸들러
@@ -113,16 +128,8 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
 
-            // 다음 단어로 이동
-            setWordIndex(prevIndex => {
-                const nextIndex = prevIndex + 1;
-                return nextIndex >= deckSesstion.length ? prevIndex : nextIndex;
-            });
-
-            // UI 상태 리셋
-            dispatch(kanjiActions.reset());
-            setShowMean(false);
-            setShowHiragana(false);
+            // 다음 카드로 이동 및 UI 리셋
+            moveToNextCardAndResetUI();
 
         } catch (error) {
             console.error('❌ Failed to process word completion:', error);
@@ -139,18 +146,12 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
             setTimeout(() => setError(null), 3000);
 
             // 에러가 발생해도 사용자 경험을 위해 다음 카드로 진행
-            setWordIndex(prevIndex => {
-                const nextIndex = prevIndex + 1;
-                return nextIndex >= deckSesstion.length ? prevIndex : nextIndex;
-            });
-            dispatch(kanjiActions.reset());
-            setShowMean(false);
-            setShowHiragana(false);
+            moveToNextCardAndResetUI();
         } finally {
             // 처리 완료 후 버튼 다시 활성화
             setIsProcessing(false);
         }
-    }, [isProcessing, deckSesstion, wordIndex, dispatch]);
+    }, [isProcessing, deckSesstion, wordIndex, moveToNextCardAndResetUI]);
 
     /**
      * "뜻 보기" / "히라가나 보기" 버튼 핸들러
