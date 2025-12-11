@@ -85,7 +85,7 @@ export const validateProgressRequest = {
   // POST /api/progress/updateCheckpoint
   updateCheckpoint: [
     body('progressCheckpoint').exists().withMessage('Progress checkpoint data is required'),
-    body('progressCheckpoint.progress_type').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
+    body('progressCheckpoint.progress_type').exists().withMessage('progress_type is required').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('progressCheckpoint.level')
       .optional()
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
