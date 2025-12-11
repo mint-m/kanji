@@ -113,8 +113,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
 
-            console.log(`✅ Word ${know ? 'mastered' : 'marked for review'}`);
-
             // 다음 단어로 이동
             setWordIndex(prevIndex => {
                 const nextIndex = prevIndex + 1;
