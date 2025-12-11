@@ -24,8 +24,8 @@ const learningLevelValidator = body('level')
 
 // Step range validation
 const stepRangeValidator = [
-  body('steps.start').isInt({ min: 1, max: 10 }).withMessage('Step start must be an integer between 1 and 10'),
-  body('steps.end').isInt({ min: 1, max: 10 }).withMessage('Step end must be an integer between 1 and 10'),
+  body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
+  body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
   body('steps').custom((value) => {
     if (value.start > value.end) {
       throw new Error('Step start must be less than or equal to step end');
@@ -79,6 +79,29 @@ export const validateProgressRequest = {
       }
       return true;
     }),
+    handleValidationErrors,
+  ],
+
+  // POST /api/progress/updateCheckpoint
+  updateCheckpoint: [
+    body('progressCheckpoint').exists().withMessage('Progress checkpoint data is required'),
+    body('progressCheckpoint.progress_type').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
+    body('progressCheckpoint.level')
+      .optional()
+      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    body('progressCheckpoint.steps.start')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Step start must be a positive integer'),
+    body('progressCheckpoint.steps.end')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Step end must be a positive integer'),
+    body('progressCheckpoint.currentWordIndex')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('Current word index must be non-negative integer'),
     handleValidationErrors,
   ],
 };
@@ -141,10 +164,6 @@ export const validateWordProgressRequest = {
     body('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('isCorrect').isBoolean().withMessage('Is correct must be boolean'),
     body('timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
-    body('difficulty')
-      .optional()
-      .isIn(['easy', 'medium', 'hard'])
-      .withMessage('Difficulty must be "easy", "medium", or "hard"'),
     handleValidationErrors,
   ],
 
@@ -185,12 +204,12 @@ export const validateWordRequest = {
       .optional()
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    body('step').optional().isInt({ min: 1, max: 10 }).withMessage('Step must be between 1 and 10'),
+    body('step').optional().isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     body('stepRange.start')
       .optional()
-      .isInt({ min: 1, max: 10 })
-      .withMessage('Step range start must be between 1 and 10'),
-    body('stepRange.end').optional().isInt({ min: 1, max: 10 }).withMessage('Step range end must be between 1 and 10'),
+      .isInt({ min: 1 })
+      .withMessage('Step range start must be a positive integer'),
+    body('stepRange.end').optional().isInt({ min: 1 }).withMessage('Step range end must be a positive integer'),
     body('searchTerm')
       .optional()
       .isLength({ min: 1, max: 100 })
@@ -211,9 +230,9 @@ export const validateWordRequest = {
     body('count').optional().isInt({ min: 1, max: 100 }).withMessage('Count must be between 1 and 100'),
     body('stepRange.start')
       .optional()
-      .isInt({ min: 1, max: 10 })
-      .withMessage('Step range start must be between 1 and 10'),
-    body('stepRange.end').optional().isInt({ min: 1, max: 10 }).withMessage('Step range end must be between 1 and 10'),
+      .isInt({ min: 1 })
+      .withMessage('Step range start must be a positive integer'),
+    body('stepRange.end').optional().isInt({ min: 1 }).withMessage('Step range end must be a positive integer'),
     handleValidationErrors,
   ],
 };
@@ -235,11 +254,11 @@ export const validatePagination = [
 
 // Deck validation
 export const validateDeckRequest = {
-  // POST /api/deck/generate
+  // POST /api/progress/generate
   generateDeck: [
     body('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    body('steps.start').isInt({ min: 1, max: 10 }).withMessage('Step start must be an integer between 1 and 10'),
-    body('steps.end').isInt({ min: 1, max: 10 }).withMessage('Step end must be an integer between 1 and 10'),
+    body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
+    body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
     body('steps').custom((value) => {
       if (value.start > value.end) {
         throw new Error('Step start must be less than or equal to step end');
@@ -257,47 +276,35 @@ export const validateDeckRequest = {
     handleValidationErrors,
   ],
 
-  // GET /api/deck/:progressType/current|stats
+  // GET /api/progress/:progressType/current|deck-stats
   progressType: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     handleValidationErrors,
   ],
 
-  // POST /api/deck/:progressType/complete-word
+  // POST /api/progress/:progressType/complete-word
   completeWord: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('wordId').isMongoId().withMessage('Valid word ID is required'),
     body('isCorrect').isBoolean().withMessage('Is correct must be boolean'),
     body('timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
-    body('difficulty')
-      .optional()
-      .isIn(['easy', 'medium', 'hard'])
-      .withMessage('Difficulty must be "easy", "medium", or "hard"'),
     handleValidationErrors,
   ],
 
-  // POST /api/deck/:progressType/bulk-complete
+  // POST /api/progress/:progressType/bulk-complete
   bulkCompleteWords: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('completions').isArray({ min: 1, max: 100 }).withMessage('Completions must be array with 1-100 items'),
     body('completions.*.wordId').isMongoId().withMessage('Each completion must have valid word ID'),
     body('completions.*.isCorrect').isBoolean().withMessage('Each completion must have isCorrect boolean'),
     body('completions.*.timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
-    body('completions.*.difficulty')
-      .optional()
-      .isIn(['easy', 'medium', 'hard'])
-      .withMessage('Difficulty must be "easy", "medium", or "hard"'),
     handleValidationErrors,
   ],
 
-  // POST /api/deck/:progressType/complete-deck
+  // POST /api/progress/:progressType/complete-deck
   completeDeck: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('autoGenerateNext').optional().isBoolean().withMessage('Auto generate next must be boolean'),
-    body('sessionFeedback.difficulty')
-      .optional()
-      .isIn(['too_easy', 'just_right', 'too_hard'])
-      .withMessage('Difficulty feedback must be "too_easy", "just_right", or "too_hard"'),
     body('sessionFeedback.enjoyment')
       .optional()
       .isInt({ min: 1, max: 5 })

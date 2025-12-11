@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserProgress from '../models/userProgress';
+import UserCheckpoint from "../models/userCheckpoint";
 import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
-import { ProgressType, LearningLevel } from '../interfaces/userProgress';
-import CheckpointService from '../services/checkpointService';
+import { ProgressType, LearningLevel } from "../interfaces/userCheckpoint";
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -29,7 +28,7 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// 학습 체크포인트 업데이트 (UserProgress 테이블과 연동)
+// 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
@@ -55,7 +54,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       return next(new NotFoundError('User not found'));
     }
 
-    // 1. 새로운 방식: UserProgress 테이블 업데이트
+    // 1. 새로운 방식: UserCheckpoint 테이블 업데이트
     if (level && steps) {
       // Validate progress type
       if (!['main', 'sub'].includes(progressType)) {
@@ -67,8 +66,8 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
       }
 
-      // Find or create UserProgress
-      const existingProgress = await UserProgress.findOne({
+      // Find or create UserCheckpoint
+      const existingProgress = await UserCheckpoint.findOne({
         user_id: userObjectId,
         progress_type: progressType as ProgressType,
       });
@@ -76,15 +75,15 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       let userProgress;
 
       if (!existingProgress) {
-        // Create new UserProgress session
-        userProgress = await UserProgress.createNewSession(
+        // Create new UserCheckpoint session
+        userProgress = await UserCheckpoint.createNewSession(
           userObjectId,
           progressType as ProgressType,
           level as LearningLevel,
           steps
         );
       } else {
-        // Update existing UserProgress
+        // Update existing UserCheckpoint
         existingProgress.current_level = level as LearningLevel;
         existingProgress.steps = steps;
 
@@ -94,8 +93,8 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
         await existingProgress.save();
 
-        // Save checkpoint
-        await CheckpointService.createCheckpointFromProgress(existingProgress);
+        // Save checkpoint using updateCheckpoint method
+        await existingProgress.updateCheckpoint();
 
         userProgress = existingProgress;
       }

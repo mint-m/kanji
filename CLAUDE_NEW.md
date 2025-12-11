@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **📚 Detailed Documentation**: See [PROJECT_DOCS.md](./PROJECT_DOCS.md) for comprehensive technical documentation in Korean.
+
 ## Development Commands
 
 ### Full Stack Development
@@ -67,7 +69,7 @@ frontend/src/
 │   └── Bookmark/   # Bookmark management components
 ├── pages/         # Route-level page components
 ├── store/         # Redux store modules
-│   ├── progress/   # UserProgress state management
+│   ├── progress/   # UserCheckpoint state management
 │   ├── deck/      # Current deck state
 │   └── bookmarks/ # Bookmark state
 ├── services/      # API service layer
@@ -77,10 +79,10 @@ frontend/src/
 backend/src/
 ├── controllers/   # Request handlers
 ├── models/        # Mongoose schemas
-│   ├── User.js         # User authentication data
-│   ├── Word.js         # Word master data with step field
-│   ├── UserProgress.js # Learning progress tracking
-│   └── WordProgress.js # Individual word completion status
+│   ├── User.ts         # User authentication data
+│   ├── Word.ts         # Word master data with step field
+│   ├── UserCheckpoint.ts # Learning session state (MAIN SYSTEM)
+│   └── WordProgress.ts # Individual word completion status
 ├── routes/        # Express route definitions
 ├── middleware/    # Custom middleware
 ├── services/      # Business logic layer
@@ -106,6 +108,12 @@ backend/src/
 
 ## Data Models
 
+### Simplified Database Structure
+
+**Single unified checkpoint system**: All session state and checkpoint functionality combined in **UserCheckpoint**.
+
+---
+
 ### Core Collections
 
 ```typescript
@@ -115,6 +123,10 @@ backend/src/
   email: string (unique),
   name: string,
   type: "google",
+  learningCheckpoint: {        // Legacy field for backward compatibility
+    level: string,
+    step: { start: number, end: number }
+  },
   createdAt: Date,
   updatedAt: Date
 }
@@ -131,17 +143,18 @@ backend/src/
   parts: string[]          // Parts of speech
 }
 
-// UserProgress - Learning session state
+// UserCheckpoint - Session state + checkpoint (UNIFIED)
+// Collection name: "user_checkpoints"
 {
   _id: ObjectId,
   user_id: ObjectId,
   progress_type: "main" | "sub",
   current_level: string,
   steps: { start: number, end: number },
-  shuffled_order: ObjectId[],
-  current_index: number,
+  shuffled_order: ObjectId[],    // Shuffled word IDs
+  current_index: number,          // Current position in deck
   created_at: Date,
-  updated_at: Date
+  updated_at: Date                // Auto-tracks last activity
 }
 
 // WordProgress - Individual word completion
@@ -152,7 +165,7 @@ backend/src/
   progress_type: "main" | "sub",
   is_completed: boolean,
   try_count: number,
-  is_bookmarked: boolean,
+  is_bookmarked: boolean,         // Shared across progress_type
   last_studied_at?: Date,
   created_at: Date
 }
@@ -166,7 +179,7 @@ backend/src/
 - JWT token-based authentication
 - Protected routes with user session validation
 
-**Learning Flow**:
+**Learning Flow (Main System)**:
 
 1. Check for existing checkpoint → restore or create new deck
 2. Generate deck from 3-step window, filter completed words
@@ -186,29 +199,95 @@ backend/src/
 - Automatic checkpoint saving on component unmount
 - Session restoration on app reload
 
-## Migration Requirements
+## API Endpoints
 
-### Phase 1 Development (4 weeks)
+```
+GET  /api/progress/:type                        # Get current session
+POST /api/progress/:type                       # Create new session
+DELETE /api/progress/:type                     # Delete session
 
-1. **Week 1**: Database migration (add step field to Words, create new collections)
-2. **Week 2**: Core deck system and sliding window logic
-3. **Week 3**: FlashCard interface and checkpoint system
-4. **Week 4**: Bookmark management and Main/Sub session switching
+GET  /api/progress/:progressType/current       # Get current deck
+POST /api/progress/:progressType/complete-word # Complete a word
+POST /api/progress/:progressType/complete-deck # Complete deck & move to next window
 
-### Data Migration Scripts
+POST /api/bookmarks/toggle                     # Toggle bookmark
+GET  /api/bookmarks                            # Get bookmarked words
+```
 
-- Migrate existing `user.learningCheckpoint` → `UserProgress` collection
-- Calculate and populate `step` field for existing Word documents
-- Create indexes for performance optimization
+## Checkpoint Functionality
+
+UserCheckpoint automatically tracks session state:
+- **Auto-save**: After every word via `updateCheckpoint()` method
+- **Auto-update**: `updated_at` field tracks last activity
+- **Session restore**: Query by user_id + progress_type
+- **Simple**: No separate checkpoint collection needed
 
 ## Environment Configuration
 
 **Required Environment Variables**:
 
-- `MONGO_URI` - MongoDB connection string
-- `PORT` - Backend server port (default: 8000)
-- `SESSION_SECRET` - JWT signing secret
-- `GOOGLE_CLIENT_ID` - OAuth client ID
-- `GOOGLE_CLIENT_SECRET` - OAuth client secret
+```bash
+# Backend (.env)
+MONGO_URI=mongodb://localhost:27017/kanji
+PORT=8000
+SESSION_SECRET=your-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+## Migration Status (as of 2025-01-18)
+
+### ✅ Completed
+
+1. **API Service Layer** (Frontend):
+   - `services/apiClient.ts` - HTTP client
+   - `services/progressService.ts` - Progress API
+   - `services/deckService.ts` - Deck API
+   - `services/bookmarkService.ts` - Bookmark API
+   - TypeScript types defined
+
+### 🔄 In Progress
+
+2. **Redux Store Refactoring**:
+   - Transitioning from legacy deck store to UserCheckpoint-based store
+   - Separating Main/Sub session management
+
+### ⏳ Planned
+
+3. **Component Migration**:
+   - FlashCardPage
+   - LevelSelectionPage
+   - UserCheckpoint components
+
+## Important Notes for Claude Code
+
+1. **Simplified Structure**:
+   - Single model: UserCheckpoint (session + checkpoint combined)
+   - Collection: `user_checkpoints`
+   - No separate checkpoint or learning_progress systems
+
+2. **Database Collection Names**:
+   - Main collection: `user_checkpoints`
+   - Word progress: `word_progress`
+   - Words master: `words`
+   - Users: `users`
+
+3. **Checkpoint Management**:
+   - Use `updateCheckpoint()` method to save
+   - Auto-save after every word in controllers
+   - No complex TTL or cleanup logic needed
+
+4. **Frontend Migration**:
+   - Legacy: `/api/words/level/{level}` (deprecated)
+   - New: `/api/progress/{progressType}/current` (recommended)
+   - Store: UserCheckpoint-based (not UserProgress)
+
+## Related Documentation
+
+- `PROJECT_DOCS.md` - Comprehensive technical documentation (Korean)
+- `backend/src/services/slidingWindowService.ts` - Window generation logic
+- `backend/src/models/userCheckpoint.ts` - Main session state model
+
+---
 
 This application implements a sophisticated spaced repetition system using sliding window methodology for efficient Japanese vocabulary acquisition, with emphasis on user progress tracking and personalized learning paths.

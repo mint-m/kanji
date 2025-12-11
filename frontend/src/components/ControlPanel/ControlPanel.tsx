@@ -8,6 +8,7 @@ interface ControlPanelProps {
   onKnowClick: (know: boolean) => void;
   showMean: boolean;
   showHiragana: boolean;
+  disabled?: boolean;
 }
 
 interface StyledVisibleProps {
@@ -18,7 +19,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onShowClick,
   onKnowClick,
   showMean,
-  showHiragana
+  showHiragana,
+  disabled = false
 }) => {
   return (
     <ControlPanelContainer>
@@ -28,10 +30,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       <VisibleButton $isVisible={showHiragana} onClick={() => onShowClick('Hiragana')}>
         요미가미
       </VisibleButton>
-      <VisibleButton $isVisible={true} onClick={() => onKnowClick(false)}>
+      <VisibleButton $isVisible={true} onClick={() => onKnowClick(false)} disabled={disabled}>
         공부하겠습니다
       </VisibleButton>
-      <VisibleButton $isVisible={true} onClick={() => onKnowClick(true)}>
+      <VisibleButton $isVisible={true} onClick={() => onKnowClick(true)} disabled={disabled}>
         외웠습니다
       </VisibleButton>
     </ControlPanelContainer>

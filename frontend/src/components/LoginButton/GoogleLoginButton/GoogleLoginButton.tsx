@@ -70,7 +70,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     try {
       // Step 1: Exchange auth code for access token
       const tokenResponse = await exchangeCodeForToken(code, redirect_url);
-      console.log('🔍 tokenResponse:', tokenResponse);
 
       if (!tokenResponse.accessToken) {
         throw new Error('Failed to get access token from Google');

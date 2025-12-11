@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import UserProgress from '../models/userProgress';
+import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
 import { AuthenticatedRequest } from '../middleware/auth';
-import CheckpointConfig from '../config/checkpoint';
 import {
   LearningLevel,
   ProgressType,
@@ -59,8 +58,8 @@ export const generateDeck = async (req: AuthenticatedRequest, res: Response): Pr
       maxWords: options.maxWords,
     };
 
-    // Generate deck using UserProgress model
-    const shuffledOrder = await UserProgress.generateSlidingWindowDeck(level, steps, userId, deckOptions);
+    // Generate deck using UserCheckpoint model
+    const shuffledOrder = await UserCheckpoint.generateSlidingWindowDeck(level, steps, userId, deckOptions);
 
     if (shuffledOrder.length === 0) {
       res.status(404).json({
@@ -147,7 +146,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    let progress = await UserProgress.findByUserAndType(userId, progressType);
+    let progress = await UserCheckpoint.findByUserAndType(userId, progressType);
 
     if (!progress) {
       console.log(`[Auto-Create] No ${progressType} session found for user ${userId}`);
@@ -179,10 +178,10 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
           return;
         }
 
-        // UserProgress 생성
+        // UserCheckpoint 생성
         const wordIds = words.map((w) => w._id);
 
-        progress = await UserProgress.create({
+        progress = await UserCheckpoint.create({
           user_id: userId,
           progress_type: progressType,
           current_level: level,
@@ -276,18 +275,19 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
 export const completeWord = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { progressType } = req.params as { progressType: ProgressType };
-    const { wordId, isCorrect, timeSpent, difficulty } = req.body as {
+    const { wordId, isCorrect, timeSpent } = req.body as {
       wordId: string;
+      timeSpent: number;
       isCorrect: boolean;
-      timeSpent?: number;
-      difficulty?: 'easy' | 'medium' | 'hard';
     };
 
     const userId = req.user!._id;
     const wordObjectId = new mongoose.Types.ObjectId(wordId);
 
     // Get current session
-    const progress = await UserProgress.findByUserAndType(userId, progressType);
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
+    console.log(progress?.current_index);
+
     if (!progress) {
       res.status(404).json({
         success: false,
@@ -305,22 +305,14 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    // Find or create word progress
-    let wordProgress = await WordProgress.findByUserWordAndType(userId, wordObjectId, progressType);
-    if (!wordProgress) {
-      wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
-    }
-
+    const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
     const previousAttempts = wordProgress.try_count;
 
     // Record the study attempt
     const studyResult = {
       isCorrect,
-      timeSpent: timeSpent || 0,
-      difficulty:
-        difficulty ||
-        (wordProgress.difficulty_rating >= 4 ? 'hard' : wordProgress.difficulty_rating >= 2 ? 'medium' : 'easy'),
       studiedAt: new Date(),
+      timeSpent: timeSpent || 0,
     };
 
     wordProgress.recordStudyAttempt(studyResult);
@@ -343,7 +335,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       wordId: wordObjectId,
       isCorrect,
       timeSpent,
-      difficulty: studyResult.difficulty,
       previousAttempts,
       newMasteryLevel,
       shouldRepeat,
@@ -362,20 +353,11 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     // Move to next word in progress if not at the end
     if (progress.current_index < progress.shuffled_order.length - 1) {
       progress.moveToNext();
-      await progress.save();
     }
+    await progress.save();
 
-    // Auto-save checkpoint based on configuration
-    // Development: every word (interval=1)
-    // Production: every 5 words or on completion (interval=5)
-    if (CheckpointConfig.shouldSaveCheckpoint(progress.current_index, progress.isCompleted())) {
-      CheckpointConfig.log(
-        `Auto-saving checkpoint for user ${userId}, type ${progressType}, index ${progress.current_index}`
-      );
-      UserProgress.saveCheckpoint(userId, progressType).catch((error) => {
-        CheckpointConfig.logError('Checkpoint auto-save failed', error);
-      });
-    }
+    // Auto-save checkpoint after every word
+    await progress.updateCheckpoint();
 
     res.status(200).json({
       success: true,
@@ -415,7 +397,6 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
         wordId: string;
         isCorrect: boolean;
         timeSpent?: number;
-        difficulty?: 'easy' | 'medium' | 'hard';
       }>;
     };
 
@@ -448,7 +429,6 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
         const studyResult = {
           isCorrect: completion.isCorrect,
           timeSpent: completion.timeSpent || 0,
-          difficulty: completion.difficulty || 'medium',
           studiedAt: new Date(),
         };
 
@@ -466,7 +446,6 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
           wordId: wordObjectId,
           isCorrect: completion.isCorrect,
           timeSpent: completion.timeSpent,
-          difficulty: studyResult.difficulty,
           previousAttempts,
           newMasteryLevel: wordProgress.calculateMasteryLevel(),
           shouldRepeat: wordProgress.getRecommendedAction() === 'intensive_practice',
@@ -495,10 +474,12 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
     }
 
     // Auto-save checkpoint after bulk operation
-    CheckpointConfig.log(`Auto-saving checkpoint after bulk operation (${results.length} words)`);
-    UserProgress.saveCheckpoint(userId, progressType).catch((error) => {
-      CheckpointConfig.logError('Checkpoint auto-save failed after bulk operation', error);
-    });
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
+    if (progress) {
+      progress.updateCheckpoint().catch((error: Error) => {
+        console.error('Checkpoint auto-save failed:', error.message);
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -533,7 +514,7 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
     const { progressType } = req.params as { progressType: ProgressType };
     const userId = req.user!._id;
 
-    const progress = await UserProgress.findByUserAndType(userId, progressType);
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
 
     if (!progress) {
       res.status(404).json({
@@ -570,15 +551,6 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
       return acc;
     }, {} as Record<string, number>);
 
-    // Get difficulty distribution
-    const difficultyDistribution = wordProgressList.reduce((acc, wp) => {
-      const difficulty = wp.difficulty_rating;
-      if (difficulty <= 2) acc.easy = (acc.easy || 0) + 1;
-      else if (difficulty <= 4) acc.medium = (acc.medium || 0) + 1;
-      else acc.hard = (acc.hard || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
     const sessionStats = progress.getSessionStats();
 
     res.status(200).json({
@@ -607,7 +579,6 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
         },
         distributions: {
           mastery: masteryDistribution,
-          difficulty: difficultyDistribution,
         },
         recommendations: {
           wordsNeedingReview: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'review').length,
@@ -636,7 +607,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     const { autoGenerateNext = true, sessionFeedback } = req.body as {
       autoGenerateNext?: boolean;
       sessionFeedback?: {
-        difficulty: 'too_easy' | 'just_right' | 'too_hard';
         enjoyment: number; // 1-5 scale
         notes?: string;
       };
@@ -644,7 +614,7 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 
     const userId = req.user!._id;
 
-    const progress = await UserProgress.findByUserAndType(userId, progressType);
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
     if (!progress) {
       res.status(404).json({
         success: false,
@@ -662,7 +632,7 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     // Save checkpoint before transitioning to next window
-    await UserProgress.saveCheckpoint(userId, progressType);
+    await progress.updateCheckpoint();
 
     // Get final deck statistics
     const finalStats = progress.getSessionStats();
@@ -675,7 +645,7 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         await progress.save();
 
         // Save checkpoint after generating next window
-        await UserProgress.saveCheckpoint(userId, progressType);
+        await progress.updateCheckpoint();
 
         nextWindow = {
           level: progress.current_level,

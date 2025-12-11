@@ -8,6 +8,8 @@
  *   import { LearningLevel, ProgressType, ApiResponse } from '../types';
  */
 
+import { ObjectId } from 'mongoose';
+
 // ============================================================================
 // Common Base Types
 // ============================================================================
@@ -60,16 +62,6 @@ export type {
   CurrentDeckResponse,
   DeckWord,
 } from './api';
-
-export type {
-  // Checkpoint types
-  CheckpointData,
-  CheckpointRestoreResult,
-
-  // Window types
-  WindowConfig,
-  DeckWindow,
-} from './services';
 
 export type {
   // Auth types

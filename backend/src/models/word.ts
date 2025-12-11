@@ -64,11 +64,6 @@ wordSchema.methods.isInStepRange = function (this: WordDocument, start: number, 
   return this.step >= start && this.step <= end;
 };
 
-wordSchema.methods.getDifficultyScore = function (this: WordDocument): number {
-  // Higher step = higher difficulty, scale 1-10
-  return this.step;
-};
-
 wordSchema.methods.getSearchableText = function (this: WordDocument): string {
   const searchParts = [this.entry];
   if (this.pron) searchParts.push(this.pron);
