@@ -286,7 +286,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
 
     // Get current session
     const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
-    console.log(progress?.current_index);
 
     if (!progress) {
       res.status(404).json({
