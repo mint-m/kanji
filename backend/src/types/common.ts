@@ -28,8 +28,8 @@ export type ProgressType = 'main' | 'sub';
  * Each level contains steps 1-10
  */
 export interface StepRange {
-  start: number; // 1-10
-  end: number;   // 1-10
+  start: number;
+  end: number;
 }
 
 // ============================================================================
@@ -40,10 +40,10 @@ export interface StepRange {
  * Options for deck generation
  */
 export interface DeckGenerationOptions {
-  excludeCompleted?: boolean;      // Filter out completed words
-  prioritizeBookmarked?: boolean;  // Place bookmarked words first
-  shuffleOrder?: boolean;          // Randomize word order
-  maxWords?: number;               // Limit number of words
+  excludeCompleted?: boolean; // Filter out completed words
+  prioritizeBookmarked?: boolean; // Place bookmarked words first
+  shuffleOrder?: boolean; // Randomize word order
+  maxWords?: number; // Limit number of words
 }
 
 /**
@@ -64,19 +64,9 @@ export interface SessionStats {
 // ============================================================================
 
 /**
- * Difficulty rating for word completion
- */
-export type DifficultyRating = 'easy' | 'medium' | 'hard';
-
-/**
  * Completion status for word progress
  */
-export type CompletionStatus =
-  | 'not_started'
-  | 'in_progress'
-  | 'completed'
-  | 'mastered'
-  | 'needs_review';
+export type CompletionStatus = 'not_started' | 'in_progress' | 'completed' | 'mastered' | 'needs_review';
 
 /**
  * Study result for word attempts
@@ -156,16 +146,11 @@ export function isValidProgressType(value: any): value is ProgressType {
 }
 
 /**
- * Check if step range is valid
+ * Check if step range is valid (basic validation only)
+ * For actual existence validation, use Word.validateStepRange() in controllers
  */
 export function isValidStepRange(range: StepRange): boolean {
-  return (
-    range.start >= 1 &&
-    range.start <= 10 &&
-    range.end >= 1 &&
-    range.end <= 10 &&
-    range.start <= range.end
-  );
+  return range.start >= 1 && range.end >= 1 && range.start <= range.end;
 }
 
 /**

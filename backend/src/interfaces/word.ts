@@ -62,7 +62,6 @@ export interface WordDocument extends Document {
   getPrimaryMeaning(): string;
   getDisplayForm(): string; // Returns kanji if available, otherwise hiragana
   isInStepRange(start: number, end: number): boolean;
-  getDifficultyScore(): number; // Based on step position
   getSearchableText(): string; // Combined searchable content
 }
 

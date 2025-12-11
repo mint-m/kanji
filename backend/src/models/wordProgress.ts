@@ -9,8 +9,7 @@ import {
   BulkWordOperation,
   StudySessionSummary,
 } from '../interfaces/wordProgress';
-import { ProgressType, LearningLevel } from '../interfaces/userProgress';
-import { WordDocument } from '../interfaces/word';
+import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
 
 // Type for aggregated word data with progress info
 export interface WordWithProgress {
@@ -111,12 +110,6 @@ const wordProgressSchema = new mongoose.Schema<WordProgressDocument>(
       default: 0,
       min: 0,
     },
-    difficulty_rating: {
-      type: Number,
-      default: 3,
-      min: 1,
-      max: 5,
-    },
     time_spent_total: {
       type: Number,
       default: 0,
@@ -134,7 +127,6 @@ const wordProgressSchema = new mongoose.Schema<WordProgressDocument>(
       {
         isCorrect: { type: Boolean, required: true },
         timeSpent: { type: Number, min: 0 },
-        difficulty: { type: String, enum: ['easy', 'medium', 'hard'] },
         studiedAt: { type: Date, required: true, default: Date.now },
       },
     ],
@@ -175,14 +167,8 @@ wordProgressSchema.methods.markCompleted = function (this: WordProgressDocument,
   this.study_history.push({
     isCorrect: true,
     timeSpent: timeSpent || 0,
-    difficulty: this.difficulty_rating >= 4 ? 'hard' : this.difficulty_rating >= 2 ? 'medium' : 'easy',
     studiedAt: new Date(),
   });
-
-  // Adjust difficulty rating based on performance
-  if (this.difficulty_rating > 1) {
-    this.difficulty_rating = Math.max(1, this.difficulty_rating - 0.1);
-  }
 };
 
 wordProgressSchema.methods.markIncomplete = function (this: WordProgressDocument, timeSpent?: number): void {
@@ -203,14 +189,8 @@ wordProgressSchema.methods.markIncomplete = function (this: WordProgressDocument
   this.study_history.push({
     isCorrect: false,
     timeSpent: timeSpent || 0,
-    difficulty: this.difficulty_rating >= 4 ? 'hard' : this.difficulty_rating >= 2 ? 'medium' : 'easy',
     studiedAt: new Date(),
   });
-
-  // Increase difficulty rating on incorrect answer
-  if (this.difficulty_rating < 5) {
-    this.difficulty_rating = Math.min(5, this.difficulty_rating + 0.2);
-  }
 };
 
 wordProgressSchema.methods.recordStudyAttempt = function (this: WordProgressDocument, result: StudyResult): void {
@@ -268,7 +248,6 @@ wordProgressSchema.methods.resetProgress = function (this: WordProgressDocument)
   this.try_count = 0;
   this.correct_count = 0;
   this.study_streak = 0;
-  this.difficulty_rating = 3;
   this.time_spent_total = 0;
   this.study_history = [];
   this.last_studied_at = undefined;
@@ -294,7 +273,6 @@ wordProgressSchema.methods.getStudyStats = function (this: WordProgressDocument)
     lastStudied: this.last_studied_at,
     firstStudied: this.first_studied_at,
     studyStreak: this.study_streak,
-    difficultyRating: this.difficulty_rating,
   };
 };
 
@@ -351,14 +329,12 @@ wordProgressSchema.methods.calculateMasteryLevel = function (
 
 wordProgressSchema.methods.getRecommendedAction = function (
   this: WordProgressDocument
-): 'continue' | 'review' | 'skip' | 'intensive_practice' {
+): 'continue' | 'review' | 'skip' {
   const stats = this.getStudyStats();
   const daysSinceLastStudy = this.getDaysSinceLastStudy();
 
   if (stats.successRate >= 90 && this.study_streak >= 3) {
     return 'skip';
-  } else if (stats.successRate < 30 || this.difficulty_rating >= 4.5) {
-    return 'intensive_practice';
   } else if (daysSinceLastStudy >= 7 || stats.successRate < 70) {
     return 'review';
   } else {
@@ -503,7 +479,6 @@ wordProgressSchema.statics.getStudyStats = function (
           },
         },
         total_time_spent: { $sum: '$time_spent_total' },
-        avg_difficulty: { $avg: '$difficulty_rating' },
       },
     },
   ]);
@@ -536,7 +511,6 @@ wordProgressSchema.statics.getLevelProgress = function (
         _id: '$word.step',
         total_words: { $sum: 1 },
         completed_words: { $sum: { $cond: ['$is_completed', 1, 0] } },
-        avg_difficulty: { $avg: '$difficulty_rating' },
         total_time_spent: { $sum: '$time_spent_total' },
       },
     },
@@ -667,7 +641,6 @@ wordProgressSchema.statics.bulkUpdateProgress = async function (
               try_count: 0,
               correct_count: 0,
               study_streak: 0,
-              difficulty_rating: 3,
               time_spent_total: 0,
               study_history: [],
               last_studied_at: undefined,
@@ -713,10 +686,6 @@ wordProgressSchema.statics.generateStudySessionSummary = async function (
         100
       : 0;
 
-  const difficultWords = recentActivity.filter((w) => w.difficulty_rating >= 4).map((w) => w.word_id);
-
-  const easyWords = recentActivity.filter((w) => w.difficulty_rating <= 2).map((w) => w.word_id);
-
   const newBookmarks = recentActivity.filter((w) => w.is_bookmarked).length;
 
   return {
@@ -725,8 +694,6 @@ wordProgressSchema.statics.generateStudySessionSummary = async function (
     wordsCompleted,
     totalTimeSpent,
     averageAccuracy,
-    difficultWords,
-    easyWords,
     newBookmarks,
   };
 };
@@ -742,7 +709,6 @@ wordProgressSchema.statics.getWeakestWords = function (
     try_count: { $gt: 0 },
   })
     .sort({
-      difficulty_rating: -1,
       correct_count: 1,
       try_count: -1,
     })
@@ -763,7 +729,6 @@ wordProgressSchema.statics.getStrongestWords = function (
     .sort({
       study_streak: -1,
       correct_count: -1,
-      difficulty_rating: 1,
     })
     .limit(limit)
     .populate('word_id');
@@ -796,7 +761,6 @@ wordProgressSchema.statics.analyzeStudyPatterns = function (
         daily_words_studied: { $sum: 1 },
         daily_words_completed: { $sum: { $cond: ['$is_completed', 1, 0] } },
         daily_time_spent: { $sum: '$time_spent_total' },
-        avg_difficulty: { $avg: '$difficulty_rating' },
       },
     },
     { $sort: { _id: 1 } },
