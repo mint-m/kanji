@@ -28,7 +28,11 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       required: true,
       trim: true,
     },
-    // 슬라이딩 윈도우 체크포인트
+    activeProgressType: {
+      type: String,
+      enum: ['main', 'sub', null],
+      default: null,
+    },
     preferences: {
       studyReminders: { type: Boolean, default: true },
       reminderTime: { type: String, default: '19:00' },
@@ -115,14 +119,6 @@ UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | '
   if (wordsStudied >= 1000) return 'advanced';
   if (wordsStudied >= 200) return 'intermediate';
   return 'beginner';
-};
-
-UserSchema.methods.hasLearningCheckpoint = function (this: UserDocument): boolean {
-  return Boolean(
-    this.learningCheckpoint &&
-      typeof this.learningCheckpoint.level === 'number' &&
-      typeof this.learningCheckpoint.step === 'number'
-  );
 };
 
 UserSchema.methods.getPreferredStudyTime = function (this: UserDocument): string | null {
@@ -229,12 +225,6 @@ UserSchema.statics.updateProfile = function (
   );
 };
 
-UserSchema.statics.getUsersWithLearningCheckpoint = function (this): Promise<UserDocument[]> {
-  return this.find({
-    learningCheckpoint: { $exists: true },
-    isActive: true,
-  });
-};
 
 UserSchema.statics.getActiveUsers = function (days: number = 30): Promise<UserDocument[]> {
   const cutoffDate = new Date();
@@ -364,25 +354,6 @@ UserSchema.statics.sendStudyReminders = async function (this): Promise<{ sent: n
   return { sent, errors };
 };
 
-UserSchema.statics.migrateUsersWithCheckpoints = async function (this): Promise<{ migrated: number; errors: any[] }> {
-  const errors: any[] = [];
-  let migrated = 0;
-
-  const usersToMigrate = await (this as UserModel).getUsersWithLearningCheckpoint();
-
-  // This would integrate with the UserProgress migration logic
-  // For now, just return the count
-  migrated = usersToMigrate.length;
-
-  return { migrated, errors };
-};
-
-UserSchema.statics.getUsersNeedingMigration = function (this): Promise<UserDocument[]> {
-  return this.find({
-    learningCheckpoint: { $exists: true },
-    isActive: true,
-  });
-};
 
 const User = mongoose.model<UserDocument, UserModel>('User', UserSchema, 'user');
 

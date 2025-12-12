@@ -8,6 +8,7 @@ import axios from 'axios';
 import styled from 'styled-components';
 interface FlashCardContainerProps {
     deck: DeckWord[];
+    progressType: 'main' | 'sub';
 }
 
 const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props: FlashCardContainerProps) => {
@@ -30,6 +31,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
     // User and learning state from Redux
     const dispatch = useDispatch();
     const deckSesstion = props.deck;
+    const { progressType } = props;
 
     useEffect(() => {
         const restoreCheckpoint = async () => {
@@ -37,7 +39,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                const progressType = 'main'; // TODO: 타입 유동화
                 const response = await axios.get(
                     `/api/progress/${progressType}/current`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
@@ -60,7 +61,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
         if (!isInitialized) {
             restoreCheckpoint();
         }
-    }, [isInitialized]);
+    }, [isInitialized, progressType]);
 
     /**
      * 다음 카드로 이동하고 UI 상태를 리셋하는 헬퍼 함수
@@ -115,7 +116,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 console.warn('⚠️ User not authenticated');
                 return;
             }
-            const progressType = 'main'; // TODO: 타입 유동화
 
             // 단어 완료 처리 - 백엔드에서 자동으로 체크포인트 업데이트됨
             await axios.post(
@@ -151,7 +151,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
             // 처리 완료 후 버튼 다시 활성화
             setIsProcessing(false);
         }
-    }, [isProcessing, deckSesstion, wordIndex, moveToNextCardAndResetUI]);
+    }, [isProcessing, deckSesstion, wordIndex, progressType, moveToNextCardAndResetUI]);
 
     /**
      * "뜻 보기" / "히라가나 보기" 버튼 핸들러

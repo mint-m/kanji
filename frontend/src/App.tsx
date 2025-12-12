@@ -1,11 +1,13 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import Navbar from 'components/Navbar';
 import { GlobalStyle } from 'styles/GlobalStyle';
 import { lightTheme } from './styles/theme';
 import ProtectedRoute from './ProtectedRoute';
 import LearningRoute from './LearningRoute';
 import { ThemeProvider } from 'styled-components';
+import { setUser } from 'store/modules/user';
 
 // Lazy load components for better performance
 const Main = lazy(() => import('pages/Main'));
@@ -17,6 +19,28 @@ const UserProfile = lazy(() => import('pages/UserProfilePage'));
 const Bookmark = lazy(() => import('pages/BookmarkPage'));
 
 const App = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        dispatch(setUser({
+          isLoggin: true,
+          loginStatusType: userData.type || 'google',
+          email: userData.email,
+          name: userData.name,
+          activeProgressType: userData.activeProgressType || null,
+          learningStats: [],
+          learningStreak: 0,
+        }));
+      } catch (error) {
+        console.error('Failed to parse user data from localStorage:', error);
+      }
+    }
+  }, [dispatch]);
+
   return (
     <ThemeProvider theme={lightTheme}>
       <GlobalStyle />

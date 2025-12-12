@@ -153,7 +153,6 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
 
       try {
         const user = await User.findById(userId);
-        const checkpoint = user?.learningCheckpoint;
 
         let level: LearningLevel;
         let steps: { start: number; end: number };
