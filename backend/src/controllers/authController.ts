@@ -161,7 +161,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
           accountType: user.type,
           isNewUser: userDoc.isNewUser(),
           canReceiveReminders: userDoc.canReceiveReminders(),
-          hasLearningCheckpoint: userDoc.hasLearningCheckpoint(),
         },
       },
     });

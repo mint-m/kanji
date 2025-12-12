@@ -13,8 +13,8 @@ const LearningRoute = ({ children }: { children: JSX.Element }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // 학습 체크포인트 체크
-  if (!user.learningCheckpoint || !user.learningCheckpoint.level) {
+  // 활성 학습 세션 체크
+  if (!user.activeProgressType) {
     return <Navigate to="/select-level" replace />;
   }
 

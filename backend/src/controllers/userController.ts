@@ -28,6 +28,38 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+// 활성 진행 타입 업데이트
+export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const { activeProgressType } = req.body;
+
+    if (req.user?._id.toString() !== userId) {
+      return next(new ForbiddenError('You can only update your own progress type'));
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { activeProgressType },
+      { new: true }
+    );
+
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({
+      success: true,
+      data: {
+        activeProgressType: user.activeProgressType,
+      },
+    });
+  } catch (error) {
+    console.error('Update activeProgressType error:', error);
+    next(new InternalServerError('Failed to update active progress type'));
+  }
+};
+
 // 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -99,13 +131,6 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         userProgress = existingProgress;
       }
 
-      // Update legacy checkpoint field for backward compatibility
-      existingUser.learningCheckpoint = {
-        level,
-        step: steps,
-      };
-      await existingUser.save();
-
       res.json({
         success: true,
         message: 'Checkpoint updated successfully',
@@ -115,21 +140,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
             _id: existingUser._id,
             email: existingUser.email,
             name: existingUser.name,
-            learningCheckpoint: existingUser.learningCheckpoint,
           },
-        },
-      });
-    }
-    // 2. 레거시 방식: User 테이블의 learningCheckpoint만 업데이트 (하위 호환성)
-    else if (checkpoint) {
-      existingUser.learningCheckpoint = checkpoint;
-      await existingUser.save();
-
-      res.json({
-        success: true,
-        message: 'Legacy checkpoint updated successfully',
-        data: {
-          user: existingUser,
         },
       });
     } else {
