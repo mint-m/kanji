@@ -28,9 +28,12 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
     // Error state
     const [error, setError] = useState<string | null>(null);
 
+    // Time tracking for each card (timestamp in milliseconds)
+    const [cardStudyTime, setCardStudyTime] = useState<number>(Date.now());
+
     // User and learning state from Redux
     const dispatch = useDispatch();
-    const deckSesstion = props.deck;
+    const deckSession = props.deck;
     const { progressType } = props;
 
     useEffect(() => {
@@ -63,6 +66,11 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
         }
     }, [isInitialized, progressType]);
 
+    // Reset timer when card changes
+    useEffect(() => {
+        setCardStudyTime(Date.now());
+    }, [wordIndex]);
+
     /**
      * 다음 카드로 이동하고 UI 상태를 리셋하는 헬퍼 함수
      */
@@ -70,14 +78,14 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
         // 다음 단어로 이동
         setWordIndex(prevIndex => {
             const nextIndex = prevIndex + 1;
-            return nextIndex >= deckSesstion.length ? prevIndex : nextIndex;
+            return nextIndex >= deckSession.length ? prevIndex : nextIndex;
         });
 
         // UI 상태 리셋
         dispatch(kanjiActions.reset());
         setShowMean(false);
         setShowHiragana(false);
-    }, [deckSesstion.length, dispatch]);
+    }, [deckSession.length, dispatch]);
 
     /**
      * "알아요" / "모르겠어요" 버튼 클릭 핸들러
@@ -96,12 +104,12 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
 
         try {
             // 현재 단어 정보 확인
-            if (deckSesstion.length === 0 || wordIndex >= deckSesstion.length) {
+            if (deckSession.length === 0 || wordIndex >= deckSession.length) {
                 console.warn('⚠️ No valid word to process');
                 return;
             }
 
-            const currentWord = deckSesstion[wordIndex];
+            const currentWord = deckSession[wordIndex];
 
             // 학습 카운트 업데이트
             if (know) {
@@ -123,7 +131,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 {
                     wordId: currentWord._id,
                     isCorrect: know,
-                    timeSpent: 0, // TODO: 실제 소요 시간 측정 로직 추가
+                    timeSpent: Math.floor((Date.now() - cardStudyTime) / 1000), // 초 단위
                 },
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
@@ -151,7 +159,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
             // 처리 완료 후 버튼 다시 활성화
             setIsProcessing(false);
         }
-    }, [isProcessing, deckSesstion, wordIndex, progressType, moveToNextCardAndResetUI]);
+    }, [isProcessing, deckSession, wordIndex, progressType, moveToNextCardAndResetUI]);
 
     /**
      * "뜻 보기" / "히라가나 보기" 버튼 핸들러
@@ -161,7 +169,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
     }, []);
 
     // 덱의 끝에 도달했는지 확인
-    const isEndOfDeck = wordIndex >= deckSesstion.length - 1;
+    const isEndOfDeck = wordIndex >= deckSession.length - 1;
 
     return (
         <>
@@ -172,10 +180,10 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                 </ErrorBanner>
             )}
 
-            {deckSesstion.length > 0 && (
+            {deckSession.length > 0 && (
                 <>
                     <FlashCard
-                        word={deckSesstion[wordIndex]}
+                        word={deckSession[wordIndex]}
                         showMean={showMean}
                         showHiragana={showHiragana}
                     />
@@ -198,6 +206,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props:
                                     setWordIndex(0);
                                     setMasteredCount(0);
                                     setLearningCount(0);
+                                    setCardStudyTime(Date.now());
                                     dispatch(kanjiActions.reset());
                                     setShowMean(false);
                                     setShowHiragana(false);

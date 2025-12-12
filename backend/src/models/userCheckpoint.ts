@@ -33,10 +33,12 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
       start: {
         type: Number,
         required: true,
+        min: 1,
       },
       end: {
         type: Number,
         required: true,
+        min: 1,
       },
     },
     shuffled_order: [
