@@ -85,7 +85,11 @@ export const validateProgressRequest = {
   // POST /api/progress/updateCheckpoint
   updateCheckpoint: [
     body('progressCheckpoint').exists().withMessage('Progress checkpoint data is required'),
-    body('progressCheckpoint.progress_type').exists().withMessage('progress_type is required').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
+    body('progressCheckpoint.progress_type')
+      .exists()
+      .withMessage('progress_type is required')
+      .isIn(['main', 'sub'])
+      .withMessage('Progress type must be "main" or "sub"'),
     body('progressCheckpoint.level')
       .optional()
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
@@ -163,7 +167,7 @@ export const validateWordProgressRequest = {
     body('wordId').isMongoId().withMessage('Valid word ID is required'),
     body('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('isCorrect').isBoolean().withMessage('Is correct must be boolean'),
-    body('timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
+    body('timeSpent').isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
     handleValidationErrors,
   ],
 
@@ -205,10 +209,7 @@ export const validateWordRequest = {
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('step').optional().isInt({ min: 1 }).withMessage('Step must be a positive integer'),
-    body('stepRange.start')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('Step range start must be a positive integer'),
+    body('stepRange.start').optional().isInt({ min: 1 }).withMessage('Step range start must be a positive integer'),
     body('stepRange.end').optional().isInt({ min: 1 }).withMessage('Step range end must be a positive integer'),
     body('searchTerm')
       .optional()
@@ -228,10 +229,7 @@ export const validateWordRequest = {
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('count').optional().isInt({ min: 1, max: 100 }).withMessage('Count must be between 1 and 100'),
-    body('stepRange.start')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('Step range start must be a positive integer'),
+    body('stepRange.start').optional().isInt({ min: 1 }).withMessage('Step range start must be a positive integer'),
     body('stepRange.end').optional().isInt({ min: 1 }).withMessage('Step range end must be a positive integer'),
     handleValidationErrors,
   ],
