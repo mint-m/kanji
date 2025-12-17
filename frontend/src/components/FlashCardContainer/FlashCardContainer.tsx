@@ -1,234 +1,227 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import FlashCard, { ShowType } from 'components/FlashCard';
-import { DeckWord } from 'services/types';
 import { useDispatch } from 'react-redux';
-import * as kanjiActions from 'store/modules/kanji';
-import ControlPanel from 'components/ControlPanel';
 import axios from 'axios';
 import styled from 'styled-components';
+
+import FlashCard, { ShowType } from 'components/FlashCard';
+import ControlPanel from 'components/ControlPanel';
+import { DeckWord } from 'services/types';
+import * as kanjiActions from 'store/modules/kanji';
+
 interface FlashCardContainerProps {
     deck: DeckWord[];
     progressType: 'main' | 'sub';
+    initialIndex: number;
 }
 
-const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo((props: FlashCardContainerProps) => {
-    // State for the current word being shown
-    const [wordIndex, setWordIndex] = useState<number>(0);
-    const [showMean, setShowMean] = useState<boolean>(false);
-    const [showHiragana, setShowHiragana] = useState<boolean>(false);
-    const [isInitialized, setIsInitialized] = useState<boolean>(false);
+const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
+    ({ deck, progressType, initialIndex }) => {
+        // =========================
+        // Core learning state
+        // =========================
+        const [wordIndex, setWordIndex] = useState(initialIndex);
 
-    // Learning stats
-    const [masteredCount, setMasteredCount] = useState<number>(0);
-    const [learningCount, setLearningCount] = useState<number>(0);
+        // =========================
+        // UI state
+        // =========================
+        const [showMean, setShowMean] = useState(false);
+        const [showHiragana, setShowHiragana] = useState(false);
+        const [error, setError] = useState<string | null>(null);
 
-    // Processing state for preventing duplicate clicks
-    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+        // =========================
+        // Progress state
+        // =========================
+        const [masteredCount, setMasteredCount] = useState(0);
+        const [learningCount, setLearningCount] = useState(0);
 
-    // Error state
-    const [error, setError] = useState<string | null>(null);
+        // =========================
+        // Control flags
+        // =========================
+        const [isProcessing, setIsProcessing] = useState(false);
+        const [isResetting, setIsResetting] = useState(false);
 
-    // Time tracking for each card (timestamp in milliseconds)
-    const [cardStudyTime, setCardStudyTime] = useState<number>(Date.now());
+        // =========================
+        // Time tracking
+        // =========================
+        const [cardStudyTime, setCardStudyTime] = useState(Date.now());
 
-    // User and learning state from Redux
-    const dispatch = useDispatch();
-    const deckSession = props.deck;
-    const { progressType } = props;
+        const dispatch = useDispatch();
 
-    useEffect(() => {
-        const restoreCheckpoint = async () => {
+        // =========================
+        // Derived state
+        // =========================
+        const isCompleted = wordIndex >= deck.length;
+
+        // =========================
+        // Effects
+        // =========================
+        useEffect(() => {
+            setCardStudyTime(Date.now());
+        }, [wordIndex]);
+
+        useEffect(() => {
+            if (!error) return;
+            const timer = setTimeout(() => setError(null), 3000);
+            return () => clearTimeout(timer);
+        }, [error]);
+
+        // =========================
+        // Helpers
+        // =========================
+        const resetUIState = useCallback(() => {
+            dispatch(kanjiActions.reset());
+            setShowMean(false);
+            setShowHiragana(false);
+        }, [dispatch]);
+
+        const moveToNextCard = useCallback(() => {
+            setWordIndex(prev => prev + 1);
+            resetUIState();
+        }, [resetUIState]);
+
+        const updateStats = useCallback((know: boolean) => {
+            know
+                ? setMasteredCount(prev => prev + 1)
+                : setLearningCount(prev => prev + 1);
+        }, []);
+
+        // =========================
+        // Server sync (fire-and-forget)
+        // =========================
+        const completeWordAsync = useCallback(
+            (wordId: string, startedAt: number, know: boolean) => {
+                const token = localStorage.getItem('token');
+                if (!token) return Promise.resolve();
+
+                return axios.post(
+                    `/api/progress/${progressType}/complete-word`,
+                    {
+                        wordId,
+                        isCorrect: know,
+                        timeSpent: Math.floor((Date.now() - startedAt) / 1000),
+                    },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+            },
+            [progressType]
+        );
+
+        // =========================
+        // Event handlers
+        // =========================
+        const handleKnowClick = useCallback((know: boolean) => {
+            if (isProcessing) return;
+
+            setIsProcessing(true);
+
+            // Optimistic UI
+            updateStats(know);
+            moveToNextCard();
+
+            // Background sync
+            completeWordAsync(deck[wordIndex]._id, cardStudyTime, know)
+                .catch((error: unknown) => {
+                    console.warn('⚠️ Progress sync failed', {
+                        error,
+                        wordIndex,
+                    })
+                })
+                .finally(() => setIsProcessing(false));
+        }, [isProcessing, updateStats, moveToNextCard, wordIndex, cardStudyTime]);
+
+        const handleShowClick = useCallback((type: ShowType['type']) => {
+            type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
+        }, []);
+
+        const handleRestartClick = useCallback(async () => {
+            if (isResetting) return;
+            setIsResetting(true);
+
             try {
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                const response = await axios.get(
-                    `/api/progress/${progressType}/current`,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
+                await axios.put(
+                    `/api/progress/${progressType}/reset`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
 
-                if (response.data.success && response.data.data) {
-                    const { currentIndex } = response.data.data;
-
-                    // 저장된 인덱스로 복원
-                    setWordIndex(currentIndex);
-                    console.log(`✅ Checkpoint restored: starting at index ${currentIndex}`);
-                }
-            } catch (error) {
-                console.error('Failed to restore checkpoint:', error);
+                setWordIndex(0);
+                setMasteredCount(0);
+                setLearningCount(0);
+                setCardStudyTime(Date.now());
+                resetUIState();
+            } catch (e) {
+                console.error('❌ Failed to restart deck', e);
+                setError('Failed to restart deck');
             } finally {
-                setIsInitialized(true);
+                setIsResetting(false);
             }
-        };
+        }, [isResetting, progressType, resetUIState]);
 
-        if (!isInitialized) {
-            restoreCheckpoint();
-        }
-    }, [isInitialized, progressType]);
+        // =========================
+        // Render
+        // =========================
+        if (deck.length === 0) return null;
 
-    // Reset timer when card changes
-    useEffect(() => {
-        setCardStudyTime(Date.now());
-    }, [wordIndex]);
-
-    /**
-     * 다음 카드로 이동하고 UI 상태를 리셋하는 헬퍼 함수
-     */
-    const moveToNextCardAndResetUI = useCallback(() => {
-        // 다음 단어로 이동
-        setWordIndex(prevIndex => {
-            const nextIndex = prevIndex + 1;
-            return nextIndex >= deckSession.length ? prevIndex : nextIndex;
-        });
-
-        // UI 상태 리셋
-        dispatch(kanjiActions.reset());
-        setShowMean(false);
-        setShowHiragana(false);
-    }, [deckSession.length, dispatch]);
-
-    /**
-     * "알아요" / "모르겠어요" 버튼 클릭 핸들러
-     * - 단어 완료 API 호출 (complete-word)
-     * - 백엔드에서 자동으로 체크포인트 업데이트
-     * - 중복 클릭 방지 (isProcessing state 사용)
-     */
-    const handleKnowClick = useCallback(async (know: boolean) => {
-        // 중복 클릭 방지
-        if (isProcessing) {
-            console.log('⏳ Still processing previous click...');
-            return;
-        }
-
-        setIsProcessing(true);
-
-        try {
-            // 현재 단어 정보 확인
-            if (deckSession.length === 0 || wordIndex >= deckSession.length) {
-                console.warn('⚠️ No valid word to process');
-                return;
-            }
-
-            const currentWord = deckSession[wordIndex];
-
-            // 학습 카운트 업데이트
-            if (know) {
-                setMasteredCount(prev => prev + 1);
-            } else {
-                setLearningCount(prev => prev + 1);
-            }
-
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                console.warn('⚠️ User not authenticated');
-                return;
-            }
-
-            // 단어 완료 처리 - 백엔드에서 자동으로 체크포인트 업데이트됨
-            await axios.post(
-                `/api/progress/${progressType}/complete-word`,
-                {
-                    wordId: currentWord._id,
-                    isCorrect: know,
-                    timeSpent: Math.floor((Date.now() - cardStudyTime) / 1000), // 초 단위
-                },
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-
-            // 다음 카드로 이동 및 UI 리셋
-            moveToNextCardAndResetUI();
-
-        } catch (error) {
-            console.error('❌ Failed to process word completion:', error);
-
-            // 에러 메시지 설정
-            if (axios.isAxiosError(error)) {
-                const errorMessage = error.response?.data?.message || 'Failed to save progress';
-                setError(errorMessage);
-            } else {
-                setError('An unexpected error occurred');
-            }
-
-            // 에러 메시지는 3초 후 자동으로 사라짐
-            setTimeout(() => setError(null), 3000);
-
-            // 에러가 발생해도 사용자 경험을 위해 다음 카드로 진행
-            moveToNextCardAndResetUI();
-        } finally {
-            // 처리 완료 후 버튼 다시 활성화
-            setIsProcessing(false);
-        }
-    }, [isProcessing, deckSession, wordIndex, progressType, moveToNextCardAndResetUI]);
-
-    /**
-     * "뜻 보기" / "히라가나 보기" 버튼 핸들러
-     */
-    const handleShowClick = useCallback((type: ShowType['type']) => {
-        type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
-    }, []);
-
-    // 덱의 끝에 도달했는지 확인
-    const isEndOfDeck = wordIndex >= deckSession.length - 1;
-
-    return (
-        <>
-            {error && (
-                <ErrorBanner>
-                    <ErrorIcon>⚠️</ErrorIcon>
-                    <ErrorMessage>{error}</ErrorMessage>
-                </ErrorBanner>
-            )}
-
-            {deckSession.length > 0 && (
+        if (isCompleted) {
+            return (
                 <>
-                    <FlashCard
-                        word={deckSession[wordIndex]}
-                        showMean={showMean}
-                        showHiragana={showHiragana}
-                    />
-
-                    {isEndOfDeck ? (
-                        <CompletionMessage>
-                            <h3>🎉 All cards completed!</h3>
-                            <StatsContainer>
-                                <StatItem>
-                                    <StatLabel>Mastered</StatLabel>
-                                    <StatValue className="mastered">{masteredCount}</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                    <StatLabel>Still learning</StatLabel>
-                                    <StatValue className="learning">{learningCount}</StatValue>
-                                </StatItem>
-                            </StatsContainer>
-                            <RestartButton
-                                onClick={() => {
-                                    setWordIndex(0);
-                                    setMasteredCount(0);
-                                    setLearningCount(0);
-                                    setCardStudyTime(Date.now());
-                                    dispatch(kanjiActions.reset());
-                                    setShowMean(false);
-                                    setShowHiragana(false);
-                                }}
-                            >
-                                🔄 Restart Deck
-                            </RestartButton>
-                        </CompletionMessage>
-                    ) : (
-                        <ControlPanel
-                            onShowClick={handleShowClick}
-                            onKnowClick={handleKnowClick}
-                            showMean={!showMean}
-                            showHiragana={!showHiragana}
-                            disabled={isProcessing}
-                        />
+                    {error && (
+                        <ErrorBanner>
+                            <ErrorIcon>⚠️</ErrorIcon>
+                            <ErrorMessage>{error}</ErrorMessage>
+                        </ErrorBanner>
                     )}
+
+                    <CompletionMessage>
+                        <h3>🎉 All cards completed!</h3>
+
+                        <StatsContainer>
+                            <StatItem>
+                                <StatLabel>Mastered</StatLabel>
+                                <StatValue className="mastered">{masteredCount}</StatValue>
+                            </StatItem>
+                            <StatItem>
+                                <StatLabel>Still learning</StatLabel>
+                                <StatValue className="learning">{learningCount}</StatValue>
+                            </StatItem>
+                        </StatsContainer>
+
+                        <RestartButton onClick={handleRestartClick} disabled={isResetting}>
+                            {isResetting ? '🔄 Restarting...' : '🔄 Restart Deck'}
+                        </RestartButton>
+                    </CompletionMessage>
                 </>
-            )}
-        </>
-    );
-});
+            );
+        }
+
+        return (
+            <>
+                {error && (
+                    <ErrorBanner>
+                        <ErrorIcon>⚠️</ErrorIcon>
+                        <ErrorMessage>{error}</ErrorMessage>
+                    </ErrorBanner>
+                )}
+
+                <FlashCard
+                    word={deck[wordIndex]}
+                    showMean={showMean}
+                    showHiragana={showHiragana}
+                />
+
+                <ControlPanel
+                    onShowClick={handleShowClick}
+                    onKnowClick={handleKnowClick}
+                    showMean={!showMean}
+                    showHiragana={!showHiragana}
+                    disabled={isProcessing}
+                />
+            </>
+        );
+    });
 
 export default FlashCardContainer;
 
@@ -243,9 +236,8 @@ const CompletionMessage = styled.div`
     border-radius: 1rem;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-    
+
     h3 {
-        margin-top: 0;
         margin-bottom: 1.5rem;
         color: #2c3e50;
         font-size: 1.5rem;
@@ -276,14 +268,9 @@ const StatLabel = styled.span`
 const StatValue = styled.span`
     font-size: 2rem;
     font-weight: 700;
-    
-    &.mastered {
-        color: #10b981;
-    }
-    
-    &.learning {
-        color: #f59e0b;
-    }
+
+    &.mastered { color: #10b981; }
+    &.learning { color: #f59e0b; }
 `;
 
 const RestartButton = styled.button`
@@ -296,16 +283,11 @@ const RestartButton = styled.button`
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
     transition: all 0.2s ease;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
-    }
-
-    &:active {
-        transform: translateY(0);
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 `;
 
@@ -313,29 +295,15 @@ const ErrorBanner = styled.div`
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    background: #fee2e2;
     border: 1px solid #fca5a5;
     border-radius: 0.75rem;
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
-    animation: slideDown 0.3s ease-out;
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
 `;
 
 const ErrorIcon = styled.span`
     font-size: 1.25rem;
-    flex-shrink: 0;
 `;
 
 const ErrorMessage = styled.span`
