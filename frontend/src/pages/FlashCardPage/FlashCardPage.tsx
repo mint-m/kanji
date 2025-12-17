@@ -14,6 +14,7 @@ const FlashCardPage: React.FC = () => {
   const [deck, setDeck] = useState<DeckWord[] | null>(null);
   const [level, setLevel] = useState<string>('');
   const [steps, setSteps] = useState<{ start: number; end: number } | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,10 +29,11 @@ const FlashCardPage: React.FC = () => {
       const response = await deckService.getCurrentDeck(progressType);
 
       if (response.success && response.data) {
-        const { words, level: deckLevel, steps: deckSteps } = response.data;
+        const { words, level: deckLevel, steps: deckSteps, currentIndex: apiCurrentIndex } = response.data;
         setDeck(words);
         setLevel(deckLevel);
         setSteps(deckSteps);
+        setCurrentIndex(apiCurrentIndex);
       } else {
         // API 응답이 실패한 경우
         setError(response.message || '단어장을 불러오는데 실패했습니다.');
@@ -65,7 +67,13 @@ const FlashCardPage: React.FC = () => {
 
     return (
       <>
-        {deck && <FlashCardContainer deck={deck} progressType={activeProgressType || 'main'} />}
+        {deck && (
+          <FlashCardContainer
+            deck={deck}
+            progressType={activeProgressType || 'main'}
+            initialIndex={currentIndex}
+          />
+        )}
         {isLoading && <SkeletonFlashCard />}
       </>
     );
