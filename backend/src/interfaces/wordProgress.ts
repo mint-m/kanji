@@ -1,6 +1,6 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { ProgressType, LearningLevel } from './userProgress';
+import { ProgressType, LearningLevel } from './userCheckpoint';
 
 // Word completion status
 export type CompletionStatus = 'not_studied' | 'studying' | 'completed' | 'needs_review';
@@ -9,7 +9,6 @@ export type CompletionStatus = 'not_studied' | 'studying' | 'completed' | 'needs
 export interface StudyResult {
   isCorrect: boolean;
   timeSpent?: number; // milliseconds
-  difficulty?: 'easy' | 'medium' | 'hard';
   studiedAt: Date;
 }
 
@@ -23,7 +22,6 @@ export interface WordStudyStats {
   lastStudied?: Date;
   firstStudied?: Date;
   studyStreak: number;
-  difficultyRating: number; // 1-5 scale
 }
 
 // Bookmark information
@@ -58,8 +56,6 @@ export interface StudySessionSummary {
   wordsCompleted: number;
   totalTimeSpent: number;
   averageAccuracy: number;
-  difficultWords: mongoose.Types.ObjectId[];
-  easyWords: mongoose.Types.ObjectId[];
   newBookmarks: number;
 }
 
@@ -75,7 +71,6 @@ export interface WordProgressDocument extends Document {
   last_studied_at?: Date;
   first_studied_at?: Date;
   study_streak: number;
-  difficulty_rating: number;
   time_spent_total: number; // milliseconds
   bookmark_reason?: string;
   bookmark_tags: string[];

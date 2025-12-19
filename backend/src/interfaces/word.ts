@@ -51,7 +51,7 @@ export interface WordDocument extends Document {
   entry: string; // Hiragana reading
   pron?: string; // Kanji form (optional)
   level: LearningLevel;
-  step: number; // Step within level (1-10)
+  step: number; // Step within level (flexible, minimum 1)
   means: string[]; // Korean meanings array
   parts: string[]; // Parts of speech array
   createdAt: Date;
@@ -62,7 +62,6 @@ export interface WordDocument extends Document {
   getPrimaryMeaning(): string;
   getDisplayForm(): string; // Returns kanji if available, otherwise hiragana
   isInStepRange(start: number, end: number): boolean;
-  getDifficultyScore(): number; // Based on step position
   getSearchableText(): string; // Combined searchable content
 }
 
@@ -97,8 +96,6 @@ export interface WordModel extends Model<WordDocument> {
   // Validation and utilities
   validateStepRange(level: LearningLevel, start: number, end: number): Promise<boolean>;
 
-  getNextAvailableStep(level: LearningLevel): Promise<number>;
-
   rebalanceSteps(level: LearningLevel): Promise<{ moved: number; errors: any[] }>;
 
   // Bulk operations
@@ -116,7 +113,7 @@ export interface WordModel extends Model<WordDocument> {
 
   cleanupInvalidWords(): Promise<{ removed: number; errors: any[] }>;
 
-  updateLevelStepDistribution(level: LearningLevel): Promise<void>;
+  updateLevelStepDistribution(level: LearningLevel, targetStepsCount?: number): Promise<void>;
 }
 
 export default WordModel;

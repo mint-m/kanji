@@ -9,7 +9,7 @@ const router = Router();
 // 모든 단어 가져오기
 router.get('/all', wordController.getAllWords);
 
-// 레벨별 단어 가져오기
+// 레벨별 단어 가져오기 (레거시 코드. 사용하지 않습니다)
 router.get(
   '/level/:level',
   [
@@ -34,7 +34,7 @@ router.get(
   '/level/:level/step/:step',
   [
     param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    param('step').isInt({ min: 1, max: 10 }).withMessage('Step must be between 1 and 10'),
+    param('step').isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('sortBy').optional().isIn(['kanji', 'step', 'level', 'readings.hiragana']).withMessage('Invalid sort field'),
@@ -49,13 +49,12 @@ router.get(
   '/level/:level/steps/:startStep-:endStep',
   [
     param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    param('startStep').isInt({ min: 1, max: 10 }).withMessage('Start step must be between 1 and 10'),
-    param('endStep').isInt({ min: 1, max: 10 }).withMessage('End step must be between 1 and 10'),
+    param('startStep').isInt({ min: 1 }).withMessage('Start step must be over 1'),
+    param('endStep').isInt({ min: 1 }).withMessage('step must be over 1 intiger'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('sortBy').optional().isIn(['kanji', 'step', 'level', 'readings.hiragana']).withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be "asc" or "desc"'),
-    query('includeSlidingWindow').optional().isBoolean().withMessage('Include sliding window must be boolean'),
     handleValidationErrors,
   ],
   wordController.getWordsByStepRange
@@ -65,12 +64,14 @@ router.get(
 router.get(
   '/step-range',
   [
-    query('startStep').isInt({ min: 1, max: 10 }).withMessage('Start step must be between 1 and 10'),
-    query('endStep').isInt({ min: 1, max: 10 }).withMessage('End step must be between 1 and 10'),
-    query('level').optional().isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    query('startStep').isInt({ min: 1 }).withMessage('Start step must be a positive integer'),
+    query('endStep').isInt({ min: 1 }).withMessage('End step must be over 1 intiger'),
+    query('level')
+      .optional()
+      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-    query('includeSlidingWindow').optional().isBoolean().withMessage('Include sliding window must be boolean'),
     handleValidationErrors,
   ],
   wordController.getWordsByStepRange

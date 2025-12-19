@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserProgress from '../models/userProgress';
+import UserCheckpoint from "../models/userCheckpoint";
 import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
-import { ProgressType, LearningLevel } from '../interfaces/userProgress';
-import CheckpointService from '../services/checkpointService';
+import { ProgressType, LearningLevel } from "../interfaces/userCheckpoint";
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -29,7 +28,39 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// 학습 체크포인트 업데이트 (UserProgress 테이블과 연동)
+// 활성 진행 타입 업데이트
+export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const { activeProgressType } = req.body;
+
+    if (req.user?._id.toString() !== userId) {
+      return next(new ForbiddenError('You can only update your own progress type'));
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { activeProgressType },
+      { new: true }
+    );
+
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({
+      success: true,
+      data: {
+        activeProgressType: user.activeProgressType,
+      },
+    });
+  } catch (error) {
+    console.error('Update activeProgressType error:', error);
+    next(new InternalServerError('Failed to update active progress type'));
+  }
+};
+
+// 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
@@ -55,7 +86,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       return next(new NotFoundError('User not found'));
     }
 
-    // 1. 새로운 방식: UserProgress 테이블 업데이트
+    // 1. 새로운 방식: UserCheckpoint 테이블 업데이트
     if (level && steps) {
       // Validate progress type
       if (!['main', 'sub'].includes(progressType)) {
@@ -67,8 +98,8 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
       }
 
-      // Find or create UserProgress
-      const existingProgress = await UserProgress.findOne({
+      // Find or create UserCheckpoint
+      const existingProgress = await UserCheckpoint.findOne({
         user_id: userObjectId,
         progress_type: progressType as ProgressType,
       });
@@ -76,15 +107,15 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       let userProgress;
 
       if (!existingProgress) {
-        // Create new UserProgress session
-        userProgress = await UserProgress.createNewSession(
+        // Create new UserCheckpoint session
+        userProgress = await UserCheckpoint.createNewSession(
           userObjectId,
           progressType as ProgressType,
           level as LearningLevel,
           steps
         );
       } else {
-        // Update existing UserProgress
+        // Update existing UserCheckpoint
         existingProgress.current_level = level as LearningLevel;
         existingProgress.steps = steps;
 
@@ -94,18 +125,11 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
         await existingProgress.save();
 
-        // Save checkpoint
-        await CheckpointService.createCheckpointFromProgress(existingProgress);
+        // Save checkpoint using updateCheckpoint method
+        await existingProgress.updateCheckpoint();
 
         userProgress = existingProgress;
       }
-
-      // Update legacy checkpoint field for backward compatibility
-      existingUser.learningCheckpoint = {
-        level,
-        step: steps,
-      };
-      await existingUser.save();
 
       res.json({
         success: true,
@@ -116,21 +140,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
             _id: existingUser._id,
             email: existingUser.email,
             name: existingUser.name,
-            learningCheckpoint: existingUser.learningCheckpoint,
           },
-        },
-      });
-    }
-    // 2. 레거시 방식: User 테이블의 learningCheckpoint만 업데이트 (하위 호환성)
-    else if (checkpoint) {
-      existingUser.learningCheckpoint = checkpoint;
-      await existingUser.save();
-
-      res.json({
-        success: true,
-        message: 'Legacy checkpoint updated successfully',
-        data: {
-          user: existingUser,
         },
       });
     } else {

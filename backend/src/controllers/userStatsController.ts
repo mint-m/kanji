@@ -2,7 +2,8 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserProgress from '../models/userProgress';
+import UserCheckpoint from "../models/userCheckpoint";
+import { ProgressType } from "../interfaces/userCheckpoint";
 import WordProgress from '../models/wordProgress';
 import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/errors';
 
@@ -24,9 +25,9 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
 
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    // Get active UserProgress sessions (main and sub)
-    const mainProgress = await UserProgress.findByUserAndType(userObjectId, 'main');
-    const subProgress = await UserProgress.findByUserAndType(userObjectId, 'sub');
+    // Get active UserCheckpoint sessions (main and sub)
+    const mainProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'main');
+    const subProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'sub');
 
     // Get Word model for total word count
     const Word = mongoose.model('Word');

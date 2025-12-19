@@ -13,33 +13,22 @@
 ### 요청 파라미터
 
 #### 경로 파라미터
+
 - `userId` (string, 필수): 사용자의 MongoDB ObjectId
 
 #### 본문 파라미터
 
 **옵션 1: 새로운 UserProgress 기반 시스템 (권장)**
-```json
-{
-  "progressType": "main",  // "main" 또는 "sub" (기본값: "main")
-  "level": "N5",           // "N5", "N4", "N3", "N2", "N1" 중 하나
-  "steps": {
-    "start": 1,            // 1-10 범위
-    "end": 3               // 1-10 범위
-  },
-  "currentIndex": 0        // 선택사항, 현재 덱에서의 단어 인덱스
-}
-```
 
-**옵션 2: 레거시 체크포인트 포맷 (하위 호환성)**
 ```json
 {
-  "checkpoint": {
-    "level": "N5",
-    "step": {
-      "min": 1,
-      "max": 3
-    }
-  }
+  "progressType": "main", // "main" 또는 "sub" (기본값: "main")
+  "level": "N5", // "N5", "N4", "N3", "N2", "N1" 중 하나
+  "steps": {
+    "start": 1, // 양의 정수, 최소 1 (기본값: 1)
+    "end": 3 // 양의 정수, start <= end (기본값: 3)
+  },
+  "currentIndex": 0 // 선택사항, 현재 덱에서의 단어 인덱스
 }
 ```
 
@@ -117,6 +106,7 @@
 ### 에러 응답
 
 #### 400 Bad Request - 필수 데이터 누락
+
 ```json
 {
   "success": false,
@@ -125,6 +115,7 @@
 ```
 
 #### 400 Bad Request - 잘못된 진행 타입
+
 ```json
 {
   "success": false,
@@ -133,6 +124,7 @@
 ```
 
 #### 400 Bad Request - 잘못된 레벨
+
 ```json
 {
   "success": false,
@@ -141,6 +133,7 @@
 ```
 
 #### 403 Forbidden - 권한 없음
+
 ```json
 {
   "success": false,
@@ -149,6 +142,7 @@
 ```
 
 #### 404 Not Found - 사용자 없음
+
 ```json
 {
   "success": false,
@@ -157,6 +151,7 @@
 ```
 
 #### 500 Internal Server Error - 서버 오류
+
 ```json
 {
   "success": false,
@@ -171,12 +166,14 @@
 #### 새 시스템 (level + steps 사용)
 
 1. **UserProgress 생성 또는 업데이트**:
+
    - 해당 사용자/progressType 조합에 대한 UserProgress가 없으면 새 세션 생성
    - 슬라이딩 윈도우 (level + steps) 기반으로 새 덱 생성
    - 완료된 단어를 필터링하고 선택적으로 북마크된 단어 우선순위 적용
    - 세션 복구를 위한 체크포인트 데이터 저장
 
 2. **사용자의 레거시 체크포인트 업데이트**:
+
    - User 모델의 `learningCheckpoint` 필드를 업데이트하여 하위 호환성 유지
 
 3. **자동 체크포인트 생성**:
@@ -197,6 +194,7 @@
 #### 예시 1: N5 Steps 1-3에서 새 Main 세션 시작
 
 **요청**:
+
 ```bash
 curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoint \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -218,6 +216,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 #### 예시 2: 기존 세션의 현재 인덱스 업데이트
 
 **요청**:
+
 ```bash
 curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoint \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -240,6 +239,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 #### 예시 3: Sub 세션 시작 (북마크 중심)
 
 **요청**:
+
 ```bash
 curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoint \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -261,6 +261,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 #### 예시 4: 레거시 포맷 업데이트
 
 **요청**:
+
 ```bash
 curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoint \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -314,12 +315,14 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 엔드포인트는 두 가지 방식으로 작동합니다:
 
 **새 시스템 (권장)**:
+
 - UserProgress 테이블에 세션 상태 저장
 - Checkpoint 테이블에 복구 포인트 저장
 - Main/Sub 세션 독립 관리
 - 슬라이딩 윈도우 덱 시스템 완전 지원
 
 **레거시 시스템**:
+
 - User 테이블의 learningCheckpoint 필드만 사용
 - 구 버전 클라이언트와의 호환성 유지
 - 간단한 체크포인트 저장만 필요한 경우 사용
@@ -327,6 +330,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 ### 2. 자동 덱 생성
 
 새 시스템 사용 시:
+
 - 레벨과 스텝 범위에 맞는 단어 자동 검색
 - 완료된 단어 자동 필터링
 - 북마크된 단어 우선순위 적용 (옵션)
@@ -353,14 +357,15 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 ### 데이터베이스 구조
 
 **UserProgress 컬렉션**:
+
 ```javascript
 {
   user_id: ObjectId,           // 사용자 ID
   progress_type: "main" | "sub", // 세션 타입
   current_level: "N5" | "N4" | ..., // 현재 레벨
   steps: {
-    start: Number,             // 시작 스텝 (1-10)
-    end: Number                // 종료 스텝 (1-10)
+    start: Number,             // 시작 스텝 (양의 정수, 최소 1)
+    end: Number                // 종료 스텝 (양의 정수, start <= end)
   },
   shuffled_order: [ObjectId],  // 셔플된 단어 ID 배열
   current_index: Number,       // 현재 학습 중인 단어 인덱스
@@ -370,6 +375,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 ```
 
 **Checkpoint 컬렉션**:
+
 ```javascript
 {
   user_id: ObjectId,
@@ -403,6 +409,7 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
 ### 슬라이딩 윈도우 시스템
 
 3단계 슬라이딩 윈도우:
+
 - 1-3 → 2-4 → 3-5 → ... → 8-10
 - 순환 복습: 9-1, 10-2 (레벨 경계 넘어감)
 - 각 윈도우는 독립적인 덱 생성

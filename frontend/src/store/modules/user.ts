@@ -13,36 +13,22 @@ interface UserState {
   loginStatusType: 'google' | 'kakao' | 'local' | null;
   email: string | null;
   name?: string;
-  learningCheckpoint: CheckPoint;
+  activeProgressType: 'main' | 'sub' | null;
   learningStats: LevelStatistics[];
   learningStreak: number;
-}
-
-interface CheckPoint {
-  level: string;
-  step: StepType;
-}
-
-interface StepType {
-  start: number;
-  end: number;
 }
 
 // actionType
 export const userActionTypes = {
   setUser: 'user/SET_USER',
-  setLearningCheckpoint: 'user/SET_LEANINGCHECKPOINT',
-  setLevelCheckpoint: 'user/SET_LEVELCHECKPOINT',
-  setStepCheckpoint: 'user/SET_SETCHECKPOINT',
+  setActiveProgressType: 'user/SET_ACTIVE_PROGRESS_TYPE',
   setLearningStats: 'user/SET_LEARNING_STATS',
   setLearningStreak: 'user/SET_LEARNING_STREAK',
 } as const;
 
 // action
 export const setUser = createAction<UserState>(userActionTypes.setUser);
-export const setLearningCheckpoint = createAction<CheckPoint>(userActionTypes.setLearningCheckpoint);
-export const setLevelCheckpoint = createAction<string>(userActionTypes.setLevelCheckpoint);
-export const setStepCheckpoint = createAction<StepType>(userActionTypes.setStepCheckpoint);
+export const setActiveProgressType = createAction<'main' | 'sub' | null>(userActionTypes.setActiveProgressType);
 export const setLearningStats = createAction<LevelStatistics[]>(userActionTypes.setLearningStats);
 export const setLearningStreak = createAction<number>(userActionTypes.setLearningStreak);
 
@@ -50,7 +36,7 @@ const initialState: UserState = {
   isLoggin: false,
   loginStatusType: null,
   email: null,
-  learningCheckpoint: { level: 'N5', step: { start: 1, end: 3 } },
+  activeProgressType: null,
   learningStats: [],
   learningStreak: 0,
 };
@@ -62,23 +48,9 @@ const userReducer = handleActions<UserState, any>(
       ...action.payload,
       isLoggin: true,
     }),
-    [userActionTypes.setLearningCheckpoint]: (state, action: Action<CheckPoint>) => ({
+    [userActionTypes.setActiveProgressType]: (state, action: Action<'main' | 'sub' | null>) => ({
       ...state,
-      learningCheckpoint: action.payload,
-    }),
-    [userActionTypes.setLevelCheckpoint]: (state, action: Action<string>) => ({
-      ...state,
-      learningCheckpoint: {
-        ...state.learningCheckpoint,
-        level: action.payload,
-      },
-    }),
-    [userActionTypes.setStepCheckpoint]: (state, action: Action<StepType>) => ({
-      ...state,
-      learningCheckpoint: {
-        ...state.learningCheckpoint,
-        step: action.payload,
-      },
+      activeProgressType: action.payload,
     }),
     [userActionTypes.setLearningStats]: (state, action: Action<LevelStatistics[]>) => ({
       ...state,

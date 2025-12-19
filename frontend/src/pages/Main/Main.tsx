@@ -12,7 +12,7 @@ const Container = styled.div`
 
 const Main = () => {
   const navigate = useNavigate();
-  
+
   // 시작하기 버튼 클릭 시 플래시카드 페이지로 바로 이동
   // 인증 및 체크포인트 확인은 LearningRoute 컴포넌트에서 처리
   const handleStartClick = () => {
