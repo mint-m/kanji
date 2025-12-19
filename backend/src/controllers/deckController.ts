@@ -42,10 +42,10 @@ export const generateDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    if (steps.start < 1 || steps.end > 10 || steps.start > steps.end) {
+    if (steps.start < 1 || steps.start > steps.end) {
       res.status(400).json({
         success: false,
-        message: 'Invalid step range. Steps must be 1-10 with start <= end',
+        message: 'Invalid step range. Steps must be positive integers with start <= end',
       });
       return;
     }

@@ -25,7 +25,8 @@ export type ProgressType = 'main' | 'sub';
 
 /**
  * Step range for sliding window system
- * Each level contains steps 1-10
+ * Each level contains variable number of steps based on word count
+ * Steps start at 1, max varies per level
  */
 export interface StepRange {
   start: number;
