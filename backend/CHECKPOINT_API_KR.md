@@ -25,8 +25,8 @@
   "progressType": "main", // "main" 또는 "sub" (기본값: "main")
   "level": "N5", // "N5", "N4", "N3", "N2", "N1" 중 하나
   "steps": {
-    "start": 1, // 1-10 범위
-    "end": 3 // 1-10 범위
+    "start": 1, // 양의 정수, 최소 1 (기본값: 1)
+    "end": 3 // 양의 정수, start <= end (기본값: 3)
   },
   "currentIndex": 0 // 선택사항, 현재 덱에서의 단어 인덱스
 }
@@ -364,8 +364,8 @@ curl -X PATCH http://localhost:8000/api/users/64f5a1b2c3d4e5f6g7h8i9j1/checkpoin
   progress_type: "main" | "sub", // 세션 타입
   current_level: "N5" | "N4" | ..., // 현재 레벨
   steps: {
-    start: Number,             // 시작 스텝 (1-10)
-    end: Number                // 종료 스텝 (1-10)
+    start: Number,             // 시작 스텝 (양의 정수, 최소 1)
+    end: Number                // 종료 스텝 (양의 정수, start <= end)
   },
   shuffled_order: [ObjectId],  // 셔플된 단어 ID 배열
   current_index: Number,       // 현재 학습 중인 단어 인덱스

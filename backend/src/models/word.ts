@@ -23,7 +23,7 @@ const wordSchema = new mongoose.Schema<WordDocument>(
     step: {
       type: Number,
       required: true,
-    }, // Step within level (1-10) for sliding window
+    }, // Step within level (flexible based on word count)
     means: {
       type: [String],
       required: true,
@@ -240,13 +240,6 @@ wordSchema.statics.validateStepRange = async function (
   return start >= levelStats.minStep && end <= levelStats.maxStep && start <= end;
 };
 
-wordSchema.statics.getNextAvailableStep = async function (level: LearningLevel): Promise<number> {
-  const stats = await (this as WordModel).getLevelStats(level);
-  if (stats.length === 0) return 1;
-
-  return Math.min(10, stats[0].maxStep + 1);
-};
-
 wordSchema.statics.rebalanceSteps = async function (level: LearningLevel): Promise<{ moved: number; errors: any[] }> {
   const words = await this.find({ level }).sort({ step: 1, entry: 1 });
   const errors: any[] = [];
@@ -259,7 +252,7 @@ wordSchema.statics.rebalanceSteps = async function (level: LearningLevel): Promi
     const targetStep = Math.floor(i / wordsPerStep) + 1;
     if (words[i].step !== targetStep) {
       try {
-        await this.updateOne({ _id: words[i]._id }, { step: Math.min(targetStep, 10) });
+        await this.updateOne({ _id: words[i]._id }, { step: targetStep });
         moved++;
       } catch (error) {
         errors.push({ wordId: words[i]._id, error });
@@ -278,7 +271,8 @@ wordSchema.statics.bulkUpdateSteps = async function (
 
   for (const update of updates) {
     try {
-      const result = await this.updateOne({ _id: update.wordId }, { step: Math.max(1, Math.min(10, update.newStep)) });
+      const validStep = Math.max(1, update.newStep);
+      const result = await this.updateOne({ _id: update.wordId }, { step: validStep });
       modified += result.modifiedCount;
     } catch (error) {
       errors.push({ wordId: update.wordId, error });
@@ -380,9 +374,9 @@ wordSchema.statics.cleanupInvalidWords = async function (): Promise<{ removed: n
   let removed = 0;
 
   try {
-    // Remove words with invalid steps
+    // Remove words with invalid steps (only minimum validation)
     const invalidSteps = await this.deleteMany({
-      $or: [{ step: { $lt: 1 } }, { step: { $gt: 10 } }],
+      step: { $lt: 1 },
     });
     removed += invalidSteps.deletedCount || 0;
 
@@ -398,13 +392,16 @@ wordSchema.statics.cleanupInvalidWords = async function (): Promise<{ removed: n
   return { removed, errors };
 };
 
-wordSchema.statics.updateLevelStepDistribution = async function (level: LearningLevel): Promise<void> {
-  // Redistribute words evenly across steps 1-10
+wordSchema.statics.updateLevelStepDistribution = async function (
+  level: LearningLevel,
+  targetStepsCount: number = 10
+): Promise<void> {
+  // Redistribute words evenly across specified number of steps
   const words = await this.find({ level }).sort({ entry: 1 });
-  const wordsPerStep = Math.ceil(words.length / 10);
+  const wordsPerStep = Math.ceil(words.length / targetStepsCount);
 
   for (let i = 0; i < words.length; i++) {
-    const targetStep = Math.min(Math.floor(i / wordsPerStep) + 1, 10);
+    const targetStep = Math.floor(i / wordsPerStep) + 1;
     if (words[i].step !== targetStep) {
       await this.updateOne({ _id: words[i]._id }, { step: targetStep });
     }

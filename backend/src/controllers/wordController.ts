@@ -111,7 +111,7 @@ export const getWordsByLevelAndStep = async (req: Request, res: Response, next: 
 export const getWordsByStepRange = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { level, startStep, endStep } = req.params;
-    const { limit = 50, page = 1, sortBy = 'step', sortOrder = 'asc', includeSlidingWindow = false } = req.query;
+    const { limit = 50, page = 1, sortBy = 'step', sortOrder = 'asc' } = req.query;
 
     // Handle both URL params and query params for flexibility
     const start = parseInt((startStep || req.query.startStep) as string);
@@ -133,13 +133,6 @@ export const getWordsByStepRange = async (req: Request, res: Response, next: Nex
     const levelParam = level || req.query.level;
     if (levelParam) {
       filter.level = levelParam;
-    }
-
-    // If sliding window mode, include overlapping words from adjacent steps
-    if (includeSlidingWindow === 'true') {
-      const windowStart = Math.max(1, start - 1);
-      const windowEnd = Math.min(10, end + 1);
-      filter.step = { $gte: windowStart, $lte: windowEnd };
     }
 
     const sort: any = {};
@@ -179,7 +172,6 @@ export const getWordsByStepRange = async (req: Request, res: Response, next: Nex
         filter: {
           level,
           stepRange: { start, end },
-          slidingWindow: includeSlidingWindow === 'true',
         },
       },
     });

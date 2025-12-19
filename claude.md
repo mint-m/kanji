@@ -126,7 +126,7 @@ backend/src/
   entry: string,           // Hiragana reading
   pron?: string,           // Kanji form
   level: string,           // N5, N4, etc.
-  step: number,            // Step within level (1-10)
+  step: number,            // Step within level (flexible, based on word count)
   means: string[],         // Korean meanings
   parts: string[]          // Parts of speech
 }
