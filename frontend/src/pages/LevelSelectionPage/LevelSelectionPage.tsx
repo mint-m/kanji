@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from 'store';
 import axios from 'axios';
-import * as userActions from 'store/modules/user';
 import SelectStep from 'components/SelectStep';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
@@ -23,8 +22,11 @@ const levels: string[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
 
 const LevelSelectionPage: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const learningCheckpoint = useSelector((state: RootState) => state.user.learningCheckpoint);
+  const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
+
+  // Local state for level and step selection
+  const [selectedLevel, setSelectedLevel] = useState<string>('N5');
+  const [selectedSteps, setSelectedSteps] = useState<{ start: number, end: number }>({ start: 1, end: 3 });
 
   // Current page for page scroller
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -37,15 +39,14 @@ const LevelSelectionPage: React.FC = () => {
   // Fetch steps data for the selected level
   useEffect(() => {
     const fetchStepsForLevel = async () => {
-      if (!learningCheckpoint.level) return;
+      if (!selectedLevel) return;
 
       setIsLoading(true);
       setError(null);
 
       try {
-        // 수정된 API 경로 사용
         const response = await axios.get<LevelStepData>(
-          `/api/words/level/${learningCheckpoint.level}/steps`
+          `/api/words/level/${selectedLevel}/steps`
         );
 
         setLevelData(response.data);
@@ -58,40 +59,45 @@ const LevelSelectionPage: React.FC = () => {
     };
 
     fetchStepsForLevel();
-  }, [learningCheckpoint.level]);
+  }, [selectedLevel]);
 
   // Handler for level selection
-  const handleSelectLevel = React.useCallback((selectedLevel: string) => {
-    dispatch(userActions.setLevelCheckpoint(selectedLevel));
+  const handleSelectLevel = React.useCallback((level: string) => {
+    setSelectedLevel(level);
     // Reset to default step selection when level changes
-    dispatch(userActions.setStepCheckpoint({ start: 1, end: 3 }));
-  }, [dispatch]);
+    setSelectedSteps({ start: 1, end: 3 });
+  }, []);
 
   // Handler for step selection
-  const handleSelectStep = React.useCallback((selectedStep: { start: number, end: number }) => {
-    dispatch(userActions.setStepCheckpoint(selectedStep));
-  }, [dispatch]);
+  const handleSelectStep = React.useCallback((steps: { start: number, end: number }) => {
+    setSelectedSteps(steps);
+  }, []);
 
   // Handler for page changes
   const handlePageChange = (page: number): void => {
     setCurrentPage(page);
   };
 
-  // 체크포인트 저장
+  // 체크포인트 저장 및 UserProgress 생성/업데이트
   const handleStartLearning = () => {
-    // Save checkpoint to server
     const saveCheckpoint = async () => {
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (!user._id) return;
+        if (!user._id) {
+          alert('User not found. Please log in again.');
+          return;
+        }
 
-        // Show loading feedback
         setIsLoading(true);
 
-        // 수정된 API 경로 사용
+        // UserProgress 생성/업데이트
         await axios.patch(
           `/api/users/${user._id}/checkpoint`,
-          { checkpoint: learningCheckpoint },
+          {
+            progressType: activeProgressType || 'main',
+            level: selectedLevel,
+            steps: selectedSteps,
+          },
           { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
         );
 
@@ -100,7 +106,7 @@ const LevelSelectionPage: React.FC = () => {
       } catch (error) {
         console.error('Failed to save checkpoint:', error);
 
-        // Show error but continue anyway - user can still learn
+        // Show error but continue anyway
         const errorMessage = "Failed to save your progress, but you can continue learning";
         alert(errorMessage);
 
@@ -124,7 +130,7 @@ const LevelSelectionPage: React.FC = () => {
           <SelectLevel
             levels={levels}
             onSelectLevel={handleSelectLevel}
-            progressLevel={learningCheckpoint.level}
+            progressLevel={selectedLevel}
           />
         </CenterDiv>
       </div>
@@ -138,8 +144,8 @@ const LevelSelectionPage: React.FC = () => {
             <ErrorMessage>{error}</ErrorMessage>
           ) : (
             <SelectStep
-              progressLevel={learningCheckpoint.level}
-              stepLength={levelData?.totalSteps || 6} // Fallback to 6 if not loaded
+              progressLevel={selectedLevel}
+              stepLength={levelData?.totalSteps || 6}
               onSelectStep={handleSelectStep}
             />
           )}
@@ -151,10 +157,11 @@ const LevelSelectionPage: React.FC = () => {
         <CenterDiv>
           <InfoPanel>
             <h2>Selected Study Plan:</h2>
-            <p>Level: {learningCheckpoint.level}</p>
-            <p>Steps: {learningCheckpoint.step.start} to {learningCheckpoint.step.end}</p>
+            <p>Session: {activeProgressType || 'main'}</p>
+            <p>Level: {selectedLevel}</p>
+            <p>Steps: {selectedSteps.start} to {selectedSteps.end}</p>
             {levelData && (
-              <p>Approximately {levelData.wordsPerStep * (learningCheckpoint.step.end - learningCheckpoint.step.start + 1)} words</p>
+              <p>Approximately {levelData.wordsPerStep * (selectedSteps.end - selectedSteps.start + 1)} words</p>
             )}
           </InfoPanel>
           <StartButton onClick={handleStartLearning}>

@@ -5,7 +5,7 @@
  * These match the frontend's request types for consistency.
  */
 
-import { LearningLevel, ProgressType, StepRange, DeckGenerationOptions, DifficultyRating } from '../common';
+import { LearningLevel, ProgressType, StepRange, DeckGenerationOptions } from '../common';
 
 // ============================================================================
 // Authentication Requests
@@ -47,7 +47,6 @@ export interface CompleteWordRequest {
   wordId: string;
   isCorrect: boolean;
   timeSpent?: number; // milliseconds
-  difficulty?: DifficultyRating;
 }
 
 /**
@@ -69,7 +68,6 @@ export interface CompleteDeckRequest {
  * Session feedback from user
  */
 export interface SessionFeedback {
-  difficulty: 'too_easy' | 'just_right' | 'too_hard';
   enjoyment: number; // 1-5
   notes?: string;
 }
@@ -115,7 +113,6 @@ export interface RecordAttemptRequest {
   progressType: ProgressType;
   isCorrect: boolean;
   timeSpent?: number;
-  difficulty?: DifficultyRating;
 }
 
 /**

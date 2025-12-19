@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import styled from 'styled-components';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
@@ -8,6 +9,7 @@ import {
   exchangeCodeForToken,
   loginWithGoogleToken,
 } from 'services/authService';
+import { setUser } from 'store/modules/user';
 
 interface GoogleLoginButtonProps {
   onLoginError?: (error: Error) => void;
@@ -30,6 +32,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   loadingText = 'in...'
 }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isComponentMounted, setIsComponentMounted] = useState(true);
@@ -70,7 +73,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
     try {
       // Step 1: Exchange auth code for access token
       const tokenResponse = await exchangeCodeForToken(code, redirect_url);
-      console.log('🔍 tokenResponse:', tokenResponse);
 
       if (!tokenResponse.accessToken) {
         throw new Error('Failed to get access token from Google');
@@ -83,12 +85,25 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         throw new Error('Login failed - missing token or user data');
       }
 
+      // Step 3: Update Redux with user data
+      if (isComponentMounted && loginResponse.user) {
+        dispatch(setUser({
+          isLoggin: true,
+          loginStatusType: loginResponse.user.type || 'google',
+          email: loginResponse.user.email,
+          name: loginResponse.user.name,
+          activeProgressType: loginResponse.user.activeProgressType || null,
+          learningStats: [],
+          learningStreak: 0,
+        }));
+      }
+
       // 성공 콜백 호출
       if (onLoginSuccess && isComponentMounted) {
         onLoginSuccess();
       }
 
-      // Step 3: Navigate to destination page (only if component is still mounted)
+      // Step 4: Navigate to destination page (only if component is still mounted)
       if (isComponentMounted) {
         navigate(redirectPath);
       }

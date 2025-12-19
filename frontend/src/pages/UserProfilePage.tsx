@@ -1,21 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from 'store';
 import UserProgress from 'components/UserProgress';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import axios from 'axios';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
+import { setActiveProgressType } from 'store/modules/user';
+import { updateActiveProgressType } from 'services/userService';
 
 interface UserProfileProps { }
 
 const UserProfilePage: React.FC<UserProfileProps> = () => {
   const navigate = useNavigate();
-  const user = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch();
+  const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingSession, setIsUpdatingSession] = useState<boolean>(false);
+  const [progressData, setProgressData] = useState<any>(null);
+  const [isLoadingProgress, setIsLoadingProgress] = useState<boolean>(false);
 
   useEffect(() => {
     // Fetch user data from local storage or API
@@ -53,6 +59,61 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
     fetchUserData();
   }, []);
+
+  // Fetch current learning progress from UserProgress API
+  useEffect(() => {
+    const fetchProgress = async () => {
+      if (!activeProgressType) {
+        setProgressData(null);
+        return;
+      }
+
+      setIsLoadingProgress(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get(
+          `/api/progress/${activeProgressType}/current`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+
+        if (response.data.success && response.data.data) {
+          setProgressData(response.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch progress data:', error);
+        // Silent fail - progress section will show fallback message
+      } finally {
+        setIsLoadingProgress(false);
+      }
+    };
+
+    fetchProgress();
+  }, [activeProgressType]);
+
+  const handleSessionToggle = async (type: 'main' | 'sub') => {
+    if (!userData?._id || isUpdatingSession || type === activeProgressType) return;
+
+    setIsUpdatingSession(true);
+    try {
+      await updateActiveProgressType(userData._id, type);
+      dispatch(setActiveProgressType(type));
+
+      // Update localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        parsedUser.activeProgressType = type;
+        localStorage.setItem('user', JSON.stringify(parsedUser));
+      }
+    } catch (error) {
+      console.error('Failed to update session type:', error);
+      setError('세션 전환에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsUpdatingSession(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -96,19 +157,45 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
       </ProfileHeader>
 
       <LearningSection>
+        <SectionTitle>Learning Session</SectionTitle>
+        <SessionToggleContainer>
+          <SessionButton
+            active={activeProgressType === 'main'}
+            onClick={() => handleSessionToggle('main')}
+            disabled={isUpdatingSession}
+          >
+            Main
+          </SessionButton>
+          <SessionButton
+            active={activeProgressType === 'sub'}
+            onClick={() => handleSessionToggle('sub')}
+            disabled={isUpdatingSession}
+          >
+            Sub
+          </SessionButton>
+        </SessionToggleContainer>
+
         <SectionTitle>Current Learning</SectionTitle>
-        <CurrentProgress>
-          <ProgressItem>
-            <ProgressLabel>Level</ProgressLabel>
-            <ProgressValue>{user.learningCheckpoint.level}</ProgressValue>
-          </ProgressItem>
-          <ProgressItem>
-            <ProgressLabel>Steps</ProgressLabel>
-            <ProgressValue>
-              {user.learningCheckpoint.step.start} - {user.learningCheckpoint.step.end}
-            </ProgressValue>
-          </ProgressItem>
-        </CurrentProgress>
+        {isLoadingProgress ? (
+          <LoadingProgress>Loading progress...</LoadingProgress>
+        ) : progressData ? (
+          <CurrentProgress>
+            <ProgressItem>
+              <ProgressLabel>Level</ProgressLabel>
+              <ProgressValue>{progressData.current_level || 'N/A'}</ProgressValue>
+            </ProgressItem>
+            <ProgressItem>
+              <ProgressLabel>Steps</ProgressLabel>
+              <ProgressValue>
+                {progressData.steps ? `${progressData.steps.start} - ${progressData.steps.end}` : 'N/A'}
+              </ProgressValue>
+            </ProgressItem>
+          </CurrentProgress>
+        ) : (
+          <NoProgressMessage>
+            No active learning session. Start by selecting a level!
+          </NoProgressMessage>
+        )}
 
         <ButtonGroup>
           <ActionButton onClick={() => navigate('/select-level')}>
@@ -265,8 +352,54 @@ const ActionButton = styled(DefaultButton)`
 const LogoutButton = styled(DefaultButton)`
   background-color: #f8f9fa;
   color: #d32f2f;
-  
+
   &:hover {
     background-color: #f1f1f1;
   }
+`;
+
+const SessionToggleContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+`;
+
+interface SessionButtonProps {
+  active: boolean;
+}
+
+const SessionButton = styled.button<SessionButtonProps>`
+  flex: 1;
+  padding: 0.8rem 1.5rem;
+  border: 2px solid ${props => props.active ? '#3498db' : '#ddd'};
+  background-color: ${props => props.active ? '#3498db' : 'white'};
+  color: ${props => props.active ? 'white' : '#666'};
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: ${props => props.active ? 'bold' : 'normal'};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #3498db;
+    background-color: ${props => props.active ? '#2980b9' : '#e8f4f8'};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+const LoadingProgress = styled.div`
+  padding: 1rem;
+  color: #7f8c8d;
+  font-style: italic;
+`;
+
+const NoProgressMessage = styled.div`
+  padding: 1rem;
+  color: #95a5a6;
+  font-style: italic;
+  margin-bottom: 1.5rem;
 `;

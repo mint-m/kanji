@@ -6,15 +6,7 @@
  */
 
 import mongoose from 'mongoose';
-import {
-  LearningLevel,
-  ProgressType,
-  StepRange,
-  SessionStats,
-  DeckGenerationOptions,
-  DifficultyRating,
-  ObjectId,
-} from '../common';
+import { LearningLevel, ProgressType, StepRange, SessionStats, DeckGenerationOptions, ObjectId } from '../common';
 
 // ============================================================================
 // Generic API Response Wrapper
@@ -86,7 +78,6 @@ export interface WordCompletionResult {
   wordId: ObjectId;
   isCorrect: boolean;
   timeSpent?: number;
-  difficulty?: DifficultyRating;
   previousAttempts: number;
   newMasteryLevel?: string;
   shouldRepeat: boolean;
@@ -155,7 +146,6 @@ export interface DeckWord {
     correctCount: number;
     successRate: number;
     timeSpent: number;
-    difficultyRating: number;
   };
 
   recommendedAction?: 'continue' | 'review' | 'intensive_practice' | 'skip';
@@ -174,7 +164,6 @@ export interface DeckStatsResponse {
   averageSuccessRate: number;
   averageTimePerWord: number;
   masteryDistribution: Record<string, number>;
-  difficultyDistribution: Record<string, number>;
   recentActivity: Array<{
     date: Date;
     wordsStudied: number;

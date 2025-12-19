@@ -1,11 +1,7 @@
 import mongoose from 'mongoose';
 import Word from '../models/word';
 import { LearningLevel, StepRange, ProgressType } from '../types/common';
-import {
-  WindowConfig,
-  DeckWindow,
-  WindowCheckpoint,
-} from '../types/services/slidingWindow';
+import { WindowConfig, DeckWindow, WindowCheckpoint } from '../types/services/slidingWindow';
 
 // Re-export types for backwards compatibility
 export type { WindowConfig, DeckWindow, WindowCheckpoint };
@@ -234,10 +230,7 @@ export class SlidingWindowService {
     }
 
     // Combine remaining words
-    const remainingZone = [
-      ...remainingBookmarks,
-      ...shuffledNonBookmarks.slice(nonBookmarkIdx),
-    ];
+    const remainingZone = [...remainingBookmarks, ...shuffledNonBookmarks.slice(nonBookmarkIdx)];
 
     // Final ordered deck
     const orderedWordIds = [...priorityZone, ...this.shuffleArray(remainingZone)];

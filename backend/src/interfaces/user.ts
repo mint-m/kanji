@@ -53,7 +53,7 @@ export interface UserDocument extends Document {
   type: UserAuthType;
   email: string;
   name: string;
-  learningCheckpoint?: LearningCheckpoint; // Legacy field (for migration)
+  activeProgressType: 'main' | 'sub' | null; // Active learning session type
   preferences: UserPreferences;
   profile: UserProfile;
   statistics: UserStats;
@@ -69,7 +69,6 @@ export interface UserDocument extends Document {
   resetStreak(): void;
   updateStudyStats(timeSpent: number, wordsStudied: number): void;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
-  hasLearningCheckpoint(): boolean;
   getPreferredStudyTime(): string | null;
   canReceiveReminders(): boolean;
   isNewUser(): boolean;
@@ -101,8 +100,6 @@ export interface UserModel extends Model<UserDocument> {
   updateProfile(userId: mongoose.Types.ObjectId, profile: Partial<UserProfile>): Promise<UserDocument | null>;
 
   // Statistics and analytics
-  getUsersWithLearningCheckpoint(): Promise<UserDocument[]>;
-
   getActiveUsers(days?: number): Promise<UserDocument[]>;
 
   getUserStats(userId: mongoose.Types.ObjectId): Promise<UserStats | null>;
@@ -117,11 +114,6 @@ export interface UserModel extends Model<UserDocument> {
   updateUserStatistics(userId: mongoose.Types.ObjectId): Promise<void>;
 
   sendStudyReminders(): Promise<{ sent: number; errors: any[] }>;
-
-  // Migration utilities
-  migrateUsersWithCheckpoints(): Promise<{ migrated: number; errors: any[] }>;
-
-  getUsersNeedingMigration(): Promise<UserDocument[]>;
 }
 
 export default UserModel;

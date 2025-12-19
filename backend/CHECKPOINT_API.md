@@ -23,8 +23,8 @@
   "progressType": "main",  // "main" or "sub" (default: "main")
   "level": "N5",           // "N5", "N4", "N3", "N2", or "N1"
   "steps": {
-    "start": 1,            // 1-10
-    "end": 3               // 1-10
+    "start": 1,            // positive integer, minimum 1 (default: 1)
+    "end": 3               // positive integer, start <= end (default: 3)
   },
   "currentIndex": 0        // optional, current word index in deck
 }

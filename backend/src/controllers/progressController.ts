@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import UserProgress from '../models/userProgress';
+import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ProgressType, LearningLevel, StepRange } from '../types';
-
 // Interface for learning statistics aggregate result
 interface LearningStatsItem {
   _id: ProgressType;
@@ -32,21 +31,14 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    let progress = await UserProgress.findByUserAndType(userId, type);
+    const progress = await UserCheckpoint.findByUserAndType(userId, type);
 
-    // Try to restore from checkpoint if no active session exists
     if (!progress) {
-      const restored = await UserProgress.restoreFromCheckpoint(userId, type);
-      if (restored) {
-        progress = restored;
-        console.log(`Restored session from checkpoint for user ${userId}, type ${type}`);
-      } else {
-        res.status(404).json({
-          success: false,
-          message: `No ${type} progress found. Create a new session first.`,
-        });
-        return;
-      }
+      res.status(404).json({
+        success: false,
+        message: `No ${type} progress found. Create a new session first.`,
+      });
+      return;
     }
 
     // Populate current word details
@@ -85,41 +77,8 @@ export const createSession = async (req: AuthenticatedRequest, res: Response): P
     };
     const userId = req.user!._id;
 
-    // Validate input
-    if (!['main', 'sub'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid progress type. Must be "main" or "sub"',
-      });
-      return;
-    }
-
-    if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid level. Must be N5, N4, N3, N2, or N1',
-      });
-      return;
-    }
-
-    if (!steps.start || !steps.end || steps.start > steps.end || steps.start < 1 || steps.end > 10) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid step range. Steps must be between 1-10 with start <= end',
-      });
-      return;
-    }
-
     // Check if session already exists
-    let existingProgress = await UserProgress.findByUserAndType(userId, type);
-
-    // Try to restore from checkpoint if no active session exists
-    if (!existingProgress) {
-      existingProgress = await UserProgress.restoreFromCheckpoint(userId, type);
-      if (existingProgress) {
-        console.log(`Restored existing session from checkpoint for user ${userId}, type ${type}`);
-      }
-    }
+    const existingProgress = await UserCheckpoint.findByUserAndType(userId, type);
 
     if (existingProgress) {
       res.status(409).json({
@@ -143,7 +102,7 @@ export const createSession = async (req: AuthenticatedRequest, res: Response): P
     }
 
     // Create new session
-    const newSession = await UserProgress.createNewSession(userId, type, level, steps);
+    const newSession = await UserCheckpoint.createNewSession(userId, type, level, steps);
     await newSession.populate('shuffled_order');
 
     res.status(201).json({
@@ -177,7 +136,7 @@ export const updateWordIndex = async (req: AuthenticatedRequest, res: Response):
     };
     const userId = req.user!._id;
 
-    const progress = await UserProgress.findByUserAndType(userId, type);
+    const progress = await UserCheckpoint.findByUserAndType(userId, type);
     if (!progress) {
       res.status(404).json({
         success: false,
@@ -246,7 +205,7 @@ export const resetSession = async (req: AuthenticatedRequest, res: Response): Pr
     const { type } = req.params as { type: ProgressType };
     const userId = req.user!._id;
 
-    const progress = await UserProgress.findByUserAndType(userId, type);
+    const progress = await UserCheckpoint.findByUserAndType(userId, type);
     if (!progress) {
       res.status(404).json({
         success: false,
@@ -284,7 +243,7 @@ export const deleteSession = async (req: AuthenticatedRequest, res: Response): P
     const { type } = req.params as { type: ProgressType };
     const userId = req.user!._id;
 
-    const result = await UserProgress.deleteOne({
+    const result = await UserCheckpoint.deleteOne({
       user_id: userId,
       progress_type: type,
     });
@@ -319,7 +278,7 @@ export const generateNextWindow = async (req: AuthenticatedRequest, res: Respons
     const { type } = req.params as { type: ProgressType };
     const userId = req.user!._id;
 
-    const progress = await UserProgress.findByUserAndType(userId, type);
+    const progress = await UserCheckpoint.findByUserAndType(userId, type);
     if (!progress) {
       res.status(404).json({
         success: false,
@@ -374,7 +333,7 @@ export const generateNextWindow = async (req: AuthenticatedRequest, res: Respons
 export const getAllSessions = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!._id;
-    const sessions = await UserProgress.getActiveProgressForUser(userId);
+    const sessions = await UserCheckpoint.getActiveProgressForUser(userId);
 
     const sessionData = await Promise.all(
       sessions.map(async (session) => ({
@@ -412,7 +371,7 @@ export const getAllSessions = async (req: AuthenticatedRequest, res: Response): 
 export const getLearningStats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!._id;
-    const stats: LearningStatsItem[] = await UserProgress.getUserLearningStats(userId);
+    const stats: LearningStatsItem[] = await UserCheckpoint.getUserLearningStats(userId);
 
     // Get overall word progress statistics
     const wordStats = await Promise.all([
@@ -475,8 +434,8 @@ export const switchSessionType = async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    const fromSession = await UserProgress.findByUserAndType(userId, fromType);
-    const toSession = await UserProgress.findByUserAndType(userId, toType);
+    const fromSession = await UserCheckpoint.findByUserAndType(userId, fromType);
+    const toSession = await UserCheckpoint.findByUserAndType(userId, toType);
 
     res.status(200).json({
       success: true,
@@ -518,6 +477,88 @@ export const switchSessionType = async (req: AuthenticatedRequest, res: Response
   }
 };
 
+/**
+ * Update checkpoint for current session
+ */
+export const updateCheckpoint = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!._id;
+    const { progressCheckpoint } = req.body as {
+      progressCheckpoint: {
+        progress_type: ProgressType;
+        level?: LearningLevel;
+        steps?: StepRange;
+        currentWordIndex?: number;
+      };
+    };
+
+    if (!progressCheckpoint) {
+      res.status(400).json({
+        success: false,
+        message: 'Progress checkpoint data is required',
+      });
+      return;
+    }
+
+    const progressType = progressCheckpoint.progress_type || 'main';
+
+    // Find existing session
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
+
+    if (!progress) {
+      res.status(404).json({
+        success: false,
+        message: `No ${progressType} session found. Create a session first.`,
+      });
+      return;
+    }
+
+    // Update current index if provided
+    if (typeof progressCheckpoint.currentWordIndex === 'number') {
+      if (
+        progressCheckpoint.currentWordIndex >= 0 &&
+        progressCheckpoint.currentWordIndex < progress.shuffled_order.length
+      ) {
+        progress.current_index = progressCheckpoint.currentWordIndex;
+      }
+    }
+
+    // Update level and steps if provided
+    if (progressCheckpoint.level) {
+      progress.current_level = progressCheckpoint.level;
+    }
+    if (progressCheckpoint.steps) {
+      progress.steps = progressCheckpoint.steps;
+    }
+
+    // Save changes
+    // Save changes
+    await progress.save();
+
+    // Update checkpoint timestamp
+    await progress.updateCheckpoint();
+
+    res.status(200).json({
+      success: true,
+      message: 'Checkpoint updated successfully',
+      data: {
+        progress_type: progress.progress_type,
+        current_level: progress.current_level,
+        steps: progress.steps,
+        current_index: progress.current_index,
+        updated_at: progress.updated_at,
+      },
+    });
+  } catch (error) {
+    console.error('Update checkpoint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update checkpoint',
+      error: process.env.NODE_ENV === 'development' ? error : undefined,
+    });
+  }
+};
+
 export default {
   getUserProgress,
   createSession,
@@ -528,4 +569,5 @@ export default {
   getAllSessions,
   getLearningStats,
   switchSessionType,
+  updateCheckpoint,
 };

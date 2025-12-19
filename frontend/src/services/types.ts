@@ -26,7 +26,6 @@ export interface Word {
   parts: string[]; // 품사
 }
 
-// 사용자 진행 상황 (UserProgress)
 export interface UserProgress {
   _id: string;
   user_id: string;
@@ -50,7 +49,6 @@ export interface WordProgress {
   try_count: number;
   correct_count: number;
   time_spent_total: number;
-  difficulty_rating: number;
   study_streak: number;
   last_studied_at?: string;
   created_at: string;
@@ -119,7 +117,6 @@ export interface DeckWord extends Word {
     correctCount: number;
     successRate: number;
     timeSpent: number;
-    difficultyRating: number;
   };
   recommendedAction?: 'continue' | 'review' | 'intensive_practice' | 'skip';
 }
@@ -129,7 +126,6 @@ export interface CompleteWordRequest {
   wordId: string;
   isCorrect: boolean;
   timeSpent?: number;
-  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 // 단어 완료 응답
@@ -138,7 +134,6 @@ export interface CompleteWordResponse {
     wordId: string;
     isCorrect: boolean;
     timeSpent?: number;
-    difficulty?: string;
     previousAttempts: number;
     newMasteryLevel?: string;
     shouldRepeat: boolean;

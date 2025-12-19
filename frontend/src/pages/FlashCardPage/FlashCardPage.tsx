@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import deckService from 'services/deckService';
 import { DeckWord } from 'services/types';
 import Kanji from 'components/Kanji';
@@ -6,11 +7,14 @@ import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
 import styled from 'styled-components';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
+import { RootState } from 'store';
 
 const FlashCardPage: React.FC = () => {
+  const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const [deck, setDeck] = useState<DeckWord[] | null>(null);
   const [level, setLevel] = useState<string>('');
   const [steps, setSteps] = useState<{ start: number; end: number } | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,14 +24,16 @@ const FlashCardPage: React.FC = () => {
     setError(null);
 
     try {
-      // 새 API로 현재 덱 조회
-      const response = await deckService.getCurrentDeck('main');
+      // activeProgressType이 null이면 'main'을 기본값으로 사용
+      const progressType = activeProgressType || 'main';
+      const response = await deckService.getCurrentDeck(progressType);
 
       if (response.success && response.data) {
-        const { words, level: deckLevel, steps: deckSteps } = response.data;
+        const { words, level: deckLevel, steps: deckSteps, currentIndex: apiCurrentIndex } = response.data;
         setDeck(words);
         setLevel(deckLevel);
         setSteps(deckSteps);
+        setCurrentIndex(apiCurrentIndex);
       } else {
         // API 응답이 실패한 경우
         setError(response.message || '단어장을 불러오는데 실패했습니다.');
@@ -46,9 +52,9 @@ const FlashCardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeProgressType]);
 
-  // 컴포넌트가 마운트될 때 데이터 불러오기
+  // 컴포넌트가 마운트될 때 또는 activeProgressType이 변경될 때 데이터 불러오기
   useEffect(() => {
     fetchDeck();
   }, [fetchDeck]);
@@ -61,7 +67,13 @@ const FlashCardPage: React.FC = () => {
 
     return (
       <>
-        {deck && <FlashCardContainer deck={deck} />}
+        {deck && (
+          <FlashCardContainer
+            deck={deck}
+            progressType={activeProgressType || 'main'}
+            initialIndex={currentIndex}
+          />
+        )}
         {isLoading && <SkeletonFlashCard />}
       </>
     );
