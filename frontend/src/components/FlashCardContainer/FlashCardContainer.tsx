@@ -94,7 +94,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
                 if (!token) return Promise.resolve();
 
                 return axios.post(
-                    `/api/progress/${progressType}/complete-word`,
+                    `/api/users/me/progress/${progressType}/complete-word`,
                     {
                         wordId,
                         isCorrect: know,
@@ -142,7 +142,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
                 if (!token) return;
 
                 await axios.put(
-                    `/api/progress/${progressType}/reset`,
+                    `/api/users/me/progress/${progressType}/reset`,
                     {},
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
