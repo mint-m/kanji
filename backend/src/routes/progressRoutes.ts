@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import progressController from '../controllers/progressController';
 import deckController from '../controllers/deckController';
-import { authenticateUser } from '../middleware/auth';
 import { validateProgressRequest, validateDeckRequest } from '../middleware/validation';
 
 const router = Router();
 
-// All progress routes require authentication
-router.use(authenticateUser);
+// Authentication is applied in parent router (userRoutes.ts)
+// No need to apply authenticateUser here again
 
 /**
  * @route   GET /api/progress

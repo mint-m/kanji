@@ -10,11 +10,11 @@ import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/err
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    // JWT에서 userId 추출
+    const userId = req.user?._id;
 
-    // Check if user is authorized to view stats
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only view your own statistics'));
+    if (!userId) {
+      return next(new ForbiddenError('Authentication required'));
     }
 
     // Check if user exists
@@ -23,7 +23,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const userObjectId = userId as mongoose.Types.ObjectId;
 
     // Get active UserCheckpoint sessions (main and sub)
     const mainProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'main');

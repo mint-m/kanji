@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import bookmarkController from '../controllers/bookmarkController';
-import { authenticateUser } from '../middleware/auth';
 import { validateWordProgressRequest, validatePagination } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
 
 const router = Router();
 
-// All bookmark routes require authentication
-router.use(authenticateUser);
+// Authentication is applied in parent router (userRoutes.ts)
+// No need to apply authenticateUser here again
 
 /**
  * @route   POST /api/bookmarks/toggle

@@ -8,12 +8,11 @@ import { ProgressType, LearningLevel } from "../interfaces/userCheckpoint";
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    // JWT에서 userId 추출 (authenticateJwt 미들웨어에서 검증됨)
+    const userId = req.user?._id;
 
-    // 인증된 사용자와 요청된 userId가 일치하는지 확인
-    if (req.user?._id.toString() !== userId) {
-      // need check
-      return next(new ForbiddenError('You can only view your own profile'));
+    if (!userId) {
+      return next(new ForbiddenError('Authentication required'));
     }
 
     const user = await User.findById(userId);
@@ -31,11 +30,12 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    // JWT에서 userId 추출
+    const userId = req.user?._id;
     const { activeProgressType } = req.body;
 
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only update your own progress type'));
+    if (!userId) {
+      return next(new ForbiddenError('Authentication required'));
     }
 
     const user = await User.findByIdAndUpdate(
@@ -63,7 +63,8 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
 // 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    // JWT에서 userId 추출
+    const userId = req.user?._id;
     const {
       checkpoint,
       wordIndex,
@@ -73,12 +74,11 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       currentIndex
     } = req.body;
 
-    // 인증된 사용자와 요청된 userId가 일치하는지 확인
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only update your own checkpoint'));
+    if (!userId) {
+      return next(new ForbiddenError('Authentication required'));
     }
 
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const userObjectId = userId as mongoose.Types.ObjectId;
 
     // 사용자 확인
     const existingUser = await User.findById(userObjectId);
