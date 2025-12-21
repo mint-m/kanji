@@ -74,7 +74,7 @@ const progressService = {
    * 모든 활성 세션 조회
    */
   async getAllSessions(): Promise<ApiResponse<{ sessions: any[]; totalSessions: number }>> {
-    return api.get('/api/progress');
+    return api.get('/api/users/me/progress');
   },
 
   /**
@@ -103,7 +103,7 @@ const progressService = {
    * ```
    */
   async createSession(data: CreateSessionRequest): Promise<ApiResponse<CreateSessionResponse>> {
-    return api.post('/api/progress', data);
+    return api.post('/api/users/me/progress', data);
   },
 
   /**
@@ -144,14 +144,14 @@ const progressService = {
    * Main/Sub 세션 전환
    */
   async switchSessionType(fromType: ProgressType, toType: ProgressType): Promise<ApiResponse<any>> {
-    return api.post('/api/progress/switch', { fromType, toType });
+    return api.post('/api/users/me/progress/switch', { fromType, toType });
   },
 
   /**
    * 학습 통계 조회
    */
   async getLearningStats(): Promise<ApiResponse<LearningStatsResponse>> {
-    return api.get('/api/progress/stats');
+    return api.get('/api/users/me/progress/stats');
   },
 };
 

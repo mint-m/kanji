@@ -52,7 +52,7 @@ const bookmarkService = {
     progressType?: ProgressType,
     notes?: string
   ): Promise<ApiResponse<Bookmark>> {
-    return api.post('/api/bookmarks', {
+    return api.post('/api/users/me/bookmarks', {
       wordId,
       progressType,
       notes,
@@ -75,7 +75,7 @@ const bookmarkService = {
    * @param progressType - 세션 타입 (optional)
    */
   async toggleBookmark(wordId: string, progressType?: ProgressType): Promise<ApiResponse<Bookmark>> {
-    return api.post('/api/bookmarks/toggle', {
+    return api.post('/api/users/me/bookmarks/toggle', {
       wordId,
       progressType,
     });
@@ -104,7 +104,7 @@ const bookmarkService = {
     if (options?.limit) params.append('limit', options.limit.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/api/bookmarks?${queryString}` : '/api/bookmarks';
+    const url = queryString ? `/api/bookmarks?${queryString}` : '/api/users/me/bookmarks';
 
     return api.get(url);
   },
@@ -126,7 +126,7 @@ const bookmarkService = {
    * - 최근 북마크 단어
    */
   async getBookmarkStats(): Promise<ApiResponse<any>> {
-    return api.get('/api/bookmarks/stats');
+    return api.get('/api/users/me/bookmarks/stats');
   },
 
   /**
@@ -145,7 +145,7 @@ const bookmarkService = {
    * @param wordIds - 단어 ID 배열
    */
   async bulkRemoveBookmarks(wordIds: string[]): Promise<ApiResponse<any>> {
-    return api.post('/api/bookmarks/bulk-remove', { wordIds });
+    return api.post('/api/users/me/bookmarks/bulk-remove', { wordIds });
   },
 };
 

@@ -93,11 +93,11 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   }, [activeProgressType]);
 
   const handleSessionToggle = async (type: 'main' | 'sub') => {
-    if (!userData?._id || isUpdatingSession || type === activeProgressType) return;
+    if (isUpdatingSession || type === activeProgressType) return;
 
     setIsUpdatingSession(true);
     try {
-      await updateActiveProgressType(userData._id, type);
+      await updateActiveProgressType(type);
       dispatch(setActiveProgressType(type));
 
       // Update localStorage
