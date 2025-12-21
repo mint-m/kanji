@@ -66,7 +66,7 @@ const deckService = {
    * ```
    */
   async generateDeck(data: GenerateDeckRequest): Promise<ApiResponse<Deck>> {
-    return api.post('/api/progress/generate', data);
+    return api.post('/api/users/me/progress/generate', data);
   },
 
   /**
