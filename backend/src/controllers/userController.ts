@@ -12,7 +12,7 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     const userId = req.user?._id;
 
     if (!userId) {
-      return next(new ForbiddenError('Authentication required'));
+      return next(new UnauthorizedError('Authentication required'));
     }
 
     const user = await User.findById(userId);
