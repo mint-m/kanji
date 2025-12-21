@@ -43,7 +43,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
             throw new Error('Not authenticated');
           }
 
-          const response = await axios.get('/auth/profile', {
+          const response = await axios.get('/api/auth/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
 
@@ -209,7 +209,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       <StatsSection>
         <SectionTitle>Learning Progress</SectionTitle>
-        <UserProgress userId={userData._id} />
+        <UserProgress />
       </StatsSection>
 
       <AccountSection>

@@ -29,11 +29,9 @@ interface UserStats {
   sessions: SessionProgress[];
 }
 
-interface UserProgressProps {
-  userId?: string;
-}
+interface UserProgressProps {}
 
-const UserProgress: React.FC<UserProgressProps> = ({ userId }) => {
+const UserProgress: React.FC<UserProgressProps> = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,20 +44,17 @@ const UserProgress: React.FC<UserProgressProps> = ({ userId }) => {
       setError(null);
 
       try {
-        // userId가 props로 전달되지 않은 경우 로컬 스토리지에서 가져옴
-        const id = userId || JSON.parse(localStorage.getItem('user') || '{}')._id;
+        const token = localStorage.getItem('token');
 
-        if (!id) {
+        if (!token) {
           setError('사용자 인증 정보가 없습니다');
           setIsLoading(false);
           return;
         }
 
-        const token = localStorage.getItem('token');
-
         // 사용자 통계 API 호출
         const response = await axios.get<UserStats>(
-          `/api/users/${id}/stats`,
+          `/api/users/me/stats`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
 
@@ -73,7 +68,7 @@ const UserProgress: React.FC<UserProgressProps> = ({ userId }) => {
     };
 
     fetchUserStats();
-  }, [userId, user.isLoggin]);
+  }, [user.isLoggin]);
 
   // 로딩 중일 때 표시할 컴포넌트
   if (isLoading) {

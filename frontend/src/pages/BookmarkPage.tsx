@@ -7,7 +7,7 @@ import { LearningLevel, ProgressType } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 
-interface BookmarkPageProps {}
+interface BookmarkPageProps { }
 
 type SortOption = 'recent' | 'level' | 'step';
 
@@ -48,12 +48,21 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.getBookmarks(options);
 
       if (response.success && response.data) {
-        setBookmarks(response.data);
+        // 배열인지 검증
+        if (Array.isArray(response.data)) {
+          setBookmarks(response.data);
+        } else {
+          console.error('Invalid response format: data is not an array', response.data);
+          setBookmarks([]);
+          setError('잘못된 응답 형식입니다.');
+        }
       } else {
+        setBookmarks([]);
         setError('Failed to load bookmarks');
       }
     } catch (err) {
       console.error('Error fetching bookmarks:', err);
+      setBookmarks([]); // 에러 시 빈 배열로 초기화
       setError('Failed to load bookmarks');
     } finally {
       setIsLoading(false);
@@ -211,7 +220,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       )}
 
       {/* Bookmarks List */}
-      {bookmarks.length === 0 ? (
+      {!Array.isArray(bookmarks) || bookmarks.length === 0 ? (
         <EmptyState>
           <h2>북마크가 없습니다</h2>
           <p>학습 중 어려운 단어를 북마크로 저장하세요.</p>

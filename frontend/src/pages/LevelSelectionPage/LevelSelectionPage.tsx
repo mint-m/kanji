@@ -92,7 +92,7 @@ const LevelSelectionPage: React.FC = () => {
 
         // UserProgress 생성/업데이트
         await axios.patch(
-          `/api/users/${user._id}/checkpoint`,
+          `/api/users/me/checkpoint`,
           {
             progressType: activeProgressType || 'main',
             level: selectedLevel,

@@ -65,7 +65,7 @@ const bookmarkService = {
    * @param wordId - 단어 ID
    */
   async removeBookmark(wordId: string): Promise<ApiResponse<any>> {
-    return api.delete(`/api/bookmarks/${wordId}`);
+    return api.delete(`/api/users/me/bookmarks/${wordId}`);
   },
 
   /**
@@ -104,7 +104,7 @@ const bookmarkService = {
     if (options?.limit) params.append('limit', options.limit.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/api/bookmarks?${queryString}` : '/api/users/me/bookmarks';
+    const url = queryString ? `/api/users/me/bookmarks?${queryString}` : '/api/users/me/bookmarks';
 
     return api.get(url);
   },
@@ -115,7 +115,7 @@ const bookmarkService = {
    * @param wordId - 단어 ID
    */
   async getBookmarkStatus(wordId: string): Promise<ApiResponse<{ isBookmarked: boolean; bookmark?: Bookmark }>> {
-    return api.get(`/api/bookmarks/${wordId}/status`);
+    return api.get(`/api/users/me/bookmarks/${wordId}/status`);
   },
 
   /**
@@ -136,7 +136,7 @@ const bookmarkService = {
    * @param notes - 메모 내용
    */
   async updateBookmarkNotes(wordId: string, notes: string): Promise<ApiResponse<Bookmark>> {
-    return api.put(`/api/bookmarks/${wordId}/notes`, { notes });
+    return api.put(`/api/users/me/bookmarks/${wordId}/notes`, { notes });
   },
 
   /**
