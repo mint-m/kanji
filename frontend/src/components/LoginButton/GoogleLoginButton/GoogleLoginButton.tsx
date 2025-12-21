@@ -93,8 +93,6 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
           email: loginResponse.user.email,
           name: loginResponse.user.name,
           activeProgressType: loginResponse.user.activeProgressType || null,
-          learningStats: [],
-          learningStreak: 0,
         }));
       }
 
