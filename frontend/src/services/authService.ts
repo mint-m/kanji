@@ -116,7 +116,7 @@ export const exchangeCodeForToken = async (
   redirectUri: string = GOOGLE_REDIRECT_URI
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const response = await axios.post(`auth/google/access-token`, {
+    const response = await axios.post(`/api/auth/google/access-token`, {
       code,
       redirect_uri: redirectUri,
     });
@@ -140,7 +140,7 @@ export const exchangeCodeForToken = async (
 export const fetchUserData = async (token: string): Promise<UserProfile & { learningStats?: any }> => {
   try {
     // 상세 프로필 정보 가져오기 (이미 통계 정보 포함)
-    const profileResponse = await axios.get('auth/profile', {
+    const profileResponse = await axios.get('/api/auth/profile', {
       headers: getAuthHeaders(token),
     });
 
@@ -187,7 +187,7 @@ export const loginWithGoogleToken = async (accessToken: string): Promise<LoginRe
 
 export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
   try {
-    const response = await axios.get('auth/profile', {
+    const response = await axios.get('/api/auth/profile', {
       headers: getAuthHeaders(token),
     });
 

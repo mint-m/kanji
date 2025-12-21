@@ -74,7 +74,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
         if (!token) return;
 
         const response = await axios.get(
-          `/api/progress/${activeProgressType}/current`,
+          `/api/users/me/progress/${activeProgressType}/current`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
 
