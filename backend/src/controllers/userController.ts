@@ -78,7 +78,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       return next(new ForbiddenError('Authentication required'));
     }
 
-    const userObjectId = userId as mongoose.Types.ObjectId;
+    const userObjectId = userId;
 
     // 사용자 확인
     const existingUser = await User.findById(userObjectId);
