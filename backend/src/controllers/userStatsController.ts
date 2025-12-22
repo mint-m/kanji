@@ -23,7 +23,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    const userObjectId = userId as mongoose.Types.ObjectId;
+    const userObjectId = userId;
 
     // Get active UserCheckpoint sessions (main and sub)
     const mainProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'main');
