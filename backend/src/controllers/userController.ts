@@ -2,7 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
-import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
+import {
+  NotFoundError,
+  BadRequestError,
+  InternalServerError,
+  ForbiddenError,
+  UnauthorizedError,
+} from '../utils/errors';
 import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
 
 // 사용자 프로필 조회
