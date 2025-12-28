@@ -1,19 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
-import { RootState } from 'store';
 import bookmarkService, { Bookmark, GetBookmarksOptions } from 'services/bookmarkService';
 import { LearningLevel, ProgressType } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
-import DefaultButton from 'components/CommonStyled/DefaultButton';
 
 interface BookmarkPageProps { }
 
 type SortOption = 'recent' | 'level' | 'step';
 
 const BookmarkPage: React.FC<BookmarkPageProps> = () => {
-  const user = useSelector((state: RootState) => state.user);
-
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -220,7 +215,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       )}
 
       {/* Bookmarks List */}
-      {!Array.isArray(bookmarks) || bookmarks.length === 0 ? (
+      {bookmarks.length === 0 ? (
         <EmptyState>
           <h2>북마크가 없습니다</h2>
           <p>학습 중 어려운 단어를 북마크로 저장하세요.</p>

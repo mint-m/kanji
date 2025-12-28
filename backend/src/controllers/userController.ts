@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserCheckpoint from "../models/userCheckpoint";
+import UserCheckpoint from '../models/userCheckpoint';
 import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
-import { ProgressType, LearningLevel } from "../interfaces/userCheckpoint";
+import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -38,11 +38,7 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
       return next(new ForbiddenError('Authentication required'));
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { activeProgressType },
-      { new: true }
-    );
+    const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
 
     if (!user) {
       return next(new NotFoundError('User not found'));
@@ -65,14 +61,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
   try {
     // JWT에서 userId 추출
     const userId = req.user?._id;
-    const {
-      checkpoint,
-      wordIndex,
-      progressType = 'main',
-      level,
-      steps,
-      currentIndex
-    } = req.body;
+    const { checkpoint, wordIndex, progressType = 'main', level, steps, currentIndex } = req.body;
 
     if (!userId) {
       return next(new ForbiddenError('Authentication required'));
@@ -146,7 +135,6 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
     } else {
       return next(new BadRequestError('Either (level + steps) or checkpoint data is required'));
     }
-
   } catch (error) {
     console.error('Update checkpoint error:', error);
     next(new InternalServerError('Failed to update checkpoint'));
