@@ -2,8 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserCheckpoint from "../models/userCheckpoint";
-import { ProgressType } from "../interfaces/userCheckpoint";
+import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/errors';
 
@@ -38,9 +37,8 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       user_id: userObjectId,
       is_completed: true,
     });
-    const overallProgressPercentage = totalWordsInDatabase > 0
-      ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100)
-      : 0;
+    const overallProgressPercentage =
+      totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;
 
     // Format response
     const response: any = {
