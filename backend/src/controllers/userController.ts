@@ -70,7 +70,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
     const { checkpoint, wordIndex, progressType = 'main', level, steps, currentIndex } = req.body;
 
     if (!userId) {
-      return next(new ForbiddenError('Authentication required'));
+      return next(new UnauthorizedError('Authentication required'));
     }
 
     const userObjectId = userId;
