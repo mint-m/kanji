@@ -782,14 +782,13 @@ wordProgressSchema.statics.predictOptimalReviewTime = async function (
 
 // Bookmark analytics and statistics
 wordProgressSchema.statics.getBookmarkAnalytics = async function (
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType
+  userId: mongoose.Types.ObjectId
 ): Promise<any> {
+  // progressType 필터 제거, 전체 북마크 통계 조회
   const pipeline = [
     {
       $match: {
         user_id: userId,
-        progress_type: progressType,
         is_bookmarked: true,
       },
     },

@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import bookmarkService, { Bookmark, GetBookmarksOptions } from 'services/bookmarkService';
-import { LearningLevel, ProgressType } from 'services/types';
+import { LearningLevel } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 
 interface BookmarkPageProps { }
+interface BookmarkStats {
+  totalBookmarks: number;
+  completedBookmarks: number;
+}
 
-type SortOption = 'recent' | 'level' | 'step';
+type SortOption = 'recent' | 'level';
 
 const BookmarkPage: React.FC<BookmarkPageProps> = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -15,11 +19,10 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
 
   // Filter & Sort states
   const [selectedLevel, setSelectedLevel] = useState<LearningLevel | 'all'>('all');
-  const [selectedProgressType, setSelectedProgressType] = useState<ProgressType>('main');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   // Statistics
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<BookmarkStats | null>(null);
 
   // Edit mode
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
@@ -32,7 +35,6 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
 
     try {
       const options: GetBookmarksOptions = {
-        progressType: selectedProgressType,
         sortBy,
       };
 
@@ -43,7 +45,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.getBookmarks(options);
 
       if (response.success && response.data) {
-        // 배열인지 검증
+        // Backend에서 배열 직접 반환
         if (Array.isArray(response.data)) {
           setBookmarks(response.data);
         } else {
@@ -78,8 +80,11 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
 
   useEffect(() => {
     fetchBookmarks();
+  }, [selectedLevel, sortBy]);
+
+  useEffect(() => {
     fetchStats();
-  }, [selectedLevel, selectedProgressType, sortBy]);
+  }, []);
 
   // Handle bookmark removal
   const handleRemoveBookmark = async (wordId: string) => {
@@ -90,7 +95,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
     try {
       const response = await bookmarkService.removeBookmark(wordId);
       if (response.success) {
-        setBookmarks(bookmarks.filter(b => b.word._id !== wordId));
+        setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
         fetchStats(); // Refresh stats
       }
     } catch (err) {
@@ -105,11 +110,11 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.updateBookmarkNotes(wordId, editNotes);
       if (response.success) {
         // Update local state
-        setBookmarks(bookmarks.map(b =>
-          b.word._id === wordId
-            ? { ...b, notes: editNotes }
-            : b
-        ));
+        setBookmarks(prev =>
+          prev.map(b =>
+            b.word._id === wordId ? { ...b, notes: editNotes } : b
+          )
+        );
         setEditingBookmark(null);
         setEditNotes('');
       }
@@ -141,20 +146,6 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
     <BookmarkContainer>
       <PageHeader>
         <h1>내 북마크</h1>
-        <SessionToggle>
-          <ToggleButton
-            $active={selectedProgressType === 'main'}
-            onClick={() => setSelectedProgressType('main')}
-          >
-            Main Session
-          </ToggleButton>
-          <ToggleButton
-            $active={selectedProgressType === 'sub'}
-            onClick={() => setSelectedProgressType('sub')}
-          >
-            Sub Session
-          </ToggleButton>
-        </SessionToggle>
       </PageHeader>
 
       {/* Statistics Section */}
@@ -209,7 +200,6 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
         </FilterGroup>
       </ControlSection>
 
-      {/* Error Message */}
       {error && (
         <ErrorMessage>{error}</ErrorMessage>
       )}
@@ -320,26 +310,6 @@ const PageHeader = styled.div`
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
-  }
-`;
-
-const SessionToggle = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const ToggleButton = styled.button<{ $active: boolean }>`
-  padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.$active ? '#3498db' : '#ddd'};
-  background-color: ${props => props.$active ? '#3498db' : 'white'};
-  color: ${props => props.$active ? 'white' : '#666'};
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: ${props => props.$active ? 'bold' : 'normal'};
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #3498db;
   }
 `;
 
