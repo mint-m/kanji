@@ -74,7 +74,7 @@ const progressService = {
    * 모든 활성 세션 조회
    */
   async getAllSessions(): Promise<ApiResponse<{ sessions: any[]; totalSessions: number }>> {
-    return api.get('/api/progress');
+    return api.get('/api/users/me/progress');
   },
 
   /**
@@ -84,7 +84,7 @@ const progressService = {
    * - 복원 성공 시 restoredFromCheckpoint: true
    */
   async getUserProgress(type: ProgressType): Promise<ApiResponse<GetProgressResponse>> {
-    return api.get(`/api/progress/${type}`);
+    return api.get(`/api/users/me/progress/${type}`);
   },
 
   /**
@@ -103,7 +103,7 @@ const progressService = {
    * ```
    */
   async createSession(data: CreateSessionRequest): Promise<ApiResponse<CreateSessionResponse>> {
-    return api.post('/api/progress', data);
+    return api.post('/api/users/me/progress', data);
   },
 
   /**
@@ -113,14 +113,14 @@ const progressService = {
    * @param data - 이동 방향 (next/previous/jump)
    */
   async updateWordIndex(type: ProgressType, data: UpdateIndexRequest): Promise<ApiResponse<any>> {
-    return api.put(`/api/progress/${type}/index`, data);
+    return api.put(`/api/users/me/progress/${type}/index`, data);
   },
 
   /**
    * 세션 리셋 (처음부터 다시 시작)
    */
   async resetSession(type: ProgressType): Promise<ApiResponse<any>> {
-    return api.put(`/api/progress/${type}/reset`);
+    return api.put(`/api/users/me/progress/${type}/reset`);
   },
 
   /**
@@ -130,28 +130,28 @@ const progressService = {
    * 예: 1-3 → 2-4
    */
   async generateNextWindow(type: ProgressType): Promise<ApiResponse<any>> {
-    return api.post(`/api/progress/${type}/next-window`);
+    return api.post(`/api/users/me/progress/${type}/next-window`);
   },
 
   /**
    * 세션 삭제
    */
   async deleteSession(type: ProgressType): Promise<ApiResponse<any>> {
-    return api.delete(`/api/progress/${type}`);
+    return api.delete(`/api/users/me/progress/${type}`);
   },
 
   /**
    * Main/Sub 세션 전환
    */
   async switchSessionType(fromType: ProgressType, toType: ProgressType): Promise<ApiResponse<any>> {
-    return api.post('/api/progress/switch', { fromType, toType });
+    return api.post('/api/users/me/progress/switch', { fromType, toType });
   },
 
   /**
    * 학습 통계 조회
    */
   async getLearningStats(): Promise<ApiResponse<LearningStatsResponse>> {
-    return api.get('/api/progress/stats');
+    return api.get('/api/users/me/progress/stats');
   },
 };
 

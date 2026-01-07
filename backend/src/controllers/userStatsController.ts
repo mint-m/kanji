@@ -2,20 +2,15 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserCheckpoint from "../models/userCheckpoint";
-import { ProgressType } from "../interfaces/userCheckpoint";
+import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
-import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/errors';
+import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
 
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
-
-    // Check if user is authorized to view stats
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only view your own statistics'));
-    }
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
 
     // Check if user exists
     const user = await User.findById(userId);
@@ -23,11 +18,9 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
     // Get active UserCheckpoint sessions (main and sub)
-    const mainProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'main');
-    const subProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'sub');
+    const mainProgress = await UserCheckpoint.findByUserAndType(userId, 'main');
+    const subProgress = await UserCheckpoint.findByUserAndType(userId, 'sub');
 
     // Get Word model for total word count
     const Word = mongoose.model('Word');
@@ -35,12 +28,11 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     // Calculate overall learning progress (all levels combined)
     const totalWordsInDatabase = await Word.countDocuments();
     const totalCompletedWords = await WordProgress.countDocuments({
-      user_id: userObjectId,
+      user_id: userId,
       is_completed: true,
     });
-    const overallProgressPercentage = totalWordsInDatabase > 0
-      ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100)
-      : 0;
+    const overallProgressPercentage =
+      totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;
 
     // Format response
     const response: any = {

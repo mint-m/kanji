@@ -116,7 +116,7 @@ export const exchangeCodeForToken = async (
   redirectUri: string = GOOGLE_REDIRECT_URI
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const response = await axios.post(`auth/google/access-token`, {
+    const response = await axios.post(`/api/auth/google/access-token`, {
       code,
       redirect_uri: redirectUri,
     });
@@ -140,7 +140,7 @@ export const exchangeCodeForToken = async (
 export const fetchUserData = async (token: string): Promise<UserProfile & { learningStats?: any }> => {
   try {
     // 상세 프로필 정보 가져오기 (이미 통계 정보 포함)
-    const profileResponse = await axios.get('auth/profile', {
+    const profileResponse = await axios.get('/api/auth/profile', {
       headers: getAuthHeaders(token),
     });
 
@@ -150,24 +150,7 @@ export const fetchUserData = async (token: string): Promise<UserProfile & { lear
 
     const userData = profileResponse.data.data;
 
-    // 추가 학습 통계 가져오기 (선택적)
-    try {
-      const statsResponse = await axios.get('/api/progress/learning-stats', {
-        headers: getAuthHeaders(token),
-      });
-
-      if (statsResponse.data.success) {
-        userData.learningStats = statsResponse.data.data;
-      }
-    } catch (statsError) {
-      console.warn('학습 통계를 가져오는데 실패했습니다:', statsError);
-      // 기본 빈 객체 설정
-      userData.learningStats = {
-        sessionStats: [],
-        wordStats: { main: null, sub: null },
-        overall: { totalSessions: 0, totalWordsInDecks: 0, averageProgress: 0 },
-      };
-    }
+    // 학습 통계는 필요할 때 별도로 조회 (불필요한 초기 로딩 제거)
 
     return userData;
   } catch (error) {
@@ -177,7 +160,7 @@ export const fetchUserData = async (token: string): Promise<UserProfile & { lear
 
 export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse & { user?: UserProfile }> => {
   try {
-    const loginResponse = await axios.post('/auth/google-login', {
+    const loginResponse = await axios.post('/api/auth/google-login', {
       accessToken,
     });
 
@@ -204,7 +187,7 @@ export const loginWithGoogleToken = async (accessToken: string): Promise<LoginRe
 
 export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
   try {
-    const response = await axios.get('auth/profile', {
+    const response = await axios.get('/api/auth/profile', {
       headers: getAuthHeaders(token),
     });
 

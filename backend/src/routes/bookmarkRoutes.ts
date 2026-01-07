@@ -1,13 +1,12 @@
 import { Router } from 'express';
 import bookmarkController from '../controllers/bookmarkController';
-import { authenticateUser } from '../middleware/auth';
 import { validateWordProgressRequest, validatePagination } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
 
 const router = Router();
 
-// All bookmark routes require authentication
-router.use(authenticateUser);
+// Authentication is applied in parent router (userRoutes.ts)
+// No need to apply authenticateUser here again
 
 /**
  * @route   POST /api/bookmarks/toggle
@@ -24,10 +23,9 @@ router.post('/toggle', validateWordProgressRequest.toggleBookmark, bookmarkContr
 
 /**
  * @route   GET /api/bookmarks
- * @desc    Get all bookmarked words for authenticated user with pagination and filtering
+ * @desc    Get all bookmarked words for authenticated user with pagination (전체 북마크 조회)
  * @access  Private
  * @query   {
- *            progressType?: 'main'|'sub',
  *            tags?: string|string[],
  *            level?: 'N5'|'N4'|'N3'|'N2'|'N1',
  *            page?: number,
@@ -39,7 +37,6 @@ router.post('/toggle', validateWordProgressRequest.toggleBookmark, bookmarkContr
 router.get(
   '/',
   [
-    query('progressType').optional().isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     query('level')
       .optional()
       .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
@@ -53,7 +50,10 @@ router.get(
         throw new Error('Tags must be string or array of strings');
       }),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
     query('sortBy')
       .optional()
       .isIn(['last_studied_at', 'kanji', 'level', 'step', 'bookmark_reason'])
@@ -132,24 +132,16 @@ router.post(
 
 /**
  * @route   GET /api/bookmarks/stats
- * @desc    Get comprehensive bookmark statistics and analytics
+ * @desc    Get comprehensive bookmark statistics and analytics (전체 북마크 통계)
  * @access  Private
- * @query   {
- *            progressType?: 'main'|'sub'
- *          }
  */
-router.get(
-  '/stats',
-  [query('progressType').optional().isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"')],
-  bookmarkController.getBookmarkStats
-);
+router.get('/stats', bookmarkController.getBookmarkStats);
 
 /**
  * @route   POST /api/bookmarks/search
- * @desc    Advanced search for bookmarked words with multiple filter options
+ * @desc    Advanced search for bookmarked words with multiple filter options (전체 북마크 검색)
  * @access  Private
  * @body    {
- *            progressType?: 'main'|'sub',
  *            searchTerm?: string,
  *            level?: 'N5'|'N4'|'N3'|'N2'|'N1',
  *            step?: number,
@@ -164,7 +156,6 @@ router.get(
 router.post(
   '/search',
   [
-    body('progressType').optional().isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('searchTerm')
       .optional()
       .isLength({ min: 1, max: 100 })

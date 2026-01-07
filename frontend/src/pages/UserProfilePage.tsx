@@ -43,7 +43,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
             throw new Error('Not authenticated');
           }
 
-          const response = await axios.get('/auth/profile', {
+          const response = await axios.get('/api/auth/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
 
@@ -74,7 +74,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
         if (!token) return;
 
         const response = await axios.get(
-          `/api/progress/${activeProgressType}/current`,
+          `/api/users/me/progress/${activeProgressType}/current`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
 
@@ -93,11 +93,11 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   }, [activeProgressType]);
 
   const handleSessionToggle = async (type: 'main' | 'sub') => {
-    if (!userData?._id || isUpdatingSession || type === activeProgressType) return;
+    if (isUpdatingSession || type === activeProgressType) return;
 
     setIsUpdatingSession(true);
     try {
-      await updateActiveProgressType(userData._id, type);
+      await updateActiveProgressType(type);
       dispatch(setActiveProgressType(type));
 
       // Update localStorage
@@ -209,7 +209,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       <StatsSection>
         <SectionTitle>Learning Progress</SectionTitle>
-        <UserProgress userId={userData._id} />
+        <UserProgress />
       </StatsSection>
 
       <AccountSection>

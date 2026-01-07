@@ -32,8 +32,6 @@ const App = () => {
           email: userData.email,
           name: userData.name,
           activeProgressType: userData.activeProgressType || null,
-          learningStats: [],
-          learningStreak: 0,
         }));
       } catch (error) {
         console.error('Failed to parse user data from localStorage:', error);

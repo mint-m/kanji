@@ -66,7 +66,7 @@ const deckService = {
    * ```
    */
   async generateDeck(data: GenerateDeckRequest): Promise<ApiResponse<Deck>> {
-    return api.post('/api/progress/generate', data);
+    return api.post('/api/users/me/progress/generate', data);
   },
 
   /**
@@ -79,7 +79,7 @@ const deckService = {
    * @param progressType - 세션 타입 (main/sub)
    */
   async getCurrentDeck(progressType: ProgressType): Promise<ApiResponse<CurrentDeck>> {
-    return api.get(`/api/progress/${progressType}/current`);
+    return api.get(`/api/users/me/progress/${progressType}/current`);
   },
 
   /**
@@ -92,7 +92,7 @@ const deckService = {
    * @param progressType - 세션 타입 (main/sub)
    */
   async getDeckStats(progressType: ProgressType): Promise<ApiResponse<any>> {
-    return api.get(`/api/progress/${progressType}/deck-stats`);
+    return api.get(`/api/users/me/progress/${progressType}/deck-stats`);
   },
 
   /**
@@ -118,7 +118,7 @@ const deckService = {
     progressType: ProgressType,
     data: CompleteWordRequest
   ): Promise<ApiResponse<CompleteWordResponse>> {
-    return api.post(`/api/progress/${progressType}/complete-word`, data);
+    return api.post(`/api/users/me/progress/${progressType}/complete-word`, data);
   },
 
   /**
@@ -128,7 +128,7 @@ const deckService = {
    * @param data - 완료 정보 배열
    */
   async bulkCompleteWords(progressType: ProgressType, data: BulkCompleteRequest): Promise<ApiResponse<any>> {
-    return api.post(`/api/progress/${progressType}/bulk-complete`, data);
+    return api.post(`/api/users/me/progress/${progressType}/bulk-complete`, data);
   },
 
   /**
@@ -153,7 +153,7 @@ const deckService = {
    * ```
    */
   async completeDeck(progressType: ProgressType, data?: CompleteDeckRequest): Promise<ApiResponse<any>> {
-    return api.post(`/api/progress/${progressType}/complete-deck`, data || {});
+    return api.post(`/api/users/me/progress/${progressType}/complete-deck`, data || {});
   },
 };
 

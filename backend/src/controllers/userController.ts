@@ -1,20 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import User from '../models/user';
-import UserCheckpoint from "../models/userCheckpoint";
-import { NotFoundError, BadRequestError, InternalServerError, ForbiddenError } from '../utils/errors';
-import { ProgressType, LearningLevel } from "../interfaces/userCheckpoint";
+import UserCheckpoint from '../models/userCheckpoint';
+import {
+  NotFoundError,
+  BadRequestError,
+  InternalServerError,
+  UnauthorizedError,
+} from '../utils/errors';
+import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
-
-    // 인증된 사용자와 요청된 userId가 일치하는지 확인
-    if (req.user?._id.toString() !== userId) {
-      // need check
-      return next(new ForbiddenError('You can only view your own profile'));
-    }
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
 
     const user = await User.findById(userId);
 
@@ -31,18 +31,11 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
     const { activeProgressType } = req.body;
 
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only update your own progress type'));
-    }
-
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { activeProgressType },
-      { new: true }
-    );
+    const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
 
     if (!user) {
       return next(new NotFoundError('User not found'));
@@ -63,25 +56,12 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
 // 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.params;
-    const {
-      checkpoint,
-      wordIndex,
-      progressType = 'main',
-      level,
-      steps,
-      currentIndex
-    } = req.body;
-
-    // 인증된 사용자와 요청된 userId가 일치하는지 확인
-    if (req.user?._id.toString() !== userId) {
-      return next(new ForbiddenError('You can only update your own checkpoint'));
-    }
-
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
+    const { checkpoint, wordIndex, progressType = 'main', level, steps, currentIndex } = req.body;
 
     // 사용자 확인
-    const existingUser = await User.findById(userObjectId);
+    const existingUser = await User.findById(userId);
     if (!existingUser) {
       return next(new NotFoundError('User not found'));
     }
@@ -100,7 +80,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       // Find or create UserCheckpoint
       const existingProgress = await UserCheckpoint.findOne({
-        user_id: userObjectId,
+        user_id: userId,
         progress_type: progressType as ProgressType,
       });
 
@@ -109,7 +89,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       if (!existingProgress) {
         // Create new UserCheckpoint session
         userProgress = await UserCheckpoint.createNewSession(
-          userObjectId,
+          userId,
           progressType as ProgressType,
           level as LearningLevel,
           steps
@@ -146,7 +126,6 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
     } else {
       return next(new BadRequestError('Either (level + steps) or checkpoint data is required'));
     }
-
   } catch (error) {
     console.error('Update checkpoint error:', error);
     next(new InternalServerError('Failed to update checkpoint'));

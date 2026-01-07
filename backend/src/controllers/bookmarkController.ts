@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import mongoose, { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
-import { ProgressType } from "../interfaces/userCheckpoint";
+import { ProgressType } from '../interfaces/userCheckpoint';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 /**
@@ -70,19 +70,17 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
   try {
     const userId = req.user!._id;
     const {
-      progressType = 'main',
       tags,
       level,
       page = 1,
-      limit = 50,
+      limit = 20,
       sortBy = 'last_studied_at',
       sortOrder = 'desc',
     } = req.query;
 
-    // Build filter
+    // Build filter - progressType 필터 제거, 전체 북마크 조회
     const filter: any = {
       user_id: userId,
-      progress_type: progressType,
       is_bookmarked: true,
     };
 
@@ -104,26 +102,6 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
         },
       },
       { $unwind: '$word' },
-      {
-        $addFields: {
-          'word.bookmarkInfo': {
-            isBookmarked: '$is_bookmarked',
-            reason: '$bookmark_reason',
-            tags: '$bookmark_tags',
-            bookmarkedAt: '$last_studied_at',
-          },
-          'word.progressInfo': {
-            isCompleted: '$is_completed',
-            tryCount: '$try_count',
-            correctCount: '$correct_count',
-            successRate: {
-              $cond: [{ $eq: ['$try_count', 0] }, 0, { $divide: ['$correct_count', '$try_count'] }],
-            },
-            lastStudiedAt: '$last_studied_at',
-            timeSpentTotal: '$time_spent_total',
-          },
-        },
-      },
     ];
 
     // Add level filter if provided
@@ -132,6 +110,11 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
         $match: { 'word.level': level },
       });
     }
+
+    // Get total count before pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const totalCountResult = await WordProgress.aggregate(countPipeline);
+    const totalCount = totalCountResult[0]?.total || 0;
 
     // Add sorting
     const sortField =
@@ -151,121 +134,34 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
     const skip = (Number(page) - 1) * Number(limit);
     pipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
+    // Project only needed fields with unified field names
+    pipeline.push({
+      $project: {
+        _id: 1,
+        user_id: 1,
+        word_id: 1,
+        word: 1,
+        notes: '$bookmark_reason',
+        bookmarked_at: '$last_studied_at',
+        is_bookmarked: 1,
+        progress_type: 1,
+      },
+    });
+
     // Execute aggregation
     const bookmarks = await WordProgress.aggregate(pipeline);
 
-    // Get total count for pagination
-    const totalCountPipeline: PipelineStage[] = [
-      { $match: filter },
-      {
-        $lookup: {
-          from: 'words',
-          localField: 'word_id',
-          foreignField: '_id',
-          as: 'word',
-        },
-      },
-      { $unwind: '$word' },
-    ];
-
-    if (level) {
-      totalCountPipeline.push({
-        $match: { 'word.level': level },
-      });
-    }
-
-    totalCountPipeline.push({ $count: 'total' });
-    const totalCountResult = await WordProgress.aggregate(totalCountPipeline);
-    const totalCount = totalCountResult[0]?.total || 0;
-
-    // Get bookmark statistics
-    const statsResult = await WordProgress.aggregate([
-      {
-        $match: {
-          user_id: userId,
-          progress_type: progressType,
-          is_bookmarked: true,
-        },
-      },
-      {
-        $lookup: {
-          from: 'words',
-          localField: 'word_id',
-          foreignField: '_id',
-          as: 'word',
-        },
-      },
-      { $unwind: '$word' },
-      {
-        $group: {
-          _id: null,
-          totalBookmarks: { $sum: 1 },
-          byLevel: {
-            $push: {
-              level: '$word.level',
-              step: '$word.step',
-            },
-          },
-          completedBookmarks: {
-            $sum: { $cond: ['$is_completed', 1, 0] },
-          },
-          allTags: { $push: '$bookmark_tags' },
-        },
-      },
-      {
-        $addFields: {
-          levelDistribution: {
-            $reduce: {
-              input: '$byLevel',
-              initialValue: {},
-              in: {
-                $mergeObjects: [
-                  '$$value',
-                  {
-                    $arrayToObject: [
-                      [
-                        {
-                          k: '$$this.level',
-                          v: {
-                            $add: [{ $ifNull: [{ $getField: { field: '$$this.level', input: '$$value' } }, 0] }, 1],
-                          },
-                        },
-                      ],
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-          uniqueTags: {
-            $reduce: {
-              input: '$allTags',
-              initialValue: [],
-              in: { $setUnion: ['$$value', '$$this'] },
-            },
-          },
-        },
-      },
-    ]);
-
-    const stats = statsResult[0] || {
-      totalBookmarks: 0,
-      completedBookmarks: 0,
-      levelDistribution: {},
-      uniqueTags: [],
-    };
-
+    // 최적화된 응답: 페이지네이션 정보 포함
     res.json({
       success: true,
       data: {
-        bookmarks: bookmarks.map((b) => b.word),
+        bookmarks,
         pagination: {
           currentPage: Number(page),
-          totalPages: Math.ceil(totalCount / Number(limit)),
-          totalItems: totalCount,
           itemsPerPage: Number(limit),
+          totalItems: totalCount,
+          totalPages: Math.ceil(totalCount / Number(limit)),
         },
-        statistics: stats,
       },
     });
   } catch (error) {
@@ -413,9 +309,9 @@ export const bulkBookmarkOperation = async (req: AuthenticatedRequest, res: Resp
 export const getBookmarkStats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!._id;
-    const { progressType = 'main' } = req.query;
 
-    const stats = await WordProgress.getBookmarkAnalytics(userId, progressType as ProgressType);
+    // progressType 파라미터 제거, 전체 북마크 통계 조회
+    const stats = await WordProgress.getBookmarkAnalytics(userId);
 
     res.json({
       success: true,
@@ -438,7 +334,6 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
   try {
     const userId = req.user!._id;
     const {
-      progressType = 'main',
       searchTerm,
       level,
       step,
@@ -450,12 +345,11 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
       limit = 50,
     } = req.body;
 
-    // Build search pipeline
+    // Build search pipeline - progressType 필터 제거, 전체 북마크 검색
     const pipeline: PipelineStage[] = [
       {
         $match: {
           user_id: userId,
-          progress_type: progressType,
           is_bookmarked: true,
         },
       },
@@ -505,27 +399,16 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
       pipeline.push({ $match: matchConditions });
     }
 
-    // Add enhanced word data
-    pipeline.push({
-      $addFields: {
-        'word.bookmarkInfo': {
-          isBookmarked: '$is_bookmarked',
-          reason: '$bookmark_reason',
-          tags: '$bookmark_tags',
-          bookmarkedAt: '$last_studied_at',
-        },
-        'word.progressInfo': {
-          isCompleted: '$is_completed',
-          tryCount: '$try_count',
-          correctCount: '$correct_count',
+    // Add success rate calculation only if sorting by success_rate
+    if (sortBy === 'success_rate') {
+      pipeline.push({
+        $addFields: {
           successRate: {
             $cond: [{ $eq: ['$try_count', 0] }, 0, { $divide: ['$correct_count', '$try_count'] }],
           },
-          lastStudiedAt: '$last_studied_at',
-          timeSpentTotal: '$time_spent_total',
         },
-      },
-    });
+      });
+    }
 
     // Add sorting
     const sortField =
@@ -536,7 +419,7 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
         : sortBy === 'kanji'
         ? 'word.kanji'
         : sortBy === 'success_rate'
-        ? 'word.progressInfo.successRate'
+        ? 'successRate'
         : `${sortBy}`;
 
     pipeline.push({
@@ -552,13 +435,27 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
     const skip = (Number(page) - 1) * Number(limit);
     pipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
+    // Project only needed fields with unified field names
+    pipeline.push({
+      $project: {
+        _id: 1,
+        user_id: 1,
+        word_id: 1,
+        word: 1,
+        notes: '$bookmark_reason',
+        bookmarked_at: '$last_studied_at',
+        is_bookmarked: 1,
+        progress_type: 1,
+      },
+    });
+
     // Execute search
     const results = await WordProgress.aggregate(pipeline);
 
     res.json({
       success: true,
       data: {
-        bookmarks: results.map((r) => r.word),
+        bookmarks: results,
         pagination: {
           currentPage: Number(page),
           totalPages: Math.ceil(totalCount / Number(limit)),
@@ -571,7 +468,6 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
           step,
           tags,
           isCompleted,
-          progressType,
         },
       },
     });

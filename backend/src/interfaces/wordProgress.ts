@@ -151,7 +151,7 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     type: ProgressType
   ): Promise<number>;
 
-  getBookmarkAnalytics(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<any>;
+  getBookmarkAnalytics(userId: mongoose.Types.ObjectId): Promise<any>;
 }
 
 export default WordProgressModel;

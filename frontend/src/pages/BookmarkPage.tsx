@@ -1,44 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { useSelector } from 'react-redux';
-import { RootState } from 'store';
 import bookmarkService, { Bookmark, GetBookmarksOptions } from 'services/bookmarkService';
-import { LearningLevel, ProgressType } from 'services/types';
+import { LearningLevel } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
-import DefaultButton from 'components/CommonStyled/DefaultButton';
 
-interface BookmarkPageProps {}
+interface BookmarkPageProps { }
+interface BookmarkStats {
+  totalBookmarks: number;
+  completedBookmarks: number;
+}
 
-type SortOption = 'recent' | 'level' | 'step';
+type SortOption = 'recent' | 'level';
 
 const BookmarkPage: React.FC<BookmarkPageProps> = () => {
-  const user = useSelector((state: RootState) => state.user);
-
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filter & Sort states
   const [selectedLevel, setSelectedLevel] = useState<LearningLevel | 'all'>('all');
-  const [selectedProgressType, setSelectedProgressType] = useState<ProgressType>('main');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<{
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+  } | null>(null);
+
   // Statistics
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<BookmarkStats | null>(null);
 
   // Edit mode
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState<string>('');
 
   // Fetch bookmarks
-  const fetchBookmarks = async () => {
+  const fetchBookmarks = async (page: number = 1) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const options: GetBookmarksOptions = {
-        progressType: selectedProgressType,
         sortBy,
+        page,
+        limit: 20,
       };
 
       if (selectedLevel !== 'all') {
@@ -48,13 +56,26 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.getBookmarks(options);
 
       if (response.success && response.data) {
-        setBookmarks(response.data);
+        // Backend에서 { bookmarks, pagination } 객체 반환
+        const { bookmarks: bookmarkList, pagination: paginationInfo } = response.data as any;
+
+        if (Array.isArray(bookmarkList)) {
+          setBookmarks(bookmarkList);
+          setPagination(paginationInfo);
+          setCurrentPage(page);
+        } else {
+          console.error('Invalid response format: bookmarks is not an array', response.data);
+          setBookmarks([]);
+          setError('북마크를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
+        }
       } else {
-        setError('Failed to load bookmarks');
+        setBookmarks([]);
+        setError('북마크를 불러오는데 실패했습니다.');
       }
     } catch (err) {
       console.error('Error fetching bookmarks:', err);
-      setError('Failed to load bookmarks');
+      setBookmarks([]);
+      setError('북마크를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +94,18 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
   };
 
   useEffect(() => {
-    fetchBookmarks();
+    fetchBookmarks(1); // 필터 변경 시 첫 페이지로
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLevel, sortBy]);
+
+  useEffect(() => {
     fetchStats();
-  }, [selectedLevel, selectedProgressType, sortBy]);
+  }, []);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    fetchBookmarks(page);
+  };
 
   // Handle bookmark removal
   const handleRemoveBookmark = async (wordId: string) => {
@@ -86,7 +116,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
     try {
       const response = await bookmarkService.removeBookmark(wordId);
       if (response.success) {
-        setBookmarks(bookmarks.filter(b => b.word._id !== wordId));
+        setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
         fetchStats(); // Refresh stats
       }
     } catch (err) {
@@ -101,11 +131,11 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.updateBookmarkNotes(wordId, editNotes);
       if (response.success) {
         // Update local state
-        setBookmarks(bookmarks.map(b =>
-          b.word._id === wordId
-            ? { ...b, notes: editNotes }
-            : b
-        ));
+        setBookmarks(prev =>
+          prev.map(b =>
+            b.word._id === wordId ? { ...b, notes: editNotes } : b
+          )
+        );
         setEditingBookmark(null);
         setEditNotes('');
       }
@@ -137,20 +167,6 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
     <BookmarkContainer>
       <PageHeader>
         <h1>내 북마크</h1>
-        <SessionToggle>
-          <ToggleButton
-            $active={selectedProgressType === 'main'}
-            onClick={() => setSelectedProgressType('main')}
-          >
-            Main Session
-          </ToggleButton>
-          <ToggleButton
-            $active={selectedProgressType === 'sub'}
-            onClick={() => setSelectedProgressType('sub')}
-          >
-            Sub Session
-          </ToggleButton>
-        </SessionToggle>
       </PageHeader>
 
       {/* Statistics Section */}
@@ -205,7 +221,6 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
         </FilterGroup>
       </ControlSection>
 
-      {/* Error Message */}
       {error && (
         <ErrorMessage>{error}</ErrorMessage>
       )}
@@ -287,6 +302,32 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
           ))}
         </BookmarkList>
       )}
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <PaginationContainer>
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            이전
+          </PageButton>
+
+          <PageInfo>
+            {currentPage} / {pagination.totalPages} 페이지
+            <span style={{ marginLeft: '1rem', fontSize: '0.9rem', color: '#7f8c8d' }}>
+              (총 {pagination.totalItems}개)
+            </span>
+          </PageInfo>
+
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === pagination.totalPages}
+          >
+            다음
+          </PageButton>
+        </PaginationContainer>
+      )}
     </BookmarkContainer>
   );
 };
@@ -316,26 +357,6 @@ const PageHeader = styled.div`
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
-  }
-`;
-
-const SessionToggle = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const ToggleButton = styled.button<{ $active: boolean }>`
-  padding: 0.5rem 1rem;
-  border: 2px solid ${props => props.$active ? '#3498db' : '#ddd'};
-  background-color: ${props => props.$active ? '#3498db' : 'white'};
-  color: ${props => props.$active ? 'white' : '#666'};
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: ${props => props.$active ? 'bold' : 'normal'};
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #3498db;
   }
 `;
 
@@ -624,4 +645,35 @@ const RemoveButton = styled.button`
     background-color: #e74c3c;
     color: white;
   }
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 1.5rem 0;
+`;
+
+const PageButton = styled.button<{ disabled?: boolean }>`
+  padding: 0.6rem 1.5rem;
+  background-color: ${props => props.disabled ? '#ecf0f1' : '#3498db'};
+  color: ${props => props.disabled ? '#95a5a6' : 'white'};
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => props.disabled ? '#ecf0f1' : '#2980b9'};
+  }
+`;
+
+const PageInfo = styled.div`
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2c3e50;
 `;
