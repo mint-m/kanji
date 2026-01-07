@@ -69,7 +69,14 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
 export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!._id;
-    const { tags, level, sortBy = 'last_studied_at', sortOrder = 'desc' } = req.query;
+    const {
+      tags,
+      level,
+      page = 1,
+      limit = 20,
+      sortBy = 'last_studied_at',
+      sortOrder = 'desc',
+    } = req.query;
 
     // Build filter - progressType 필터 제거, 전체 북마크 조회
     const filter: any = {
@@ -104,6 +111,11 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
       });
     }
 
+    // Get total count before pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const totalCountResult = await WordProgress.aggregate(countPipeline);
+    const totalCount = totalCountResult[0]?.total || 0;
+
     // Add sorting
     const sortField =
       sortBy === 'level'
@@ -118,6 +130,10 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
       $sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
     });
 
+    // Add pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    pipeline.push({ $skip: skip }, { $limit: Number(limit) });
+
     // Project only needed fields with unified field names
     pipeline.push({
       $project: {
@@ -125,8 +141,8 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
         user_id: 1,
         word_id: 1,
         word: 1,
-        notes: '$bookmark_reason', // 필드명 통일
-        bookmarked_at: '$last_studied_at', // 필드명 통일
+        notes: '$bookmark_reason',
+        bookmarked_at: '$last_studied_at',
         is_bookmarked: 1,
         progress_type: 1,
       },
@@ -135,10 +151,18 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
     // Execute aggregation
     const bookmarks = await WordProgress.aggregate(pipeline);
 
-    // 단순화된 응답: 배열 직접 반환 (pagination, statistics 제거)
+    // 최적화된 응답: 페이지네이션 정보 포함
     res.json({
       success: true,
-      data: bookmarks,
+      data: {
+        bookmarks,
+        pagination: {
+          currentPage: Number(page),
+          itemsPerPage: Number(limit),
+          totalItems: totalCount,
+          totalPages: Math.ceil(totalCount / Number(limit)),
+        },
+      },
     });
   } catch (error) {
     console.error('Get bookmarks error:', error);

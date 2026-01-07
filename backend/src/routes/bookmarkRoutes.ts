@@ -23,11 +23,13 @@ router.post('/toggle', validateWordProgressRequest.toggleBookmark, bookmarkContr
 
 /**
  * @route   GET /api/bookmarks
- * @desc    Get all bookmarked words for authenticated user (전체 북마크 조회)
+ * @desc    Get all bookmarked words for authenticated user with pagination (전체 북마크 조회)
  * @access  Private
  * @query   {
  *            tags?: string|string[],
  *            level?: 'N5'|'N4'|'N3'|'N2'|'N1',
+ *            page?: number,
+ *            limit?: number,
  *            sortBy?: string,
  *            sortOrder?: 'asc'|'desc'
  *          }
@@ -47,6 +49,11 @@ router.get(
         }
         throw new Error('Tags must be string or array of strings');
       }),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
     query('sortBy')
       .optional()
       .isIn(['last_studied_at', 'kanji', 'level', 'step', 'bookmark_reason'])
