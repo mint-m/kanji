@@ -13,12 +13,8 @@ import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // JWT에서 userId 추출 (authenticateJwt 미들웨어에서 검증됨)
-    const userId = req.user?._id;
-
-    if (!userId) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
 
     const user = await User.findById(userId);
 
@@ -35,13 +31,9 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // JWT에서 userId 추출
-    const userId = req.user?._id;
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
     const { activeProgressType } = req.body;
-
-    if (!userId) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
 
     const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
 
@@ -64,18 +56,12 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
 // 학습 체크포인트 업데이트 (UserCheckpoint 테이블과 연동)
 export const updateCheckpoint = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // JWT에서 userId 추출
-    const userId = req.user?._id;
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
     const { checkpoint, wordIndex, progressType = 'main', level, steps, currentIndex } = req.body;
 
-    if (!userId) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
-
-    const userObjectId = userId;
-
     // 사용자 확인
-    const existingUser = await User.findById(userObjectId);
+    const existingUser = await User.findById(userId);
     if (!existingUser) {
       return next(new NotFoundError('User not found'));
     }
@@ -94,7 +80,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       // Find or create UserCheckpoint
       const existingProgress = await UserCheckpoint.findOne({
-        user_id: userObjectId,
+        user_id: userId,
         progress_type: progressType as ProgressType,
       });
 
@@ -103,7 +89,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       if (!existingProgress) {
         // Create new UserCheckpoint session
         userProgress = await UserCheckpoint.createNewSession(
-          userObjectId,
+          userId,
           progressType as ProgressType,
           level as LearningLevel,
           steps
