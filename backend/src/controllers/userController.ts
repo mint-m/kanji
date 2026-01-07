@@ -41,7 +41,7 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
     const { activeProgressType } = req.body;
 
     if (!userId) {
-      return next(new ForbiddenError('Authentication required'));
+      return next(new UnauthorizedError('Authentication required'));
     }
 
     const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
