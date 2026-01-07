@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
-import { NotFoundError, ForbiddenError, InternalServerError } from '../utils/errors';
+import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
 
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -13,7 +13,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     const userId = req.user?._id;
 
     if (!userId) {
-      return next(new ForbiddenError('Authentication required'));
+      return next(new UnauthorizedError('Authentication required'));
     }
 
     // Check if user exists

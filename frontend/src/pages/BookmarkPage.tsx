@@ -21,6 +21,15 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
   const [selectedLevel, setSelectedLevel] = useState<LearningLevel | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<{
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+  } | null>(null);
+
   // Statistics
   const [stats, setStats] = useState<BookmarkStats | null>(null);
 
@@ -29,13 +38,15 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
   const [editNotes, setEditNotes] = useState<string>('');
 
   // Fetch bookmarks
-  const fetchBookmarks = async () => {
+  const fetchBookmarks = async (page: number = 1) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const options: GetBookmarksOptions = {
         sortBy,
+        page,
+        limit: 20,
       };
 
       if (selectedLevel !== 'all') {
@@ -45,11 +56,15 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       const response = await bookmarkService.getBookmarks(options);
 
       if (response.success && response.data) {
-        // Backend에서 배열 직접 반환
-        if (Array.isArray(response.data)) {
-          setBookmarks(response.data);
+        // Backend에서 { bookmarks, pagination } 객체 반환
+        const { bookmarks: bookmarkList, pagination: paginationInfo } = response.data as any;
+
+        if (Array.isArray(bookmarkList)) {
+          setBookmarks(bookmarkList);
+          setPagination(paginationInfo);
+          setCurrentPage(page);
         } else {
-          console.error('Invalid response format: data is not an array', response.data);
+          console.error('Invalid response format: bookmarks is not an array', response.data);
           setBookmarks([]);
           setError('잘못된 응답 형식입니다.');
         }
@@ -59,7 +74,7 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
       }
     } catch (err) {
       console.error('Error fetching bookmarks:', err);
-      setBookmarks([]); // 에러 시 빈 배열로 초기화
+      setBookmarks([]);
       setError('Failed to load bookmarks');
     } finally {
       setIsLoading(false);
@@ -79,12 +94,18 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
   };
 
   useEffect(() => {
-    fetchBookmarks();
+    fetchBookmarks(1); // 필터 변경 시 첫 페이지로
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLevel, sortBy]);
 
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    fetchBookmarks(page);
+  };
 
   // Handle bookmark removal
   const handleRemoveBookmark = async (wordId: string) => {
@@ -280,6 +301,32 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
             </BookmarkCard>
           ))}
         </BookmarkList>
+      )}
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <PaginationContainer>
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            이전
+          </PageButton>
+
+          <PageInfo>
+            {currentPage} / {pagination.totalPages} 페이지
+            <span style={{ marginLeft: '1rem', fontSize: '0.9rem', color: '#7f8c8d' }}>
+              (총 {pagination.totalItems}개)
+            </span>
+          </PageInfo>
+
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === pagination.totalPages}
+          >
+            다음
+          </PageButton>
+        </PaginationContainer>
       )}
     </BookmarkContainer>
   );
@@ -598,4 +645,35 @@ const RemoveButton = styled.button`
     background-color: #e74c3c;
     color: white;
   }
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 1.5rem 0;
+`;
+
+const PageButton = styled.button<{ disabled?: boolean }>`
+  padding: 0.6rem 1.5rem;
+  background-color: ${props => props.disabled ? '#ecf0f1' : '#3498db'};
+  color: ${props => props.disabled ? '#95a5a6' : 'white'};
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => props.disabled ? '#ecf0f1' : '#2980b9'};
+  }
+`;
+
+const PageInfo = styled.div`
+  font-size: 1rem;
+  font-weight: 500;
+  color: #2c3e50;
 `;

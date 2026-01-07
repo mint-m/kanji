@@ -6,7 +6,6 @@ import {
   NotFoundError,
   BadRequestError,
   InternalServerError,
-  ForbiddenError,
   UnauthorizedError,
 } from '../utils/errors';
 import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
