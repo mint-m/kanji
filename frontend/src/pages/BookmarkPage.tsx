@@ -66,16 +66,16 @@ const BookmarkPage: React.FC<BookmarkPageProps> = () => {
         } else {
           console.error('Invalid response format: bookmarks is not an array', response.data);
           setBookmarks([]);
-          setError('잘못된 응답 형식입니다.');
+          setError('북마크를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.');
         }
       } else {
         setBookmarks([]);
-        setError('Failed to load bookmarks');
+        setError('북마크를 불러오는데 실패했습니다.');
       }
     } catch (err) {
       console.error('Error fetching bookmarks:', err);
       setBookmarks([]);
-      setError('Failed to load bookmarks');
+      setError('북마크를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
     } finally {
       setIsLoading(false);
     }

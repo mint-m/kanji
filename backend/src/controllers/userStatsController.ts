@@ -9,12 +9,8 @@ import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // JWT에서 userId 추출
-    const userId = req.user?._id;
-
-    if (!userId) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
 
     // Check if user exists
     const user = await User.findById(userId);
@@ -22,11 +18,9 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    const userObjectId = userId;
-
     // Get active UserCheckpoint sessions (main and sub)
-    const mainProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'main');
-    const subProgress = await UserCheckpoint.findByUserAndType(userObjectId, 'sub');
+    const mainProgress = await UserCheckpoint.findByUserAndType(userId, 'main');
+    const subProgress = await UserCheckpoint.findByUserAndType(userId, 'sub');
 
     // Get Word model for total word count
     const Word = mongoose.model('Word');
@@ -34,7 +28,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     // Calculate overall learning progress (all levels combined)
     const totalWordsInDatabase = await Word.countDocuments();
     const totalCompletedWords = await WordProgress.countDocuments({
-      user_id: userObjectId,
+      user_id: userId,
       is_completed: true,
     });
     const overallProgressPercentage =
