@@ -202,13 +202,16 @@ export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
 };
 
 // 로그아웃
-export const logout = (): void => {
+export const logout = (skipRedirect = false): void => {
   removeTokenLocally();
   removeUserLocally();
 
   // 추가: 프론트엔드에서만 로그아웃하는 대신 백엔드에도 로그아웃 요청 가능
   // 세션 무효화를 위해 백엔드에 로그아웃 알림 >> 보안 업데이트 필요시 개발 예정
-  window.location.href = '/';
+
+  if (!skipRedirect) {
+    window.location.href = '/';
+  }
 };
 
 // 인증 상태 확인

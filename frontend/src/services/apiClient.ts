@@ -8,7 +8,8 @@
  */
 
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getAuthHeaders, handleApiError } from './authService';
+import { getAuthHeaders, handleApiError, logout } from './authService';
+import { triggerAuthBanner } from 'contexts/authBannerInstance';
 
 // Axios 인스턴스 생성
 const apiClient: AxiosInstance = axios.create({
@@ -44,8 +45,13 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     // 401 Unauthorized - 토큰 만료 또는 유효하지 않음
     if (error.response?.status === 401) {
-      console.error('인증 오류: 다시 로그인해주세요');
-      // authService의 handleApiError가 자동으로 로그아웃 처리
+      console.error('인증 오류: 세션이 만료되었습니다');
+
+      // Show banner immediately
+      triggerAuthBanner();
+
+      // Clear localStorage (skip redirect, banner handles it)
+      logout(true);
     }
 
     // 403 Forbidden - 권한 없음
