@@ -4,13 +4,13 @@ import { setAuthBannerTrigger } from './authBannerInstance';
 
 export const AuthBannerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [showBanner, setShowBanner] = useState(false);
-  const [isTriggered, setIsTriggered] = useState(false);
+  const isTriggeredRef = useRef(false);
 
   const showSessionExpiredBanner = useCallback(() => {
-    if (isTriggered) return; // Prevent multiple triggers
-    setIsTriggered(true);
+    if (isTriggeredRef.current) return; // Prevent multiple triggers
+    isTriggeredRef.current = true;
     setShowBanner(true);
-  }, [isTriggered]);
+  }, []);
 
   // Register global trigger for axios interceptor
   useEffect(() => {
