@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { useState, useCallback, useEffect, ReactNode, useRef } from 'react';
 import styled from 'styled-components';
 import { setAuthBannerTrigger } from './authBannerInstance';
 
