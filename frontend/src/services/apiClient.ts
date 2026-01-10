@@ -52,6 +52,10 @@ apiClient.interceptors.response.use(
 
       // Clear localStorage (skip redirect, banner handles it)
       logout(true);
+
+      // Stop the promise chain by returning a promise that never resolves.
+      // This prevents the error from being handled again downstream.
+      return new Promise(() => {});
     }
 
     // 403 Forbidden - 권한 없음
