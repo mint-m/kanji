@@ -4,11 +4,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from 'store';
 import UserProgress from 'components/UserProgress';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
-import axios from 'axios';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
-import { updateActiveProgressType } from 'services/userService';
+import { updateActiveProgressType, getProfile } from 'services/userService';
+import { api } from 'services/apiClient';
 
 interface UserProfileProps { }
 
@@ -43,9 +43,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
             throw new Error('Not authenticated');
           }
 
-          const response = await axios.get('/api/auth/profile', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+          const response = await getProfile();
 
           setUserData(response.data);
         }
@@ -70,12 +68,8 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       setIsLoadingProgress(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        const response = await axios.get(
-          `/api/users/me/progress/${activeProgressType}/current`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
+        const response = await api.get(
+          `/api/users/me/progress/${activeProgressType}/current`
         );
 
         if (response.data.success && response.data.data) {

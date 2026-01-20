@@ -9,6 +9,7 @@ import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import ReactPageScroller from 'react-page-scroller';
 import styled from 'styled-components';
+import { api } from 'services/apiClient';
 
 // Types for level data
 interface LevelStepData {
@@ -91,14 +92,13 @@ const LevelSelectionPage: React.FC = () => {
         setIsLoading(true);
 
         // UserProgress 생성/업데이트
-        await axios.patch(
+        await api.patch(
           `/api/users/me/checkpoint`,
           {
             progressType: activeProgressType || 'main',
             level: selectedLevel,
             steps: selectedSteps,
-          },
-          { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+          }
         );
 
         // Navigate to flashcards

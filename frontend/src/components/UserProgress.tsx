@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
+import { getStats } from 'services/userService';
 
 // 세션 진행 상황 인터페이스
 interface SessionProgress {
@@ -53,10 +53,7 @@ const UserProgress: React.FC<UserProgressProps> = () => {
         }
 
         // 사용자 통계 API 호출
-        const response = await axios.get<UserStats>(
-          `/api/users/me/stats`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
+        const response = await getStats();
 
         setStats(response.data);
       } catch (error) {
