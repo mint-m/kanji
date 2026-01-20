@@ -1,44 +1,48 @@
-import React, { useState, useCallback, useEffect, ReactNode, useRef } from 'react';
+import React, { useState, useCallback, useEffect, ReactNode } from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { setAuthBannerTrigger } from './authBannerInstance';
 
 export const AuthBannerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [showBanner, setShowBanner] = useState(false);
-  const isTriggeredRef = useRef(false);
 
   const showSessionExpiredBanner = useCallback(() => {
-    if (isTriggeredRef.current) return; // Prevent multiple triggers
-    isTriggeredRef.current = true;
-    setShowBanner(true);
+    setShowBanner(true); // React skips re-render if already true
+  }, []);
+
+  const hideBanner = useCallback(() => {
+    setShowBanner(false);
   }, []);
 
   // Register global trigger for axios interceptor
   useEffect(() => {
     setAuthBannerTrigger(showSessionExpiredBanner);
-    return () => setAuthBannerTrigger(() => {});
+    return () => setAuthBannerTrigger(() => { });
   }, [showSessionExpiredBanner]);
 
   return (
     <>
       {children}
-      {showBanner && <SessionExpiredBanner />}
+      {showBanner && <SessionExpiredBanner onHide={hideBanner} />}
     </>
   );
 };
 
 // Internal banner component
-const SessionExpiredBanner: React.FC = () => {
+const SessionExpiredBanner: React.FC<{ onHide: () => void }> = ({ onHide }) => {
+  const navigate = useNavigate();
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      window.location.href = '/login';
-    }, 3000);
+      onHide(); // Hide banner before navigation
+      navigate('/login', { replace: true });
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [navigate, onHide]);
 
   return (
     <BannerContainer>
-      <BannerIcon>⚠️</BannerIcon>
       <BannerMessage>세션이 만료되었습니다. 로그인 페이지로 이동합니다.</BannerMessage>
     </BannerContainer>
   );
@@ -55,11 +59,12 @@ const BannerContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
+  background: rgba(118, 180, 255, 0.20); /* Added transparency */
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  
+  backdrop-filter: blur(8px); // Glass effect
+  box-shadow: 0 4px 12px rgba(118, 180, 255, 0.25);
 
   animation: slideDown 0.3s ease-out;
 
@@ -75,12 +80,8 @@ const BannerContainer = styled.div`
   }
 `;
 
-const BannerIcon = styled.span`
-  font-size: 1.25rem;
-`;
-
 const BannerMessage = styled.span`
-  color: #991b1b;
+  color: #1E2A44;
   font-size: 0.9rem;
   font-weight: 500;
 `;
