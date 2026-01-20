@@ -138,11 +138,12 @@ const LevelBadge = styled.div`
   right: 0.5rem;
   font-size: 1rem;
   font-weight: bold;
-  background: #E6EAED;
   padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   z-index: 1;
+
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: rgba(71, 85, 105, 0.35);
 `;
 
 const MainContent = styled.div`
