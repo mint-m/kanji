@@ -153,6 +153,62 @@ const progressService = {
   async getLearningStats(): Promise<ApiResponse<LearningStatsResponse>> {
     return api.get('/api/users/me/progress/stats');
   },
+
+  /**
+   * 단어 완료 처리
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param wordId - 단어 ID
+   * @param isCorrect - 정답 여부
+   * @param timeSpent - 소요 시간 (초)
+   */
+  async completeWord(
+    progressType: ProgressType,
+    wordId: string,
+    isCorrect: boolean,
+    timeSpent: number
+  ): Promise<any> {
+    return api.post(`/api/users/me/progress/${progressType}/complete-word`, {
+      wordId,
+      isCorrect,
+      timeSpent,
+    });
+  },
+
+  /**
+   * 레벨 단계 데이터 조회
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param level - 학습 레벨
+   */
+  async getLevelStepData(
+    progressType: ProgressType,
+    level: string
+  ): Promise<any> {
+    return api.get(`/api/users/me/progress/${progressType}/levels/${level}`);
+  },
+
+  /**
+   * 체크포인트 저장
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param checkpoint - 체크포인트 데이터
+   */
+  async saveCheckpoint(
+    progressType: ProgressType,
+    checkpoint: any
+  ): Promise<any> {
+    return api.patch(`/api/users/me/progress/${progressType}/checkpoint`, checkpoint);
+  },
+
+  /**
+   * 진행 상태 리셋 (resetSession의 alias)
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   */
+  async resetProgress(progressType: ProgressType): Promise<any> {
+    return this.resetSession(progressType);
+  },
 };
 
 export default progressService;

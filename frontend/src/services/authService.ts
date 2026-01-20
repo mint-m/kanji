@@ -99,10 +99,8 @@ export const handleApiError = (error: unknown): never => {
       axiosError.message ||
       'Unknown API error';
 
-    // 401 Unauthorized 에러 발생 시 로그아웃 처리
-    if (axiosError.response?.status === 401) {
-      logout();
-    }
+    // 401 handling is done in apiClient interceptor
+    // No need to handle it here (prevents duplication)
 
     throw new Error(errorMessage);
   }
