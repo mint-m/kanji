@@ -217,6 +217,17 @@ export const isAuthenticated = (): boolean => {
   return !!getTokenLocally();
 };
 
+// JWT 토큰 만료 여부 확인 (디코딩만 수행, 서버 검증 아님)
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+};
+
 // 인증 여부에 따라 콜백 실행 (라우터 가드 등에서 사용)
 export const withAuth = <T>(callback: (user: UserProfile) => T, fallback?: () => T): T => {
   const token = getTokenLocally();

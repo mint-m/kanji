@@ -1,20 +1,12 @@
 // src/server.ts
 import mongoose from "mongoose";
 import app from "./app";
-import config from "./config";
+import config, { validateEnv } from "./config";
+
+// 환경변수 일괄 검증 (누락 시 목록 출력 후 종료)
+validateEnv();
 
 const { MONGO_URI, PORT } = config;
-
-// 환경 변수 검증
-if (!MONGO_URI) {
-  console.error("MONGO_URI is required");
-  process.exit(1);
-}
-
-if (!PORT) {
-  console.error("PORT is required");
-  process.exit(1);
-}
 
 // MongoDB 연결
 mongoose
