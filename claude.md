@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **📚 Detailed Technical Docs**: See [PROJECT_DOCS.md](./PROJECT_DOCS.md) for architecture, API specs, and database schemas (Korean).
+> **📚 Detailed Technical Docs**: See [PROJECT_DOCS.md](./docs/PROJECT_DOCS.md) for architecture, API specs, and database schemas (Korean).
 
 ---
 
@@ -201,7 +201,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-id
 
 ## Related Documentation
 
-- **[PROJECT_DOCS.md](./PROJECT_DOCS.md)** - Comprehensive technical documentation (Korean)
+- **[PROJECT_DOCS.md](./docs/PROJECT_DOCS.md)** - Comprehensive technical documentation (Korean)
   - Full architecture details
   - API endpoints and request/response formats
   - Database schemas and relationships
