@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
-import axios from 'axios';
 import SelectStep from 'components/SelectStep';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
@@ -46,11 +45,9 @@ const LevelSelectionPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await axios.get<LevelStepData>(
-          `/api/words/level/${selectedLevel}/steps`
-        );
+        const data = await api.get<LevelStepData>(`/api/words/level/${selectedLevel}/steps`);
 
-        setLevelData(response.data);
+        setLevelData(data);
       } catch (error) {
         console.error('Failed to fetch level data:', error);
         setError('Failed to load step data for this level');

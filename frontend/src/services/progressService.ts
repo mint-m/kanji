@@ -11,6 +11,7 @@
 import { api } from './apiClient';
 import {
   ApiResponse,
+  CompleteWordResponse,
   LearningLevel,
   ProgressType,
   StepRange,
@@ -59,14 +60,45 @@ export interface LearningStatsResponse {
     avgProgress: number;
   }>;
   wordStats: {
-    main: any | null;
-    sub: any | null;
+    main: WordStatsSummary | null;
+    sub: WordStatsSummary | null;
   };
   overall: {
     totalSessions: number;
     totalWordsInDecks: number;
     averageProgress: number;
   };
+}
+
+// 단어 학습 통계 집계 결과
+export interface WordStatsSummary {
+  _id: null;
+  total_words: number;
+  completed_words: number;
+  bookmarked_words: number;
+  total_tries: number;
+  total_correct: number;
+  avg_tries: number;
+  avg_success_rate: number;
+  total_time_spent: number;
+}
+
+// 레벨 단계 데이터
+export interface LevelStepData {
+  level: string;
+  totalWords: number;
+  totalSteps: number;
+  stepRange: { min: number; max: number };
+  availableSteps: number[];
+}
+
+// 체크포인트 업데이트 응답
+export interface CheckpointUpdateData {
+  progress_type: ProgressType;
+  current_level: LearningLevel;
+  steps: StepRange;
+  current_index: number;
+  updated_at: string;
 }
 
 const progressService = {
@@ -167,7 +199,7 @@ const progressService = {
     wordId: string,
     isCorrect: boolean,
     timeSpent: number
-  ): Promise<any> {
+  ): Promise<ApiResponse<CompleteWordResponse>> {
     return api.post(`/api/users/me/progress/${progressType}/complete-word`, {
       wordId,
       isCorrect,
@@ -184,7 +216,7 @@ const progressService = {
   async getLevelStepData(
     progressType: ProgressType,
     level: string
-  ): Promise<any> {
+  ): Promise<ApiResponse<LevelStepData>> {
     return api.get(`/api/users/me/progress/${progressType}/levels/${level}`);
   },
 
@@ -197,7 +229,7 @@ const progressService = {
   async saveCheckpoint(
     progressType: ProgressType,
     checkpoint: any
-  ): Promise<any> {
+  ): Promise<ApiResponse<CheckpointUpdateData>> {
     return api.patch(`/api/users/me/progress/${progressType}/checkpoint`, checkpoint);
   },
 
@@ -206,7 +238,7 @@ const progressService = {
    *
    * @param progressType - 진행 타입 (main/sub)
    */
-  async resetProgress(progressType: ProgressType): Promise<any> {
+  async resetProgress(progressType: ProgressType): Promise<ApiResponse<{ currentIndex: number; totalWords: number }>> {
     return this.resetSession(progressType);
   },
 };

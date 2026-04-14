@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateActiveProgressType, getProfile } from 'services/userService';
 import { api } from 'services/apiClient';
+import { ApiResponse, CurrentDeck } from 'services/types';
 
 interface UserProfileProps { }
 
@@ -20,7 +21,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState<boolean>(false);
-  const [progressData, setProgressData] = useState<any>(null);
+  const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState<boolean>(false);
 
   useEffect(() => {
@@ -68,12 +69,12 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       setIsLoadingProgress(true);
       try {
-        const response = await api.get(
+        const response = await api.get<ApiResponse<CurrentDeck>>(
           `/api/users/me/progress/${activeProgressType}/current`
         );
 
-        if (response.data.success && response.data.data) {
-          setProgressData(response.data.data);
+        if (response.success && response.data) {
+          setProgressData(response.data);
         }
       } catch (error) {
         console.error('Failed to fetch progress data:', error);
@@ -176,7 +177,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
           <CurrentProgress>
             <ProgressItem>
               <ProgressLabel>Level</ProgressLabel>
-              <ProgressValue>{progressData.current_level || 'N/A'}</ProgressValue>
+              <ProgressValue>{progressData.level || 'N/A'}</ProgressValue>
             </ProgressItem>
             <ProgressItem>
               <ProgressLabel>Steps</ProgressLabel>
