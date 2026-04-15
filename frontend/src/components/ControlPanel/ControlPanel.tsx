@@ -8,7 +8,6 @@ interface ControlPanelProps {
   onKnowClick: (know: boolean) => void;
   showMean: boolean;
   showHiragana: boolean;
-  disabled?: boolean;
 }
 
 interface StyledVisibleProps {
@@ -20,25 +19,19 @@ const ControlPanel: React.FC<ControlPanelProps> = React.memo(({
   onKnowClick,
   showMean,
   showHiragana,
-  disabled = false
 }) => {
-  const handleShowMean = React.useCallback(() => onShowClick('Mean'), [onShowClick]);
-  const handleShowHiragana = React.useCallback(() => onShowClick('Hiragana'), [onShowClick]);
-  const handleKnowFalse = React.useCallback(() => onKnowClick(false), [onKnowClick]);
-  const handleKnowTrue = React.useCallback(() => onKnowClick(true), [onKnowClick]);
-
   return (
     <ControlPanelContainer>
-      <VisibleButton $isVisible={showMean} onClick={handleShowMean}>
+      <VisibleButton $isVisible={showMean} onClick={() => onShowClick('Mean')}>
         한글 뜻
       </VisibleButton>
-      <VisibleButton $isVisible={showHiragana} onClick={handleShowHiragana}>
+      <VisibleButton $isVisible={showHiragana} onClick={() => onShowClick('Hiragana')}>
         요미가미
       </VisibleButton>
-      <VisibleButton $isVisible={true} onClick={handleKnowFalse} disabled={disabled}>
+      <VisibleButton $isVisible={true} onClick={() => onKnowClick(false)}>
         공부하겠습니다
       </VisibleButton>
-      <VisibleButton $isVisible={true} onClick={handleKnowTrue} disabled={disabled}>
+      <VisibleButton $isVisible={true} onClick={() => onKnowClick(true)}>
         외웠습니다
       </VisibleButton>
     </ControlPanelContainer>

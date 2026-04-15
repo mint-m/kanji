@@ -44,18 +44,8 @@ const UserProgress: React.FC<UserProgressProps> = () => {
       setError(null);
 
       try {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-          setError('사용자 인증 정보가 없습니다');
-          setIsLoading(false);
-          return;
-        }
-
-        // 사용자 통계 API 호출
-        const response = await getStats();
-
-        setStats(response.data);
+        const stats = await getStats();
+        setStats(stats);
       } catch (error) {
         console.error('통계 데이터를 가져오는데 실패했습니다:', error);
         setError('학습 진행 상황을 불러오는데 실패했습니다');

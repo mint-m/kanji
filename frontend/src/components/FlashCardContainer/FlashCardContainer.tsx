@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 
@@ -44,7 +44,8 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // =========================
         const [cardStudyTime, setCardStudyTime] = useState(Date.now());
 
-        const isProcessingRef = useRef(false);
+        // 처리 중인 단어 ID를 추적 (동일 단어 중복 클릭 방지, 다음 단어는 즉시 처리 가능)
+        const processingWordIdRef = useRef<string | null>(null);
 
 
         const dispatch = useDispatch();
@@ -53,7 +54,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // Derived state
         // =========================
         const isCompleted = wordIndex >= deck.length;
-        const currentWordId = useMemo(() => deck[wordIndex]?._id, [deck, wordIndex]);
+        const currentWordId = deck[wordIndex]?._id;
 
         // =========================
         // Effects
@@ -107,12 +108,9 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // Event handlers
         // =========================
         const handleKnowClick = useCallback((know: boolean) => {
-            // 중복 클릭 방지: ref를 통해 동기적으로 처리 (성능 최적화)
-            // TODO: UX 개선 필요 시 ControlPanel에 disabled prop 추가 고려
-            //       (트레이드오프: 카드당 2번 추가 리렌더링 vs 시각적 피드백)
-            if (isProcessingRef.current || !currentWordId) return;
+            if (!currentWordId || processingWordIdRef.current === currentWordId) return;
 
-            isProcessingRef.current = true;
+            processingWordIdRef.current = currentWordId;
 
             // Optimistic UI
             updateStats(know);
@@ -127,7 +125,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
                     })
                 })
                 .finally(() => {
-                    isProcessingRef.current = false;
+                    processingWordIdRef.current = null;
                 });
         }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, completeWordAsync, wordIndex]);
 
@@ -140,7 +138,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
             setIsResetting(true);
 
             try {
-                await progressService.resetProgress(progressType);
+                await progressService.resetSession(progressType);
 
                 setWordIndex(0);
                 setMasteredCount(0);
@@ -207,12 +205,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
                     showHiragana={showHiragana}
                 />
 
-                {/*
-                    성능 최적화: disabled prop 제거됨
-                    - 중복 클릭은 isProcessingRef로 방지 (기능적으로 안전)
-                    - 리렌더링 감소로 성능 향상
-                    - 단, 버튼 비활성화 시각 피드백 없음 (UX 트레이드오프)
-                */}
                 <ControlPanel
                     onShowClick={handleShowClick}
                     onKnowClick={handleKnowClick}

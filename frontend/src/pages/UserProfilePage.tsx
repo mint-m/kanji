@@ -8,6 +8,7 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateActiveProgressType, getProfile } from 'services/userService';
+import { logout } from 'services/authService';
 import { api } from 'services/apiClient';
 import { ApiResponse, CurrentDeck } from 'services/types';
 
@@ -44,9 +45,8 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
             throw new Error('Not authenticated');
           }
 
-          const response = await getProfile();
-
-          setUserData(response.data);
+          const profile = await getProfile();
+          setUserData(profile);
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
@@ -111,8 +111,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    logout(true);
     navigate('/');
   };
 

@@ -233,14 +233,6 @@ const progressService = {
     return api.patch(`/api/users/me/progress/${progressType}/checkpoint`, checkpoint);
   },
 
-  /**
-   * 진행 상태 리셋 (resetSession의 alias)
-   *
-   * @param progressType - 진행 타입 (main/sub)
-   */
-  async resetProgress(progressType: ProgressType): Promise<ApiResponse<{ currentIndex: number; totalWords: number }>> {
-    return this.resetSession(progressType);
-  },
 };
 
 export default progressService;
