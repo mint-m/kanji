@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import axios from 'axios';
 import styled from 'styled-components';
 
 import FlashCard, { ShowType } from 'components/FlashCard';
 import ControlPanel from 'components/ControlPanel';
 import { DeckWord } from 'services/types';
 import * as kanjiActions from 'store/modules/kanji';
+import progressService from 'services/progressService';
 
 interface FlashCardContainerProps {
     deck: DeckWord[];
@@ -37,7 +37,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // =========================
         // Control flags
         // =========================
-        const [isProcessing, setIsProcessing] = useState(false);
         const [isResetting, setIsResetting] = useState(false);
 
         // =========================
@@ -45,12 +44,17 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // =========================
         const [cardStudyTime, setCardStudyTime] = useState(Date.now());
 
+        // 처리 중인 단어 ID를 추적 (동일 단어 중복 클릭 방지, 다음 단어는 즉시 처리 가능)
+        const processingWordIdRef = useRef<string | null>(null);
+
+
         const dispatch = useDispatch();
 
         // =========================
         // Derived state
         // =========================
         const isCompleted = wordIndex >= deck.length;
+        const currentWordId = deck[wordIndex]?._id;
 
         // =========================
         // Effects
@@ -90,18 +94,11 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // =========================
         const completeWordAsync = useCallback(
             (wordId: string, startedAt: number, know: boolean) => {
-                const token = localStorage.getItem('token');
-                if (!token) return Promise.resolve();
-
-                return axios.post(
-                    `/api/users/me/progress/${progressType}/complete-word`,
-                    {
-                        wordId,
-                        isCorrect: know,
-                        timeSpent: Math.floor((Date.now() - startedAt) / 1000),
-                    },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                return progressService.completeWord(progressType, {
+                    wordId,
+                    isCorrect: know,
+                    timeSpent: Math.floor((Date.now() - startedAt) / 1000),
+                });
             },
             [progressType]
         );
@@ -110,24 +107,26 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // Event handlers
         // =========================
         const handleKnowClick = useCallback((know: boolean) => {
-            if (isProcessing) return;
+            if (!currentWordId || processingWordIdRef.current === currentWordId) return;
 
-            setIsProcessing(true);
+            processingWordIdRef.current = currentWordId;
 
             // Optimistic UI
             updateStats(know);
             moveToNextCard();
 
             // Background sync
-            completeWordAsync(deck[wordIndex]._id, cardStudyTime, know)
+            completeWordAsync(currentWordId, cardStudyTime, know)
                 .catch((error: unknown) => {
                     console.warn('⚠️ Progress sync failed', {
                         error,
                         wordIndex,
                     })
                 })
-                .finally(() => setIsProcessing(false));
-        }, [isProcessing, updateStats, moveToNextCard, wordIndex, cardStudyTime]);
+                .finally(() => {
+                    processingWordIdRef.current = null;
+                });
+        }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, completeWordAsync, wordIndex]);
 
         const handleShowClick = useCallback((type: ShowType['type']) => {
             type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
@@ -138,14 +137,7 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
             setIsResetting(true);
 
             try {
-                const token = localStorage.getItem('token');
-                if (!token) return;
-
-                await axios.put(
-                    `/api/users/me/progress/${progressType}/reset`,
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                await progressService.resetSession(progressType);
 
                 setWordIndex(0);
                 setMasteredCount(0);
@@ -217,7 +209,6 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
                     onKnowClick={handleKnowClick}
                     showMean={!showMean}
                     showHiragana={!showHiragana}
-                    disabled={isProcessing}
                 />
             </>
         );

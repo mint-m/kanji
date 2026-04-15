@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import SelectLevel from 'components/SelectLevel';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
-import axios from 'axios';
 import SelectStep from 'components/SelectStep';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import ReactPageScroller from 'react-page-scroller';
 import styled from 'styled-components';
+import { api } from 'services/apiClient';
+import progressService from 'services/progressService';
 
 // Types for level data
 interface LevelStepData {
@@ -45,11 +46,9 @@ const LevelSelectionPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await axios.get<LevelStepData>(
-          `/api/words/level/${selectedLevel}/steps`
-        );
+        const data = await api.get<LevelStepData>(`/api/words/level/${selectedLevel}/steps`);
 
-        setLevelData(response.data);
+        setLevelData(data);
       } catch (error) {
         console.error('Failed to fetch level data:', error);
         setError('Failed to load step data for this level');
@@ -91,14 +90,10 @@ const LevelSelectionPage: React.FC = () => {
         setIsLoading(true);
 
         // UserProgress 생성/업데이트
-        await axios.patch(
-          `/api/users/me/checkpoint`,
-          {
-            progressType: activeProgressType || 'main',
-            level: selectedLevel,
-            steps: selectedSteps,
-          },
-          { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } }
+        await progressService.saveCheckpoint(
+          activeProgressType || 'main',
+          selectedLevel as any,
+          selectedSteps,
         );
 
         // Navigate to flashcards

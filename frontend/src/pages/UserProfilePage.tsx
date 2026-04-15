@@ -4,11 +4,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from 'store';
 import UserProgress from 'components/UserProgress';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
-import axios from 'axios';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
-import { updateActiveProgressType } from 'services/userService';
+import { updateActiveProgressType, getProfile } from 'services/userService';
+import { logout } from 'services/authService';
+import deckService from 'services/deckService';
+import { CurrentDeck } from 'services/types';
 
 interface UserProfileProps { }
 
@@ -20,7 +22,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState<boolean>(false);
-  const [progressData, setProgressData] = useState<any>(null);
+  const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState<boolean>(false);
 
   useEffect(() => {
@@ -43,11 +45,8 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
             throw new Error('Not authenticated');
           }
 
-          const response = await axios.get('/api/auth/profile', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-
-          setUserData(response.data);
+          const profile = await getProfile();
+          setUserData(profile);
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
@@ -70,16 +69,10 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       setIsLoadingProgress(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        const response = await deckService.getCurrentDeck(activeProgressType);
 
-        const response = await axios.get(
-          `/api/users/me/progress/${activeProgressType}/current`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-
-        if (response.data.success && response.data.data) {
-          setProgressData(response.data.data);
+        if (response.success && response.data) {
+          setProgressData(response.data);
         }
       } catch (error) {
         console.error('Failed to fetch progress data:', error);
@@ -116,8 +109,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    logout(true);
     navigate('/');
   };
 
@@ -182,7 +174,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
           <CurrentProgress>
             <ProgressItem>
               <ProgressLabel>Level</ProgressLabel>
-              <ProgressValue>{progressData.current_level || 'N/A'}</ProgressValue>
+              <ProgressValue>{progressData.level || 'N/A'}</ProgressValue>
             </ProgressItem>
             <ProgressItem>
               <ProgressLabel>Steps</ProgressLabel>

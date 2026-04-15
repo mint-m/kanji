@@ -1,11 +1,10 @@
 /**
  * Deck Service
  *
- * 덱 생성 및 학습 완료 처리 API
+ * 덱 전체(큰 범위) 상태 관리 API
  * - 덱 생성 (슬라이딩 윈도우)
  * - 현재 덱 조회
- * - 단어 완료 처리
- * - 덱 완료 및 전환
+ * - 덱 완료 및 다음 윈도우 전환
  * - 덱 통계 조회
  */
 
@@ -18,8 +17,6 @@ import {
   DeckGenerationOptions,
   Deck,
   CurrentDeck,
-  CompleteWordRequest,
-  CompleteWordResponse,
 } from './types';
 
 // 덱 생성 요청
@@ -37,11 +34,6 @@ export interface CompleteDeckRequest {
     enjoyment: number; // 1-5 scale
     notes?: string;
   };
-}
-
-// 벌크 완료 요청
-export interface BulkCompleteRequest {
-  completions: CompleteWordRequest[];
 }
 
 const deckService = {
@@ -93,42 +85,6 @@ const deckService = {
    */
   async getDeckStats(progressType: ProgressType): Promise<ApiResponse<any>> {
     return api.get(`/api/users/me/progress/${progressType}/deck-stats`);
-  },
-
-  /**
-   * 단어 완료 처리 (정답/오답 기록)
-   *
-   * - 자동으로 체크포인트 저장 (개발: 매 단어, 운영: 5단어마다)
-   * - WordProgress 업데이트
-   * - current_index 자동 증가
-   *
-   * @param progressType - 세션 타입
-   * @param data - 완료 정보 (wordId, isCorrect, timeSpent)
-   *
-   * 예시:
-   * ```
-   * await deckService.completeWord('main', {
-   *   wordId: '507f1f77bcf86cd799439011',
-   *   isCorrect: true,
-   *   timeSpent: 15,
-   * });
-   * ```
-   */
-  async completeWord(
-    progressType: ProgressType,
-    data: CompleteWordRequest
-  ): Promise<ApiResponse<CompleteWordResponse>> {
-    return api.post(`/api/users/me/progress/${progressType}/complete-word`, data);
-  },
-
-  /**
-   * 여러 단어 일괄 완료 처리
-   *
-   * @param progressType - 세션 타입
-   * @param data - 완료 정보 배열
-   */
-  async bulkCompleteWords(progressType: ProgressType, data: BulkCompleteRequest): Promise<ApiResponse<any>> {
-    return api.post(`/api/users/me/progress/${progressType}/bulk-complete`, data);
   },
 
   /**

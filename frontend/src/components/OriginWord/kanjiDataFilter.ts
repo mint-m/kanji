@@ -1,10 +1,10 @@
-import axios from 'axios';
+import { api } from 'services/apiClient';
 import { KanjiDataType, Mean } from 'store/modules/kanji';
 
 const kanjiDataFilter = async (kanji: string): Promise<KanjiDataType | null> => {
   try {
-    const response = await axios.get('/api/words/kanjiSearch', { params: { kanji } });
-    const { searchResult } = response.data;
+    const data = await api.get('/api/words/kanjiSearch', { params: { kanji } });
+    const { searchResult } = data;
 
     if (searchResult.length > 0) {
       const kanjiData = searchResult[0];

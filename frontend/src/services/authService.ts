@@ -99,10 +99,8 @@ export const handleApiError = (error: unknown): never => {
       axiosError.message ||
       'Unknown API error';
 
-    // 401 Unauthorized 에러 발생 시 로그아웃 처리
-    if (axiosError.response?.status === 401) {
-      logout();
-    }
+    // 401 handling is done in apiClient interceptor
+    // No need to handle it here (prevents duplication)
 
     throw new Error(errorMessage);
   }
@@ -202,18 +200,33 @@ export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
 };
 
 // 로그아웃
-export const logout = (): void => {
+export const logout = (skipRedirect = false): void => {
   removeTokenLocally();
   removeUserLocally();
 
   // 추가: 프론트엔드에서만 로그아웃하는 대신 백엔드에도 로그아웃 요청 가능
   // 세션 무효화를 위해 백엔드에 로그아웃 알림 >> 보안 업데이트 필요시 개발 예정
-  window.location.href = '/';
+
+  if (!skipRedirect) {
+    window.location.href = '/';
+  }
 };
 
 // 인증 상태 확인
 export const isAuthenticated = (): boolean => {
   return !!getTokenLocally();
+};
+
+// JWT 토큰 만료 여부 확인 (디코딩만 수행, 서버 검증 아님)
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
 };
 
 // 인증 여부에 따라 콜백 실행 (라우터 가드 등에서 사용)

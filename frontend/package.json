@@ -39,6 +39,33 @@
     "extends": [
       "react-app",
       "react-app/jest"
+    ],
+    "rules": {
+      "no-restricted-imports": [
+        "error",
+        {
+          "paths": [
+            {
+              "name": "axios",
+              "message": "❌ Direct axios import is not allowed. Use 'services/apiClient' for authenticated APIs."
+            }
+          ]
+        }
+      ]
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/services/apiClient.ts",
+          "**/services/authService.ts",
+          "**/LoginButton/GoogleLoginButton/GoogleLoginButton.tsx",
+          "**/OriginWord/kanjiDataFilter.ts",
+          "**/pages/LevelSelectionPage/LevelSelectionPage.tsx"
+        ],
+        "rules": {
+          "no-restricted-imports": "off"
+        }
+      }
     ]
   },
   "browserslist": {

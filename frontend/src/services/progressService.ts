@@ -11,6 +11,8 @@
 import { api } from './apiClient';
 import {
   ApiResponse,
+  CompleteWordRequest,
+  CompleteWordResponse,
   LearningLevel,
   ProgressType,
   StepRange,
@@ -59,14 +61,45 @@ export interface LearningStatsResponse {
     avgProgress: number;
   }>;
   wordStats: {
-    main: any | null;
-    sub: any | null;
+    main: WordStatsSummary | null;
+    sub: WordStatsSummary | null;
   };
   overall: {
     totalSessions: number;
     totalWordsInDecks: number;
     averageProgress: number;
   };
+}
+
+// 단어 학습 통계 집계 결과
+export interface WordStatsSummary {
+  _id: null;
+  total_words: number;
+  completed_words: number;
+  bookmarked_words: number;
+  total_tries: number;
+  total_correct: number;
+  avg_tries: number;
+  avg_success_rate: number;
+  total_time_spent: number;
+}
+
+// 레벨 단계 데이터
+export interface LevelStepData {
+  level: string;
+  totalWords: number;
+  totalSteps: number;
+  stepRange: { min: number; max: number };
+  availableSteps: number[];
+}
+
+// 체크포인트 업데이트 응답
+export interface CheckpointUpdateData {
+  progress_type: ProgressType;
+  current_level: LearningLevel;
+  steps: StepRange;
+  current_index: number;
+  updated_at: string;
 }
 
 const progressService = {
@@ -124,16 +157,6 @@ const progressService = {
   },
 
   /**
-   * 다음 슬라이딩 윈도우 생성
-   *
-   * 현재 윈도우가 완료되었을 때 다음 윈도우로 이동
-   * 예: 1-3 → 2-4
-   */
-  async generateNextWindow(type: ProgressType): Promise<ApiResponse<any>> {
-    return api.post(`/api/users/me/progress/${type}/next-window`);
-  },
-
-  /**
    * 세션 삭제
    */
   async deleteSession(type: ProgressType): Promise<ApiResponse<any>> {
@@ -153,6 +176,48 @@ const progressService = {
   async getLearningStats(): Promise<ApiResponse<LearningStatsResponse>> {
     return api.get('/api/users/me/progress/stats');
   },
+
+  /**
+   * 단어 완료 처리
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param data - 완료 정보 (wordId, isCorrect, timeSpent)
+   */
+  async completeWord(
+    progressType: ProgressType,
+    data: CompleteWordRequest
+  ): Promise<ApiResponse<CompleteWordResponse>> {
+    return api.post(`/api/users/me/progress/${progressType}/complete-word`, data);
+  },
+
+  /**
+   * 레벨 단계 데이터 조회
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param level - 학습 레벨
+   */
+  async getLevelStepData(
+    progressType: ProgressType,
+    level: string
+  ): Promise<ApiResponse<LevelStepData>> {
+    return api.get(`/api/users/me/progress/${progressType}/levels/${level}`);
+  },
+
+  /**
+   * 체크포인트 저장 (레벨/파트 선택 시)
+   *
+   * @param progressType - 진행 타입 (main/sub)
+   * @param level - 선택한 레벨
+   * @param steps - 선택한 스텝 범위
+   */
+  async saveCheckpoint(
+    progressType: ProgressType,
+    level: LearningLevel,
+    steps: StepRange
+  ): Promise<ApiResponse<CheckpointUpdateData>> {
+    return api.patch(`/api/users/me/checkpoint`, { progressType, level, steps });
+  },
+
 };
 
 export default progressService;

@@ -137,7 +137,7 @@ kan-ji/
 │   │   ├── services/      # 비즈니스 로직
 │   │   └── middleware/    # 미들웨어
 │   └── package.json
-├── PROJECT_DOCS.md        # 📚 상세 기술 문서 (한글)
+├── docs/                 # 📚 문서 모음
 ├── CLAUDE.md              # Claude Code 가이드 (영문)
 └── README.md              # 이 파일
 ```
@@ -217,7 +217,7 @@ kan-ji/
 | `user_checkpoints` | 세션 상태 + 체크포인트 | Main/Sub 독립 |
 | `word_progress`    | 단어별 완료 상태       | 북마크 포함   |
 
-> 상세 스키마는 [PROJECT_DOCS.md](./PROJECT_DOCS.md#데이터베이스-구조)를 참조하세요.
+> 상세 스키마는 [PROJECT_DOCS.md](./docs/PROJECT_DOCS.md#데이터베이스-구조)를 참조하세요.
 
 ---
 
@@ -266,7 +266,7 @@ chore: 빌드 설정 등
 
 ## 📝 문서
 
-- **[PROJECT_DOCS.md](./PROJECT_DOCS.md)** - 📚 전체 기술 문서 (한글)
+- **[PROJECT_DOCS.md](./docs/PROJECT_DOCS.md)** - 📚 전체 기술 문서 (한글)
 
   - 시스템 아키텍처
   - 데이터베이스 구조
