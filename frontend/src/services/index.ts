@@ -27,7 +27,6 @@ export type {
 export type {
   GenerateDeckRequest,
   CompleteDeckRequest,
-  BulkCompleteRequest,
 } from './deckService';
 
 export type { Bookmark, GetBookmarksOptions } from './bookmarkService';

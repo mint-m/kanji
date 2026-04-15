@@ -9,8 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateActiveProgressType, getProfile } from 'services/userService';
 import { logout } from 'services/authService';
-import { api } from 'services/apiClient';
-import { ApiResponse, CurrentDeck } from 'services/types';
+import deckService from 'services/deckService';
+import { CurrentDeck } from 'services/types';
 
 interface UserProfileProps { }
 
@@ -69,9 +69,7 @@ const UserProfilePage: React.FC<UserProfileProps> = () => {
 
       setIsLoadingProgress(true);
       try {
-        const response = await api.get<ApiResponse<CurrentDeck>>(
-          `/api/users/me/progress/${activeProgressType}/current`
-        );
+        const response = await deckService.getCurrentDeck(activeProgressType);
 
         if (response.success && response.data) {
           setProgressData(response.data);

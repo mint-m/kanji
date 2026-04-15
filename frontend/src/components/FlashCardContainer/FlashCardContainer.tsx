@@ -94,12 +94,11 @@ const FlashCardContainer: React.FC<FlashCardContainerProps> = React.memo(
         // =========================
         const completeWordAsync = useCallback(
             (wordId: string, startedAt: number, know: boolean) => {
-                return progressService.completeWord(
-                    progressType,
+                return progressService.completeWord(progressType, {
                     wordId,
-                    know,
-                    Math.floor((Date.now() - startedAt) / 1000)
-                );
+                    isCorrect: know,
+                    timeSpent: Math.floor((Date.now() - startedAt) / 1000),
+                });
             },
             [progressType]
         );

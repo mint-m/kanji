@@ -9,6 +9,7 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import ReactPageScroller from 'react-page-scroller';
 import styled from 'styled-components';
 import { api } from 'services/apiClient';
+import progressService from 'services/progressService';
 
 // Types for level data
 interface LevelStepData {
@@ -89,13 +90,10 @@ const LevelSelectionPage: React.FC = () => {
         setIsLoading(true);
 
         // UserProgress 생성/업데이트
-        await api.patch(
-          `/api/users/me/checkpoint`,
-          {
-            progressType: activeProgressType || 'main',
-            level: selectedLevel,
-            steps: selectedSteps,
-          }
+        await progressService.saveCheckpoint(
+          activeProgressType || 'main',
+          selectedLevel as any,
+          selectedSteps,
         );
 
         // Navigate to flashcards
