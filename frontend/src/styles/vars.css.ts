@@ -29,7 +29,7 @@ export const vars = createGlobalTheme(':root', {
     inner: 'inset 6px 6px 12px rgba(163, 177, 198, 0.6), inset -6px -6px 12px rgba(255, 255, 255, 0.5)',
     sliderOuter: '6px 6px 12px rgba(163, 177, 198, 1), -6px -6px 12px rgba(255, 255, 255, 1)',
     sliderInner: 'inset 2px 2px 8px #bebebe, inset -2px -2px 8px #ffffff',
-    card: '0_4px_6px_rgba(0,0,0,0.07)',
+    card: '0 4px 6px rgba(0,0,0,0.07)',
   },
   font: {
     jp: "'Noto Sans JP', sans-serif",

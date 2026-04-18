@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import bookmarkService, { Bookmark, GetBookmarksOptions } from 'services/bookmarkService';
 import { LearningLevel } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
@@ -28,7 +28,7 @@ const BookmarkPage: FC = () => {
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
 
-  const fetchBookmarks = async (page: number = 1) => {
+  const fetchBookmarks = useCallback(async (page: number = 1) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -55,7 +55,7 @@ const BookmarkPage: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedLevel, sortBy]);
 
   const fetchStats = async () => {
     try {
@@ -64,7 +64,7 @@ const BookmarkPage: FC = () => {
     } catch {}
   };
 
-  useEffect(() => { fetchBookmarks(1); }, [selectedLevel, sortBy]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchBookmarks(1); }, [fetchBookmarks]);
   useEffect(() => { fetchStats(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRemoveBookmark = async (wordId: string) => {

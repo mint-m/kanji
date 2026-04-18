@@ -29,7 +29,7 @@ export const cardCollapsed = style({
 });
 
 export const cardExpanded = style({
-  maxHeight: 'none',
+  maxHeight: '400px',
 });
 
 export const cardClickable = style({

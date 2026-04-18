@@ -25,7 +25,7 @@ const FlashCard = memo(({ word, showHiragana, showMean }: FlashCardProps) => (
     <div className={clsx(styles.hiraganaRow, showHiragana ? styles.visible : styles.invisible)}>
       {word.entry}
     </div>
-    <OriginWord word={word.pron ?? word.entry} />
+    <OriginWord word={word.pron || word.entry} />
     <div>
       {word.means.map((mean, index) => (
         <div key={index} className={clsx(styles.meanItem, showMean ? styles.visible : styles.invisible)}>
