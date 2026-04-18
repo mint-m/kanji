@@ -1,7 +1,7 @@
-import React from 'react';
+import { FC } from 'react';
 import StepRangeSlider from 'components/StepRangeSlider';
-import { styled } from 'styled-components';
 import HeaderSection from 'components/HeaderSection';
+import { container } from './SelectStep.css';
 
 interface SelectStepProps {
   progressLevel: string;
@@ -9,17 +9,11 @@ interface SelectStepProps {
   onSelectStep: Function;
 }
 
-const SelectStepContainer = styled.div`
-  width: 40rem;
-`
-
-const SelectStep: React.FC<SelectStepProps> = ({ progressLevel, stepLength, onSelectStep }) => {
-  return (
-    <SelectStepContainer>
-      <HeaderSection title={progressLevel} subtitle="STEPS" />
-      <StepRangeSlider stepLength={stepLength} onSelectStep={onSelectStep} />
-    </SelectStepContainer>
-  );
-};
+const SelectStep: FC<SelectStepProps> = ({ progressLevel, stepLength, onSelectStep }) => (
+  <div className={container}>
+    <HeaderSection title={progressLevel} subtitle="STEPS" />
+    <StepRangeSlider stepLength={stepLength} onSelectStep={onSelectStep} />
+  </div>
+);
 
 export default SelectStep;

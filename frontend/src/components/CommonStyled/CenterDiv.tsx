@@ -1,12 +1,15 @@
+import { forwardRef, HTMLAttributes } from 'react';
+import { clsx } from 'clsx';
+import { centerDiv } from './CenterDiv.css';
 
-import styled from 'styled-components';
+type DivProps = HTMLAttributes<HTMLDivElement>;
 
-const CenterDiv = styled.div`
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-`;
+const CenterDiv = forwardRef<HTMLDivElement, DivProps>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={clsx(centerDiv, className)} {...props} />
+  )
+);
+
+CenterDiv.displayName = 'CenterDiv';
 
 export default CenterDiv;

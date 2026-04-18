@@ -1,7 +1,8 @@
 import DefaultButton from 'components/CommonStyled/DefaultButton';
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { css } from 'styled-components';
+import { clsx } from 'clsx';
+import * as styles from './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -21,116 +22,44 @@ const Navbar = () => {
     navigate('/');
   }, [navigate]);
 
-  // Close the menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 로그인 상태가 변경될 때 메뉴 상태 초기화
   useEffect(() => {
-    if (!userProfile) {
-      setShowUserMenu(false);
-    }
+    if (!userProfile) setShowUserMenu(false);
   }, [userProfile]);
 
   return (
-    <NavbarDiv>
-      <Button onClick={() => handleOnClick('')}>홈</Button>
+    <div className={styles.navbar}>
+      <DefaultButton className={styles.navBtn} onClick={() => handleOnClick('')}>홈</DefaultButton>
       {userProfile ? (
-        <UserSection ref={menuRef}>
-          <ProfileButton
+        <div ref={menuRef} className={styles.dropdown}>
+          <DefaultButton
+            className={clsx(styles.navBtn, showUserMenu && styles.navBtnActive)}
             onClick={() => setShowUserMenu(!showUserMenu)}
-            $isActive={showUserMenu}
           >
             {userProfile.name}
-          </ProfileButton>
+          </DefaultButton>
           {showUserMenu && (
-            <UserMenu>
-              <MenuItem onClick={() => handleOnClick('profile')}>
-                프로필
-              </MenuItem>
-              <MenuItem onClick={() => handleOnClick('bookmark')}>
-                북마크
-              </MenuItem>
-              <MenuItem onClick={handleLogout}>
-                로그아웃
-              </MenuItem>
-            </UserMenu>
+            <div className={styles.dropdownMenu}>
+              <div className={styles.dropdownItem} onClick={() => handleOnClick('profile')}>프로필</div>
+              <div className={styles.dropdownItem} onClick={() => handleOnClick('bookmark')}>북마크</div>
+              <div className={styles.dropdownItem} onClick={handleLogout}>로그아웃</div>
+            </div>
           )}
-        </UserSection>
+        </div>
       ) : (
-        <Button onClick={() => handleOnClick('login')}>로그인</Button>
+        <DefaultButton className={styles.navBtn} onClick={() => handleOnClick('login')}>로그인</DefaultButton>
       )}
-    </NavbarDiv>
+    </div>
   );
 };
 
 export default Navbar;
-
-const Button = styled(DefaultButton)`
-  /* 공통 스타일 */
-  ${css`
-    line-height: 100%;
-    width: 4rem;
-    height: 2.5rem;
-    font-size: 0.9rem;
-    border-radius: 2rem;
-    padding: 0 0.5rem;
-    margin-left: 1rem;
-    color: gray;
-  `}
-`;
-
-const ProfileButton = styled(Button) <{ $isActive: boolean }>`
-  ${props => props.$isActive && css`
-    background-color: #f0f0f0;
-  `};
-  width: fit-content;
-  padding: 0 1rem;
-`;
-
-const UserSection = styled.div`
-  position: relative;
-  display: inline-block;
-`;
-
-const UserMenu = styled.div`
-  position: absolute;
-  right: 0;
-  top: 3rem;
-  width: 8rem;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  z-index: 100;
-`;
-
-const MenuItem = styled.div`
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #333;
-
-  &:hover {
-    background-color: #f5f5f5;
-  }
-`;
-
-const NavbarDiv = styled.div`
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  top: 1vh;
-  right: 1.5vh;
-`;
