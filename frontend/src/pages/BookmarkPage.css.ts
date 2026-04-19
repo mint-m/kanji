@@ -39,8 +39,8 @@ export const statValue = style({
 
 export const filtersBar = style({
   display: 'flex',
-  gap: '24px',
-  marginBottom: '24px',
+  gap: vars.space.lg,
+  marginBottom: vars.space.lg,
 
   '@media': {
     'screen and (max-width: 640px)': {
@@ -87,7 +87,7 @@ export const bookmarkHeader = style({
 export const wordMain = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
+  gap: vars.space.xs,
 });
 
 export const wordPron = style({
@@ -97,13 +97,13 @@ export const wordPron = style({
 });
 
 export const wordEntry = style({
-  fontSize: '1.1rem',
+  fontSize: vars.fontSize.md,
   color: vars.color.textMuted,
 });
 
 export const levelBadge = style({
   padding: `4px ${vars.space.sm}`,
-  borderRadius: '20px',
+  borderRadius: vars.radius.pill,
   fontSize: vars.fontSize.sm,
   fontWeight: 'bold',
   color: vars.color.white,
@@ -114,7 +114,7 @@ export const meanings = style({
 });
 
 export const meaningItem = style({
-  padding: '4px 0',
+  padding: `${vars.space.xs} 0`,
   color: vars.color.textDark,
 
   selectors: {
@@ -135,7 +135,7 @@ export const partsRow = style({
 export const partTag = style({
   padding: '2px 8px',
   backgroundColor: vars.color.borderLight,
-  color: '#34495e',
+  color: vars.color.textDark,
   borderRadius: vars.radius.sm,
   fontSize: vars.fontSize.sm,
 });
@@ -178,7 +178,7 @@ export const saveBtn = style({
   backgroundColor: vars.color.primary,
   color: vars.color.white,
   cursor: 'pointer',
-  fontSize: '0.9rem',
+  fontSize: vars.fontSize.sm,
 
   selectors: {
     '&:hover': { opacity: 0.9 },
@@ -192,7 +192,7 @@ export const cancelBtn = style({
   backgroundColor: vars.color.textFaint,
   color: vars.color.white,
   cursor: 'pointer',
-  fontSize: '0.9rem',
+  fontSize: vars.fontSize.sm,
 
   selectors: {
     '&:hover': { opacity: 0.9 },
@@ -200,13 +200,13 @@ export const cancelBtn = style({
 });
 
 export const notesDisplay = style({
-  color: '#34495e',
+  color: vars.color.textDark,
   cursor: 'pointer',
   padding: vars.space.sm,
   borderRadius: vars.radius.sm,
 
   selectors: {
-    '&:hover': { backgroundColor: '#e9ecef' },
+    '&:hover': { backgroundColor: vars.color.borderMid },
   },
 });
 
@@ -265,7 +265,7 @@ export const pagination = style({
   alignItems: 'center',
   gap: vars.space.xl,
   marginTop: vars.space.xl,
-  paddingTop: '24px',
+  paddingTop: vars.space.lg,
 });
 
 export const paginationInfo = style({

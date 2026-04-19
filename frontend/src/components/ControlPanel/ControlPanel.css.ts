@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { style, globalStyle } from '@vanilla-extract/css';
 import { vars } from 'styles/vars.css';
 
 export const grid = style({
@@ -7,4 +7,8 @@ export const grid = style({
   gap: vars.space.sm,
   width: '100%',
   marginTop: vars.space.md,
+});
+
+globalStyle(`${grid} > *`, {
+  width: '100%',
 });

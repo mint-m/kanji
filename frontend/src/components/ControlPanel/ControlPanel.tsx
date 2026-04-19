@@ -17,16 +17,16 @@ const ControlPanel: FC<ControlPanelProps> = memo(({
   showHiragana,
 }) => (
   <div className={grid}>
-    <DefaultButton pressed={showMean} style={{ width: '100%' }} onClick={() => onShowClick('Mean')}>
+    <DefaultButton pressed={showMean} onClick={() => onShowClick('Mean')}>
       한글 뜻
     </DefaultButton>
-    <DefaultButton pressed={showHiragana} style={{ width: '100%' }} onClick={() => onShowClick('Hiragana')}>
+    <DefaultButton pressed={showHiragana} onClick={() => onShowClick('Hiragana')}>
       요미가나
     </DefaultButton>
-    <DefaultButton style={{ width: '100%' }} onClick={() => onKnowClick(false)}>
+    <DefaultButton onClick={() => onKnowClick(false)}>
       공부하겠습니다
     </DefaultButton>
-    <DefaultButton style={{ width: '100%' }} onClick={() => onKnowClick(true)}>
+    <DefaultButton onClick={() => onKnowClick(true)}>
       외웠습니다
     </DefaultButton>
   </div>

@@ -34,11 +34,12 @@ export const cardExpanded = style({
 
 export const cardClickable = style({
   cursor: 'pointer',
+  transition: 'transform 0.2s, box-shadow 0.2s',
 
   selectors: {
     '&:hover': {
       transform: 'translateY(-2px)',
-      boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+      boxShadow: vars.shadow.hover,
     },
   },
 });
@@ -73,12 +74,11 @@ export const cardBody = style({
 
 export const kanjiRow = style({
   display: 'flex',
-  // alignItems: 'flex-start',
   margin: '8px 0 12px',
 });
 
 export const kanjiGlyph = style({
-  fontSize: '4rem',
+  fontSize: vars.fontSize.kanji,
   marginRight: vars.space.md,
 });
 
@@ -86,23 +86,23 @@ export const pronWrapper = style({
   display: 'flex',
   flexDirection: 'column',
   flex: 1,
-  gap: '4px',
+  gap: vars.space.xs,
 });
 
 export const pronEntry = style({
   display: 'flex',
   alignItems: 'baseline',
-  gap: '4px',
+  gap: vars.space.xs,
 });
 
 export const pronMean = style({
-  fontSize: '1rem',
+  fontSize: vars.fontSize.base,
   fontWeight: 300,
   color: vars.color.textMuted,
 });
 
 export const pronSound = style({
-  fontSize: '1rem',
+  fontSize: vars.fontSize.base,
   fontWeight: 600,
   color: vars.color.textDark,
 });
@@ -114,7 +114,7 @@ export const readingsPanel = style({
 
 export const readingsScroll = style({
   padding: vars.space.sm,
-  fontSize: '1.25rem',
+  fontSize: vars.fontSize.md,
   display: 'flex',
   flexWrap: 'wrap',
   gap: vars.space.md,

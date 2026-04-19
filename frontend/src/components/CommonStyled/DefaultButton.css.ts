@@ -10,11 +10,11 @@ export const button = style({
   cursor: 'pointer',
   fontSize: vars.fontSize.base,
   boxShadow: vars.shadow.outer,
-  transition: 'background-color 0.15s, box-shadow 0.15s',
+  transition: 'background-color 0.2s, box-shadow 0.2s',
 
   selectors: {
     '&:hover': {
-      backgroundColor: '#eeeeee',
+      backgroundColor: vars.color.surfaceHover,
     },
     '&:disabled': {
       opacity: 0.7,

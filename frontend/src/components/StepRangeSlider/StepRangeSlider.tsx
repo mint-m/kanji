@@ -7,11 +7,11 @@ import './SliderStyles.css.ts';
 
 interface StepSliderProps {
   stepLength: number;
-  onSelectStep: Function;
+  onSelectStep: (range: { start: number; end: number }) => void;
 }
 
 const StepRangeSlider: FC<StepSliderProps> = ({ stepLength, onSelectStep }) => {
-  const [range, setRange] = useState({ min: 1, max: 1 });
+  const [range, setRange] = useState({ start: 1, end: 1 });
 
   return (
     <div className="slider-container">
@@ -21,12 +21,12 @@ const StepRangeSlider: FC<StepSliderProps> = ({ stepLength, onSelectStep }) => {
         min={1}
         max={stepLength}
         step={1}
-        defaultValue={[range.min, range.max]}
+        defaultValue={[range.start, range.end]}
         style={{ height: '1rem', padding: '0' }}
         onChange={(value) => {
-          const [min, max] = value as number[];
-          setRange({ min, max });
-          onSelectStep({ min, max });
+          const [start, end] = value as number[];
+          setRange({ start, end });
+          onSelectStep({ start, end });
         }}
         handleRender={(node, handleProps) => (
           <Tooltip

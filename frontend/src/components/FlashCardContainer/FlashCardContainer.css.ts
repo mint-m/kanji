@@ -61,13 +61,13 @@ export const statLabel = style({
 export const statValueGreen = style({
   fontSize: vars.fontSize.xl,
   fontWeight: 'bold',
-  color: '#10b981',
+  color: vars.color.success,
 });
 
 export const statValueAmber = style({
   fontSize: vars.fontSize.xl,
   fontWeight: 'bold',
-  color: '#f59e0b',
+  color: vars.color.warning,
 });
 
 export const restartButton = style({

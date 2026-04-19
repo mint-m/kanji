@@ -8,7 +8,7 @@ export const AuthBannerProvider: FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     setAuthBannerTrigger(() => setShowBanner(true));
-    return () => setAuthBannerTrigger(() => {});
+    return () => setAuthBannerTrigger(() => { });
   }, []);
 
   return (

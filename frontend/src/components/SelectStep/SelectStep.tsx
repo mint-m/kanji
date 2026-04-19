@@ -6,7 +6,7 @@ import { container } from './SelectStep.css';
 interface SelectStepProps {
   progressLevel: string;
   stepLength: number;
-  onSelectStep: Function;
+  onSelectStep: (range: { start: number; end: number }) => void;
 }
 
 const SelectStep: FC<SelectStepProps> = ({ progressLevel, stepLength, onSelectStep }) => (

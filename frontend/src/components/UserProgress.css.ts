@@ -1,6 +1,10 @@
 import { style } from '@vanilla-extract/css';
 import { vars } from 'styles/vars.css';
 
+export const container = style({
+  width: '100%',
+});
+
 export const pageTitle = style({
   marginTop: 0,
   textAlign: 'center',
@@ -17,7 +21,7 @@ export const overallSection = style({
 });
 
 export const sectionHeading = style({
-  fontSize: '1.1rem',
+  fontSize: vars.fontSize.md,
   fontWeight: 600,
   color: vars.color.textDark,
   marginBottom: vars.space.md,
@@ -64,7 +68,7 @@ export const sessionHeader = style({
 export const sessionLabel = style({
   fontSize: vars.fontSize.base,
   fontWeight: 600,
-  color: '#495057',
+  color: vars.color.textDark,
 });
 
 export const levelBadge = style({
@@ -86,23 +90,23 @@ export const statsGrid = style({
 export const statCell = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
+  gap: vars.space.xs,
 });
 
 export const statCellLabel = style({
   fontSize: vars.fontSize.sm,
-  color: '#6c757d',
+  color: vars.color.textMuted,
 });
 
 export const statCellValue = style({
   fontSize: vars.fontSize.base,
   fontWeight: 600,
-  color: '#212529',
+  color: vars.color.textStrong,
 });
 
 export const emptyState = style({
   textAlign: 'center',
   padding: vars.space.xl,
-  color: '#666',
+  color: vars.color.textLight,
   fontStyle: 'italic',
 });

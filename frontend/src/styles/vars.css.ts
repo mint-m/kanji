@@ -7,6 +7,8 @@ export const vars = createGlobalTheme(':root', {
     textDark: '#2c3e50',
     textMuted: '#7f8c8d',
     textFaint: '#95a5a6',
+    textLight: '#666666',
+    textStrong: '#212529',
     white: '#ffffff',
     primary: '#3498db',
     primaryDark: '#2980b9',
@@ -22,7 +24,10 @@ export const vars = createGlobalTheme(':root', {
     borderMid: '#e9ecef',
     surfaceGray: '#f8f9fa',
     surfaceLight: '#f5f5f5',
+    surfaceHover: '#eeeeee',
     cardBg: '#ffffff',
+    navText: '#6b7280',
+    navActiveBg: '#f0f0f0',
   },
   shadow: {
     outer: '6px 6px 12px rgba(163, 177, 198, 0.6), -6px -6px 12px rgba(255, 255, 255, 0.5)',
@@ -30,6 +35,8 @@ export const vars = createGlobalTheme(':root', {
     sliderOuter: '6px 6px 12px rgba(163, 177, 198, 1), -6px -6px 12px rgba(255, 255, 255, 1)',
     sliderInner: 'inset 2px 2px 8px #bebebe, inset -2px -2px 8px #ffffff',
     card: '0 4px 6px rgba(0,0,0,0.07)',
+    dropdown: '0 2px 10px rgba(0,0,0,0.1)',
+    hover: '0 10px 20px rgba(0,0,0,0.1)',
   },
   font: {
     jp: "'Noto Sans JP', sans-serif",
@@ -43,6 +50,7 @@ export const vars = createGlobalTheme(':root', {
     lg: '1.5rem',
     xl: '2rem',
     xxl: '3rem',
+    kanji: '4rem',
   },
   radius: {
     sm: '4px',
@@ -50,6 +58,7 @@ export const vars = createGlobalTheme(':root', {
     lg: '12px',
     xl: '16px',
     round: '2rem',
+    pill: '20px',
   },
   space: {
     xs: '4px',

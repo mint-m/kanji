@@ -52,7 +52,7 @@ const KanjiCard: FC<KanjiCardProps> = ({ kanji, koreanPron, onRead, kunRead, lev
         />
       )}
 
-      <div className={styles.levelBadge}>N{level}</div>
+      {level && <div className={styles.levelBadge}>N{level}</div>}
 
       <div className={styles.cardBody}>
         <div className={styles.kanjiRow}>

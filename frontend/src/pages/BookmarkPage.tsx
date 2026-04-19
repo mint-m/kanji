@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useState } from 'react';
-import bookmarkService, { Bookmark, GetBookmarksOptions } from 'services/bookmarkService';
+import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } from 'services/bookmarkService';
 import { LearningLevel } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { clsx } from 'clsx';
@@ -23,7 +23,7 @@ const BookmarkPage: FC = () => {
   const [selectedLevel, setSelectedLevel] = useState<LearningLevel | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<{ currentPage: number; itemsPerPage: number; totalItems: number; totalPages: number } | null>(null);
+  const [pagination, setPagination] = useState<BookmarkPagination | null>(null);
   const [stats, setStats] = useState<BookmarkStats | null>(null);
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
@@ -36,7 +36,7 @@ const BookmarkPage: FC = () => {
       if (selectedLevel !== 'all') options.level = selectedLevel;
       const response = await bookmarkService.getBookmarks(options);
       if (response.success && response.data) {
-        const { bookmarks: list, pagination: paginationInfo } = response.data as any;
+        const { bookmarks: list, pagination: paginationInfo } = response.data;
         if (Array.isArray(list)) {
           setBookmarks(list);
           setPagination(paginationInfo);

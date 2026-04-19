@@ -51,7 +51,7 @@ const UserProgress: FC = () => {
   if (error) return <div className="error-box" style={{ margin: '16px 0' }}>{error}</div>;
 
   return (
-    <div className="card" style={{ width: '100%' }}>
+    <div className={`card ${styles.container}`}>
       <h2 className={styles.pageTitle}>학습 진행 상황</h2>
 
       {!stats ? emptyState : (

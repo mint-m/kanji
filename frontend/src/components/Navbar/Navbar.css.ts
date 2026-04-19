@@ -20,7 +20,7 @@ export const navBtn = style({
   borderRadius: vars.radius.round,
   padding: `0 ${vars.space.md}`,
   marginLeft: vars.space.md,
-  color: '#6b7280',
+  color: vars.color.navText,
 });
 
 export const dropdown = style({
@@ -35,7 +35,7 @@ export const dropdownMenu = style({
   width: '128px',
   backgroundColor: vars.color.white,
   borderRadius: vars.radius.md,
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  boxShadow: vars.shadow.dropdown,
   overflow: 'hidden',
   zIndex: 100,
 });
@@ -43,16 +43,16 @@ export const dropdownMenu = style({
 export const dropdownItem = style({
   padding: `${vars.space.sm} ${vars.space.md}`,
   cursor: 'pointer',
-  fontSize: '0.9rem',
-  color: '#333',
+  fontSize: vars.fontSize.base,
+  color: vars.color.textDark,
 
   selectors: {
     '&:hover': {
-      backgroundColor: '#f5f5f5',
+      backgroundColor: vars.color.surfaceLight,
     },
   },
 });
 
 export const navBtnActive = style({
-  backgroundColor: '#f0f0f0',
+  backgroundColor: vars.color.navActiveBg,
 });

@@ -69,10 +69,10 @@ globalStyle('.filter-select:focus', {
 });
 
 globalStyle('.page-btn', {
-  paddingLeft: '24px',
-  paddingRight: '24px',
-  paddingTop: '10px',
-  paddingBottom: '10px',
+  paddingLeft: vars.space.lg,
+  paddingRight: vars.space.lg,
+  paddingTop: vars.space.sm,
+  paddingBottom: vars.space.sm,
   border: 'none',
   borderRadius: vars.radius.md,
   fontSize: vars.fontSize.base,

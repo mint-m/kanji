@@ -1,4 +1,5 @@
 import { style, keyframes } from '@vanilla-extract/css';
+import { vars } from 'styles/vars.css';
 
 const slideDown = keyframes({
   from: { opacity: 0, transform: 'translateX(-50%) translateY(-20px)' },
@@ -13,17 +14,17 @@ export const banner = style({
   zIndex: 1000,
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: vars.space.sm,
   backgroundColor: 'rgba(118, 180, 255, 0.20)',
-  borderRadius: '12px',
-  padding: '16px 20px',
+  borderRadius: vars.radius.lg,
+  padding: `${vars.space.md} ${vars.space.lg}`,
   backdropFilter: 'blur(4px)',
-  boxShadow: '0 4px 12px rgba(118, 180, 255, 0.25)',
+  boxShadow: vars.shadow.card,
   animation: `${slideDown} 0.3s ease-out`,
 });
 
 export const bannerText = style({
-  color: '#1E2A44',
-  fontSize: '0.9rem',
+  color: vars.color.textStrong,
+  fontSize: vars.fontSize.sm,
   fontWeight: 500,
 });

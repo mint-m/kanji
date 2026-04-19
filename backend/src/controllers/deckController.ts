@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import mongoose from 'mongoose';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
@@ -42,10 +42,10 @@ export const generateDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    if (steps.start < 1 || steps.start > steps.end) {
+    if (steps.start < 1 || steps.end < 1) {
       res.status(400).json({
         success: false,
-        message: 'Invalid step range. Steps must be positive integers with start <= end',
+        message: 'Invalid step range. Steps must be positive integers',
       });
       return;
     }
@@ -152,8 +152,6 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       console.log(`[Auto-Create] No ${progressType} session found for user ${userId}`);
 
       try {
-        const user = await User.findById(userId);
-
         let level: LearningLevel;
         let steps: { start: number; end: number };
 

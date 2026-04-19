@@ -24,7 +24,7 @@ export const avatar = style({
   justifyContent: 'center',
   fontSize: vars.fontSize.xl,
   fontWeight: 'bold',
-  marginRight: '24px',
+  marginRight: vars.space.lg,
   flexShrink: 0,
 });
 
@@ -38,8 +38,8 @@ export const profileName = style({
 
 export const profileMeta = style({
   margin: 0,
-  marginTop: '4px',
-  color: '#666',
+  marginTop: vars.space.xs,
+  color: vars.color.textLight,
 });
 
 export const sessionBtns = style({
@@ -57,7 +57,7 @@ export const sessionBtn = style({
   cursor: 'pointer',
   transition: 'all 0.2s',
   backgroundColor: vars.color.white,
-  color: '#666',
+  color: vars.color.textLight,
 
   selectors: {
     '&:hover:not(:disabled)': {
@@ -80,8 +80,8 @@ export const sessionBtnActive = style({
 
 export const progressRow = style({
   display: 'flex',
-  gap: '48px',
-  marginBottom: '24px',
+  gap: vars.space.xxl,
+  marginBottom: vars.space.lg,
 });
 
 export const progressCell = style({
@@ -92,7 +92,7 @@ export const progressCell = style({
 export const progressCellLabel = style({
   fontSize: vars.fontSize.sm,
   color: vars.color.textMuted,
-  marginBottom: '4px',
+  marginBottom: vars.space.xs,
 });
 
 export const progressCellValue = style({
@@ -105,7 +105,7 @@ export const noProgress = style({
   padding: vars.space.md,
   color: vars.color.textFaint,
   fontStyle: 'italic',
-  marginBottom: '24px',
+  marginBottom: vars.space.lg,
 });
 
 export const actionBtns = style({

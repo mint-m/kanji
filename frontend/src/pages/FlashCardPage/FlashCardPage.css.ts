@@ -49,7 +49,7 @@ export const skeletonBtn = style({
   background: shimmerBg,
   backgroundSize: '200% 100%',
   animation: `${shimmer} 1.5s infinite`,
-  borderRadius: '20px',
+  borderRadius: vars.radius.pill,
   margin: '0 auto',
 });
 
