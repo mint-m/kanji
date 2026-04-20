@@ -39,12 +39,14 @@ const UserProgress: FC = () => {
   const user = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
+    const controller = new AbortController();
     setIsLoading(true);
     setError(null);
     getStats()
-      .then(setStats)
-      .catch(() => setError('학습 진행 상황을 불러오는데 실패했습니다'))
-      .finally(() => setIsLoading(false));
+      .then((data) => { if (!controller.signal.aborted) setStats(data); })
+      .catch(() => { if (!controller.signal.aborted) setError('학습 진행 상황을 불러오는데 실패했습니다'); })
+      .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
+    return () => controller.abort();
   }, [user.isLoggin]);
 
   if (isLoading) return <div className="loading-text">학습 진행 상황을 불러오는 중...</div>;

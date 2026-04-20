@@ -62,11 +62,6 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
   }
 );
 
-// start > end is valid: circular window (e.g. 9-1 wraps around)
-userCheckpointSchema.pre('save', function (this: any, next: Function) {
-  next();
-});
-
 // Instance methods
 userCheckpointSchema.methods.isCompleted = function (this: UserCheckpointDocument): boolean {
   return this.current_index >= this.shuffled_order.length;

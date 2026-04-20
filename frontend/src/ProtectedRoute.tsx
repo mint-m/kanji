@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
       logout(true);
       triggerAuthBanner();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expired]);
 
   if (!user || !token || expired) {
     return <Navigate to="/login" replace />;

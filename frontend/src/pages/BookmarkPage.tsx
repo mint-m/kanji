@@ -57,15 +57,12 @@ const BookmarkPage: FC = () => {
     }
   }, [selectedLevel, sortBy]);
 
-  const fetchStats = async () => {
-    try {
-      const response = await bookmarkService.getBookmarkStats();
-      if (response.success && response.data) setStats(response.data);
-    } catch {}
-  };
-
   useEffect(() => { fetchBookmarks(1); }, [fetchBookmarks]);
-  useEffect(() => { fetchStats(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    bookmarkService.getBookmarkStats()
+      .then(response => { if (response.success && response.data) setStats(response.data); })
+      .catch(() => {});
+  }, []);
 
   const handleRemoveBookmark = async (wordId: string) => {
     if (!window.confirm('이 북마크를 삭제하시겠습니까?')) return;
@@ -73,7 +70,9 @@ const BookmarkPage: FC = () => {
       const response = await bookmarkService.removeBookmark(wordId);
       if (response.success) {
         setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
-        fetchStats();
+        bookmarkService.getBookmarkStats()
+          .then(res => { if (res.success && res.data) setStats(res.data); })
+          .catch(() => {});
       }
     } catch {
       alert('북마크 삭제에 실패했습니다.');

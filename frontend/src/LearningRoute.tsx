@@ -13,7 +13,7 @@ const LearningRoute = ({ children }: { children: JSX.Element }) => {
       logout(true);
       triggerAuthBanner();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expired]);
 
   if (!token || !userData || expired) {
     return <Navigate to="/login" replace />;
