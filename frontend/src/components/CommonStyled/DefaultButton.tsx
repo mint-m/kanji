@@ -1,20 +1,21 @@
+import { forwardRef, ButtonHTMLAttributes } from 'react';
+import { clsx } from 'clsx';
+import * as styles from './DefaultButton.css';
 
-import styled from 'styled-components';
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  pressed?: boolean;
+};
 
-const StyledButton = styled.button`
-  ${(props) => props.theme.outerShadow}
-    background: #E6EAED;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 1rem 2.5rem;
-    cursor: pointer;
-    font-size: 1rem;
+const DefaultButton = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, pressed: isPressed, ...props }, ref) => (
+    <button
+      ref={ref}
+      className={clsx(styles.button, isPressed && styles.pressed, className)}
+      {...props}
+    />
+  )
+);
 
-    &:hover {
-    background-color: '#eeeeee';
-  }
-`;
-
-const DefaultButton = styled(StyledButton)``;
+DefaultButton.displayName = 'DefaultButton';
 
 export default DefaultButton;

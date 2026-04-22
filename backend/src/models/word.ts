@@ -37,7 +37,7 @@ const wordSchema = new mongoose.Schema<WordDocument>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for efficient sliding window queries
@@ -75,7 +75,7 @@ wordSchema.methods.getSearchableText = function (this: WordDocument): string {
 wordSchema.statics.getWordsInStepRange = function (
   level: LearningLevel,
   startStep: number,
-  endStep: number
+  endStep: number,
 ): Promise<WordDocument[]> {
   return this.find({
     level: level,
@@ -200,7 +200,7 @@ wordSchema.statics.searchWords = function (filters: WordSearchFilters, limit: nu
 wordSchema.statics.searchByText = function (
   searchTerm: string,
   level?: LearningLevel,
-  limit: number = 50
+  limit: number = 50,
 ): Promise<WordDocument[]> {
   const query: any = {
     $text: { $search: searchTerm },
@@ -218,7 +218,7 @@ wordSchema.statics.searchByText = function (
 wordSchema.statics.getRandomWords = function (
   level?: LearningLevel,
   count: number = 10,
-  stepRange?: { start: number; end: number }
+  stepRange?: { start: number; end: number },
 ): Promise<WordDocument[]> {
   const matchStage: any = {};
 
@@ -231,13 +231,14 @@ wordSchema.statics.getRandomWords = function (
 wordSchema.statics.validateStepRange = async function (
   level: LearningLevel,
   start: number,
-  end: number
+  end: number,
 ): Promise<boolean> {
   const stats = await (this as WordModel).getLevelStats(level);
   if (stats.length === 0) return false;
 
   const levelStats = stats[0];
-  return start >= levelStats.minStep && end <= levelStats.maxStep && start <= end;
+  // start > end is valid: circular window (e.g. 9-1 wraps around)
+  return start >= levelStats.minStep && end <= levelStats.maxStep;
 };
 
 wordSchema.statics.rebalanceSteps = async function (level: LearningLevel): Promise<{ moved: number; errors: any[] }> {
@@ -246,7 +247,6 @@ wordSchema.statics.rebalanceSteps = async function (level: LearningLevel): Promi
   let moved = 0;
 
   const wordsPerStep = 40; // Target 40 words per step
-  const totalSteps = Math.ceil(words.length / wordsPerStep);
 
   for (let i = 0; i < words.length; i++) {
     const targetStep = Math.floor(i / wordsPerStep) + 1;
@@ -264,7 +264,7 @@ wordSchema.statics.rebalanceSteps = async function (level: LearningLevel): Promi
 };
 
 wordSchema.statics.bulkUpdateSteps = async function (
-  updates: { wordId: mongoose.Types.ObjectId; newStep: number }[]
+  updates: { wordId: mongoose.Types.ObjectId; newStep: number }[],
 ): Promise<{ modified: number; errors: any[] }> {
   const errors: any[] = [];
   let modified = 0;
@@ -283,7 +283,7 @@ wordSchema.statics.bulkUpdateSteps = async function (
 };
 
 wordSchema.statics.importWords = async function (
-  words: Partial<WordDocument>[]
+  words: Partial<WordDocument>[],
 ): Promise<{ created: number; errors: any[] }> {
   const errors: any[] = [];
   let created = 0;
@@ -313,7 +313,7 @@ wordSchema.statics.importWords = async function (
 
 wordSchema.statics.exportWords = async function (
   level?: LearningLevel,
-  format: 'json' | 'csv' = 'json'
+  format: 'json' | 'csv' = 'json',
 ): Promise<WordDocument[] | string> {
   const query = level ? { level } : {};
   const words = await this.find(query).lean();
@@ -394,7 +394,7 @@ wordSchema.statics.cleanupInvalidWords = async function (): Promise<{ removed: n
 
 wordSchema.statics.updateLevelStepDistribution = async function (
   level: LearningLevel,
-  targetStepsCount: number = 10
+  targetStepsCount: number = 10,
 ): Promise<void> {
   // Redistribute words evenly across specified number of steps
   const words = await this.find({ level }).sort({ entry: 1 });

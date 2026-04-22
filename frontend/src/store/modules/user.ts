@@ -11,11 +11,13 @@ interface UserState {
 // actionType
 export const userActionTypes = {
   setUser: 'user/SET_USER',
+  clearUser: 'user/CLEAR_USER',
   setActiveProgressType: 'user/SET_ACTIVE_PROGRESS_TYPE',
 } as const;
 
 // action
 export const setUser = createAction<UserState>(userActionTypes.setUser);
+export const clearUser = createAction(userActionTypes.clearUser);
 export const setActiveProgressType = createAction<'main' | 'sub' | null>(userActionTypes.setActiveProgressType);
 
 const initialState: UserState = {
@@ -32,6 +34,7 @@ const userReducer = handleActions<UserState, any>(
       ...action.payload,
       isLoggin: true,
     }),
+    [userActionTypes.clearUser]: () => initialState,
     [userActionTypes.setActiveProgressType]: (state, action: Action<'main' | 'sub' | null>) => ({
       ...state,
       activeProgressType: action.payload,

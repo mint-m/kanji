@@ -1,6 +1,7 @@
-import React from 'react';
-import styled from 'styled-components';
+import { memo } from 'react';
+import { clsx } from 'clsx';
 import OriginWord from 'components/OriginWord';
+import * as styles from './FlashCard.css';
 
 export interface ShowType {
   type: 'Mean' | 'Hiragana';
@@ -19,55 +20,20 @@ interface FlashCardProps {
   showMean: boolean;
 }
 
-interface StyledVisibleProps {
-  $isVisible: boolean;
-}
-
-const FlashCard = React.memo((props: FlashCardProps) => {
-  const { word, showHiragana, showMean } = props;
-
-  const means = word.means.map((mean, index) => (
-    <WordMean key={index} $isVisible={showMean}>
-      {mean}
-    </WordMean>
-  ))
-
-
-  return (
-    <CardContainer>
-      <Hiragana $isVisible={showHiragana}>{word.entry}</Hiragana>
-      {<OriginWord word={word.pron ? word.pron : word.entry} />}
-      <div>
-        {means}
-      </div>
-    </CardContainer>
-  );
-});
+const FlashCard = memo(({ word, showHiragana, showMean }: FlashCardProps) => (
+  <div className={styles.card}>
+    <div className={clsx(styles.hiraganaRow, showHiragana ? styles.visible : styles.invisible)}>
+      {word.entry}
+    </div>
+    <OriginWord word={word.pron || word.entry} />
+    <div>
+      {word.means.map((mean, index) => (
+        <div key={index} className={clsx(styles.meanItem, showMean ? styles.visible : styles.invisible)}>
+          {mean}
+        </div>
+      ))}
+    </div>
+  </div>
+));
 
 export default FlashCard;
-
-const CardContainer = styled.div`
-  width: 35rem;
-  height: 35rem;
-  text-align: center;
-
-  display: flex;
-  flex-direction: column;
-
-  border-radius: 0.5rem;
-  ${props => props.theme.innerShadow}
-`;
-
-const Hiragana = styled.div<StyledVisibleProps>`
-  height: 35%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  font-size: 2rem;
-  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
-`;
-
-const WordMean = styled.div<StyledVisibleProps>`
-  font-size: 1.5rem;
-  visibility: ${props => (props.$isVisible ? 'visible' : 'hidden')};
-`;

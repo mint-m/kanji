@@ -1,5 +1,7 @@
 // src/services/authService.ts
 import axios, { AxiosError } from 'axios';
+import store from 'store';
+import { clearUser } from 'store/modules/user';
 
 // 환경 변수에서 API URL 가져오기 (빈 문자열이면 상대 경로 사용)
 export const GOOGLE_REDIRECT_URI = process.env['REACT_APP_GOOGLE_REDIRECT_URI'] as string;
@@ -199,13 +201,11 @@ export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
   }
 };
 
-// 로그아웃
+// 로그아웃 (localStorage + Redux store 동시 초기화)
 export const logout = (skipRedirect = false): void => {
   removeTokenLocally();
   removeUserLocally();
-
-  // 추가: 프론트엔드에서만 로그아웃하는 대신 백엔드에도 로그아웃 요청 가능
-  // 세션 무효화를 위해 백엔드에 로그아웃 알림 >> 보안 업데이트 필요시 개발 예정
+  store.dispatch(clearUser()); // UI 로그아웃 상태 반영
 
   if (!skipRedirect) {
     window.location.href = '/';

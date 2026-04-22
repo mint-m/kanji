@@ -151,7 +151,8 @@ export function isValidProgressType(value: any): value is ProgressType {
  * For actual existence validation, use Word.validateStepRange() in controllers
  */
 export function isValidStepRange(range: StepRange): boolean {
-  return range.start >= 1 && range.end >= 1 && range.start <= range.end;
+  // start > end is valid: circular window (e.g. 9-1 wraps around)
+  return range.start >= 1 && range.end >= 1;
 }
 
 /**

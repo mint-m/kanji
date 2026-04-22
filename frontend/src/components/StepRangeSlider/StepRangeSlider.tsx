@@ -1,50 +1,45 @@
-import React, { useState } from 'react';
-import { SliderContainer, StyledSlider } from './SliderStyles';
+import { FC, useState } from 'react';
+import Slider from 'rc-slider';
 import Tooltip from 'rc-tooltip';
+import 'rc-slider/assets/index.css';
 import 'rc-tooltip/assets/bootstrap_white.css';
+import './SliderStyles.css.ts';
 
 interface StepSliderProps {
   stepLength: number;
-  onSelectStep: Function;
+  onSelectStep: (range: { start: number; end: number }) => void;
 }
 
-interface Range {
-  min: number;
-  max: number;
-}
-
-const StepRangeSlider: React.FC<StepSliderProps> = (props: StepSliderProps) => {
-  const [range, setRange] = useState<Range>({ min: 1, max: 1 });
+const StepRangeSlider: FC<StepSliderProps> = ({ stepLength, onSelectStep }) => {
+  const [range, setRange] = useState({ start: 1, end: 1 });
 
   return (
-    <SliderContainer>
-      <StyledSlider
+    <div className="slider-container">
+      <Slider
         range
         allowCross={false}
         min={1}
-        max={props.stepLength}
+        max={stepLength}
         step={1}
-        defaultValue={[range.min, range.max]}
-        style={{ height: "1rem", padding: "0" }}
+        defaultValue={[range.start, range.end]}
+        style={{ height: '1rem', padding: '0' }}
         onChange={(value) => {
-          const [min, max] = value as number[];
-          setRange({ min, max });
-          props.onSelectStep({ min, max });
+          const [start, end] = value as number[];
+          setRange({ start, end });
+          onSelectStep({ start, end });
         }}
-        handleRender={(node, handleProps) => {
-          return (
-            <Tooltip
-              overlayInnerStyle={{ minHeight: "auto" }}
-              overlay={`STEP ${handleProps.value}`}
-              placement="top"
-              prefixCls="rc-slider-tooltip"
-            >
-              {node}
-            </Tooltip>
-          );
-        }}
+        handleRender={(node, handleProps) => (
+          <Tooltip
+            overlayInnerStyle={{ minHeight: 'auto' }}
+            overlay={`STEP ${handleProps.value}`}
+            placement="top"
+            prefixCls="rc-slider-tooltip"
+          >
+            {node}
+          </Tooltip>
+        )}
       />
-    </SliderContainer>
+    </div>
   );
 };
 

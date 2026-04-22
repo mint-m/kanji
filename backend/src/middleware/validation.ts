@@ -26,12 +26,7 @@ const learningLevelValidator = body('level')
 const stepRangeValidator = [
   body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
   body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
-  body('steps').custom((value) => {
-    if (value.start > value.end) {
-      throw new Error('Step start must be less than or equal to step end');
-    }
-    return true;
-  }),
+  // start > end is valid: circular window (e.g. 9-1 wraps around)
 ];
 
 // Action validation for word index updates
@@ -60,7 +55,7 @@ export const validateProgressRequest = {
     progressTypeValidator,
     actionValidator,
     indexValidator,
-    body().custom((value, { req }) => {
+    body().custom((_value, { req }) => {
       if (req.body.action === 'jump' && (req.body.index === undefined || req.body.index === null)) {
         throw new Error('Index is required when action is "jump"');
       }
@@ -73,7 +68,7 @@ export const validateProgressRequest = {
   switchSession: [
     body('fromType').isIn(['main', 'sub']).withMessage('From type must be "main" or "sub"'),
     body('toType').isIn(['main', 'sub']).withMessage('To type must be "main" or "sub"'),
-    body().custom((value, { req }) => {
+    body().custom((_value, { req }) => {
       if (req.body.fromType === req.body.toType) {
         throw new Error('From type and to type must be different');
       }
@@ -257,12 +252,7 @@ export const validateDeckRequest = {
     body('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
     body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
-    body('steps').custom((value) => {
-      if (value.start > value.end) {
-        throw new Error('Step start must be less than or equal to step end');
-      }
-      return true;
-    }),
+    // start > end is valid: circular window (e.g. 9-1 wraps around)
     body('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
     body('options.excludeCompleted').optional().isBoolean().withMessage('Exclude completed must be boolean'),
     body('options.prioritizeBookmarked').optional().isBoolean().withMessage('Prioritize bookmarked must be boolean'),

@@ -62,15 +62,6 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
   }
 );
 
-// Validation: ensure start <= end for steps
-userCheckpointSchema.pre('save', function (this: any, next: Function) {
-  if (this.steps.start > this.steps.end) {
-    const error = new Error('Step start must be less than or equal to step end');
-    return next(error);
-  }
-  next();
-});
-
 // Instance methods
 userCheckpointSchema.methods.isCompleted = function (this: UserCheckpointDocument): boolean {
   return this.current_index >= this.shuffled_order.length;
@@ -304,8 +295,6 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
     // Interleave bookmarks with some non-bookmarked words in priority zone
     // This prevents monotony and maintains engagement
     const priorityZone: mongoose.Types.ObjectId[] = [];
-    const bookmarksPerSlot = Math.max(1, Math.floor(priorityBookmarks.length / 3));
-
     let bookmarkIndex = 0;
     let nonBookmarkIndex = 0;
 

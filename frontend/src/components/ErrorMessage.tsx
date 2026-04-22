@@ -1,19 +1,19 @@
-// components/ErrorMessage.tsx
-import React from 'react';
-import styled from 'styled-components';
+import { FC } from 'react';
+import { style } from '@vanilla-extract/css';
+import { vars } from 'styles/vars.css';
+
+const errorText = style({
+  color: '#f44336',
+  margin: `${vars.space.sm} 0`,
+  fontSize: vars.fontSize.sm,
+});
 
 interface ErrorMessageProps {
   message: string;
 }
 
-const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
-  return <ErrorContainer>{message}</ErrorContainer>;
-};
-
-const ErrorContainer = styled.div`
-  color: #f44336;
-  margin: 8px 0;
-  font-size: 14px;
-`;
+const ErrorMessage: FC<ErrorMessageProps> = ({ message }) => (
+  <div className={errorText}>{message}</div>
+);
 
 export default ErrorMessage;

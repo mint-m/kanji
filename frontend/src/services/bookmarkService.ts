@@ -40,6 +40,18 @@ export interface GetBookmarksOptions {
   limit?: number;
 }
 
+export interface BookmarkPagination {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface BookmarkListData {
+  bookmarks: Bookmark[];
+  pagination: BookmarkPagination;
+}
+
 const bookmarkService = {
   /**
    * 북마크 추가
@@ -96,7 +108,7 @@ const bookmarkService = {
    * await bookmarkService.getBookmarks({ progressType: 'main' });
    * ```
    */
-  async getBookmarks(options?: GetBookmarksOptions): Promise<ApiResponse<Bookmark[]>> {
+  async getBookmarks(options?: GetBookmarksOptions): Promise<ApiResponse<BookmarkListData>> {
     const params = new URLSearchParams();
 
     if (options?.level) params.append('level', options.level);
