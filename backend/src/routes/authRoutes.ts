@@ -22,13 +22,36 @@ router.post(
 );
 
 router.post(
-  '/google-login',
+  '/google/login',
   [
-    authRateLimit(5, 15 * 60 * 1000), // 5 attempts per 15 minutes (more restrictive)
+    authRateLimit(5, 15 * 60 * 1000),
     body('accessToken').notEmpty().isLength({ min: 10 }).withMessage('Valid access token is required'),
     handleValidationErrors,
   ],
   authController.googleLogin
+);
+
+// Google One Tap (ID token credential)
+router.post(
+  '/google/one-tap',
+  [
+    authRateLimit(10, 15 * 60 * 1000),
+    body('credential').notEmpty().withMessage('Credential is required'),
+    handleValidationErrors,
+  ],
+  authController.googleOneTap
+);
+
+// 카카오 로그인 (authorization code)
+router.post(
+  '/kakao/callback',
+  [
+    authRateLimit(10, 15 * 60 * 1000),
+    body('code').notEmpty().withMessage('Authorization code is required'),
+    body('redirectUri').notEmpty().withMessage('redirectUri is required'),
+    handleValidationErrors,
+  ],
+  authController.kakaoCallback
 );
 
 // 토큰 검증
