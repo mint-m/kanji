@@ -6,7 +6,7 @@ import {
   UserPreferences,
   UserProfile,
   UserStats,
-  LearningLevel,
+  AuthProvider,
 } from '../interfaces/user';
 
 const UserSchema = new mongoose.Schema<UserDocument>(
@@ -28,6 +28,12 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       required: true,
       trim: true,
     },
+    authProviders: [
+      {
+        provider: { type: String, enum: ['google', 'kakao', 'local'], required: true },
+        providerId: { type: String, required: true },
+      },
+    ],
     activeProgressType: {
       type: String,
       enum: ['main', 'sub', null],
@@ -77,7 +83,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
 
 // Indexes for efficient queries
 UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ type: 1, email: 1 });
+UserSchema.index({ 'authProviders.provider': 1, 'authProviders.providerId': 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ 'profile.lastActiveAt': 1 });
 UserSchema.index({ 'statistics.currentStreak': -1 });
@@ -148,30 +154,62 @@ UserSchema.statics.findByEmail = function (email: string): Promise<UserDocument 
 
 UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
   type: UserAuthType;
+  providerId: string;
   email: string;
   name: string;
   profilePicture?: string;
 }): Promise<UserDocument> {
-  let user = await (this as UserModel).findByEmail(authData.email);
+  const newProvider: AuthProvider = { provider: authData.type, providerId: authData.providerId };
 
-  if (!user) {
+  // 1. providerId로 기존 연동 계정 조회
+  let user = await this.findOne({
+    'authProviders.provider': authData.type,
+    'authProviders.providerId': authData.providerId,
+  });
+
+  if (user) {
+    user.updateLastActive();
+    await user.save();
+    return user;
+  }
+
+  // 2. 이메일로 기존 계정 조회 → 새 provider 연동
+  user = await (this as UserModel).findByEmail(authData.email);
+
+  if (user) {
+    user.authProviders.push(newProvider);
+    user.updateLastActive();
+    await user.save();
+    return user;
+  }
+
+  // 3. 신규 계정 생성 (concurrent 요청에 의한 duplicate key 에러 처리)
+  try {
     user = new this({
       type: authData.type,
       email: authData.email.toLowerCase(),
       name: authData.name,
+      authProviders: [newProvider],
       profile: {
         displayName: authData.name,
         profilePicture: authData.profilePicture,
         joinedAt: new Date(),
         lastActiveAt: new Date(),
       },
-      emailVerified: true, // OAuth users are pre-verified
+      emailVerified: true,
     });
     await user.save();
-  } else {
-    // Update last active time
-    user.updateLastActive();
-    await user.save();
+  } catch (err: any) {
+    if (err.code === 11000) {
+      // 동시 요청으로 이미 생성된 경우 재조회
+      user = await (this as UserModel).findByEmail(authData.email);
+      if (!user) throw err;
+      user.authProviders.push(newProvider);
+      user.updateLastActive();
+      await user.save();
+    } else {
+      throw err;
+    }
   }
 
   return user;
