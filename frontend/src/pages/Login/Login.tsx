@@ -1,12 +1,23 @@
+import { useSelector } from 'react-redux';
 import GoogleLoginButton from 'components/LoginButton/GoogleLoginButton';
+import KakaoLoginButton from 'components/LoginButton/KakaoLoginButton';
 import LogoutButton from 'components/LoginButton/LogoutButton';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
+import type { RootState } from 'store';
 
 const Login = () => {
-  const user = localStorage.getItem('user');
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
+
   return (
     <CenterDiv>
-      {user ? <LogoutButton /> : <GoogleLoginButton />}
+      {isLoggedIn ? (
+        <LogoutButton />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+          <GoogleLoginButton />
+          <KakaoLoginButton />
+        </div>
+      )}
     </CenterDiv>
   );
 };
