@@ -1,11 +1,14 @@
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { clearUser } from 'store/modules/user';
 import { clsx } from 'clsx';
 import * as styles from './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileData = localStorage.getItem('user');
@@ -18,9 +21,10 @@ const Navbar = () => {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    dispatch(clearUser());
     setShowUserMenu(false);
-    navigate('/');
-  }, [navigate]);
+    navigate('/login');
+  }, [navigate, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

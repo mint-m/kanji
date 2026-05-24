@@ -20,6 +20,7 @@ const buildLoginResponse = (user: UserDocument) => ({
   name: user.name,
   type: user.type,
   activeProgressType: user.activeProgressType,
+  authProviders: user.authProviders.map((p) => p.provider),
   profile: {
     displayName: user.getDisplayName(),
     profilePicture: user.profile.profilePicture,
@@ -29,6 +30,11 @@ const buildLoginResponse = (user: UserDocument) => ({
   statistics: user.statistics,
   isNewUser: user.isNewUser(),
 });
+
+const sendLoginResponse = (user: UserDocument, res: Response, next: NextFunction) => {
+  if (!user.isActive) return next(new UnauthorizedError('User account is deactivated'));
+  res.json({ success: true, token: generateToken(user), user: buildLoginResponse(user) });
+};
 
 const getGoogleUserInfo = async (accessToken: string) => {
   const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
@@ -80,11 +86,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
       name: userInfo.name || userInfo.given_name || 'Google User',
     });
 
-    if (!user.isActive) {
-      return next(new UnauthorizedError('User account is deactivated'));
-    }
-
-    res.json({ success: true, token: generateToken(user), user: buildLoginResponse(user) });
+    return sendLoginResponse(user, res, next);
   } catch (error) {
     console.error('Google login error:', error);
     next(new InternalServerError('Google login failed'));
@@ -113,11 +115,7 @@ export const googleOneTap = async (req: Request, res: Response, next: NextFuncti
       name: payload.name || payload.given_name || 'Google User',
     });
 
-    if (!user.isActive) {
-      return next(new UnauthorizedError('User account is deactivated'));
-    }
-
-    res.json({ success: true, token: generateToken(user), user: buildLoginResponse(user) });
+    return sendLoginResponse(user, res, next);
   } catch (error) {
     console.error('Google One Tap error:', error);
     next(new InternalServerError('Google One Tap login failed'));
@@ -137,11 +135,7 @@ export const kakaoCallback = async (req: Request, res: Response, next: NextFunct
 
     const user = await User.findOrCreateFromOAuth({ type: 'kakao', providerId: kakaoId, email, name });
 
-    if (!user.isActive) {
-      return next(new UnauthorizedError('User account is deactivated'));
-    }
-
-    res.json({ success: true, token: generateToken(user), user: buildLoginResponse(user) });
+    return sendLoginResponse(user, res, next);
   } catch (error) {
     console.error('Kakao login error:', error);
     next(new InternalServerError('Kakao login failed'));
@@ -167,6 +161,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
         email: user.email,
         name: user.name,
         type: user.type,
+        authProviders: user.authProviders.map((p) => p.provider),
         profile: {
           displayName: user.getDisplayName(),
           profilePicture: user.profile.profilePicture,
@@ -265,5 +260,57 @@ export const refreshToken = async (req: AuthenticatedRequest, res: Response, nex
   } catch (error) {
     console.error('Token refresh error:', error);
     next(new InternalServerError('Token refresh failed'));
+  }
+};
+
+// 구글 계정 연동
+export const linkGoogle = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?._id) return next(new UnauthorizedError('User not authenticated'));
+    const { accessToken } = req.body as { accessToken: string };
+    if (!accessToken) return next(new UnauthorizedError('Access token is required'));
+
+    const userInfo = await getGoogleUserInfo(accessToken);
+    if (!userInfo.email || !userInfo.id) return next(new UnauthorizedError('Failed to retrieve Google user info'));
+
+    const user = await User.findById(req.user._id);
+    if (!user) return next(new NotFoundError('User not found'));
+
+    const alreadyLinked = user.authProviders.some((p) => p.provider === 'google' && p.providerId === userInfo.id!);
+    if (!alreadyLinked) {
+      user.authProviders.push({ provider: 'google', providerId: userInfo.id! });
+      await user.save();
+    }
+
+    res.json({ success: true, authProviders: user.authProviders.map((p) => p.provider) });
+  } catch (error) {
+    console.error('Link Google error:', error);
+    next(new InternalServerError('Failed to link Google account'));
+  }
+};
+
+// 카카오 계정 연동
+export const linkKakao = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?._id) return next(new UnauthorizedError('User not authenticated'));
+    const { code, redirectUri } = req.body as { code: string; redirectUri: string };
+    if (!code || !redirectUri) return next(new UnauthorizedError('code and redirectUri are required'));
+
+    const accessToken = await getKakaoAccessToken(code, redirectUri);
+    const { kakaoId } = await getKakaoUserInfo(accessToken);
+
+    const user = await User.findById(req.user._id);
+    if (!user) return next(new NotFoundError('User not found'));
+
+    const alreadyLinked = user.authProviders.some((p) => p.provider === 'kakao' && p.providerId === kakaoId);
+    if (!alreadyLinked) {
+      user.authProviders.push({ provider: 'kakao', providerId: kakaoId });
+      await user.save();
+    }
+
+    res.json({ success: true, authProviders: user.authProviders.map((p) => p.provider) });
+  } catch (error) {
+    console.error('Link Kakao error:', error);
+    next(new InternalServerError('Failed to link Kakao account'));
   }
 };

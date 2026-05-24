@@ -2,7 +2,6 @@ import axios, { AxiosError } from 'axios';
 import store from 'store';
 import { clearUser } from 'store/modules/user';
 
-export const GOOGLE_REDIRECT_URI = process.env['REACT_APP_GOOGLE_REDIRECT_URI'] as string;
 
 export interface UserProfile {
   _id: string;
@@ -10,6 +9,7 @@ export interface UserProfile {
   name: string;
   type: 'google' | 'kakao' | 'local';
   activeProgressType: 'main' | 'sub' | null;
+  authProviders?: ('google' | 'kakao' | 'local')[];
   profile?: {
     displayName?: string;
     profilePicture?: string;
@@ -102,11 +102,10 @@ const processLoginResponse = (data: { token: string; user: UserProfile }): Login
 };
 
 export const exchangeCodeForToken = async (
-  code: string,
-  redirectUri: string = GOOGLE_REDIRECT_URI
+  code: string
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const response = await axios.post('/api/auth/google/access-token', { code, redirect_uri: redirectUri });
+    const response = await axios.post('/api/auth/google/access-token', { code });
     return { accessToken: response.data.accessToken, idToken: response.data.idToken };
   } catch (error) {
     return handleApiError(error);
@@ -140,14 +139,6 @@ export const loginWithKakaoCode = async (code: string, redirectUri: string): Pro
   }
 };
 
-export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
-  try {
-    const response = await axios.get('/api/auth/profile', { headers: getAuthHeaders(token) });
-    return response.data.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
-};
 
 export const logout = (skipRedirect = false): void => {
   removeTokenLocally();
@@ -159,6 +150,32 @@ export const logout = (skipRedirect = false): void => {
 };
 
 export const isAuthenticated = (): boolean => !!getTokenLocally();
+
+export const linkGoogleAccount = async (accessToken: string): Promise<('google' | 'kakao' | 'local')[]> => {
+  try {
+    const response = await axios.post(
+      '/api/auth/link/google',
+      { accessToken },
+      { headers: getAuthHeaders() },
+    );
+    return response.data.authProviders;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const linkKakaoAccount = async (code: string, redirectUri: string): Promise<('google' | 'kakao' | 'local')[]> => {
+  try {
+    const response = await axios.post(
+      '/api/auth/link/kakao',
+      { code, redirectUri },
+      { headers: getAuthHeaders() },
+    );
+    return response.data.authProviders;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
 
 export const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;

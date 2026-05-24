@@ -122,3 +122,72 @@ export const actionBtns = style({
 export const accountSection = style({
   textAlign: 'center',
 });
+
+export const subTitle = style({
+  fontSize: vars.fontSize.base,
+  fontWeight: 600,
+  color: vars.color.textDark,
+  marginBottom: vars.space.sm,
+});
+
+export const providerList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.sm,
+});
+
+export const providerRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: `${vars.space.sm} 0`,
+  borderBottom: `1px solid ${vars.color.borderLight}`,
+
+  selectors: {
+    '&:last-child': {
+      borderBottom: 'none',
+    },
+  },
+});
+
+export const providerName = style({
+  fontSize: vars.fontSize.base,
+  color: vars.color.textDark,
+});
+
+export const linkedBadge = style({
+  fontSize: vars.fontSize.sm,
+  color: vars.color.success,
+  backgroundColor: '#ecfdf5',
+  padding: `2px ${vars.space.sm}`,
+  borderRadius: vars.radius.pill,
+  fontWeight: 500,
+});
+
+export const linkBtn = style({
+  fontSize: vars.fontSize.sm,
+  color: vars.color.primary,
+  backgroundColor: vars.color.primaryLight,
+  border: `1px solid ${vars.color.primary}`,
+  borderRadius: vars.radius.md,
+  padding: `4px ${vars.space.sm}`,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+
+  selectors: {
+    '&:hover:not(:disabled)': {
+      backgroundColor: vars.color.primary,
+      color: vars.color.white,
+    },
+    '&:disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed',
+    },
+  },
+});
+
+export const linkErrorMsg = style({
+  marginTop: vars.space.sm,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.danger,
+});

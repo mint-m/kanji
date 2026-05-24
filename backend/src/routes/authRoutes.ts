@@ -54,6 +54,30 @@ router.post(
   authController.kakaoCallback
 );
 
+// 계정 연동 (로그인된 사용자)
+router.post(
+  '/link/google',
+  [
+    authenticateUser,
+    authRateLimit(10, 15 * 60 * 1000),
+    body('accessToken').notEmpty().withMessage('Access token is required'),
+    handleValidationErrors,
+  ],
+  authController.linkGoogle,
+);
+
+router.post(
+  '/link/kakao',
+  [
+    authenticateUser,
+    authRateLimit(10, 15 * 60 * 1000),
+    body('code').notEmpty().withMessage('Authorization code is required'),
+    body('redirectUri').notEmpty().withMessage('redirectUri is required'),
+    handleValidationErrors,
+  ],
+  authController.linkKakao,
+);
+
 // 토큰 검증
 router.get('/verify', authenticateUser, authController.verifyToken);
 

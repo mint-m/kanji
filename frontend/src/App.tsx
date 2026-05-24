@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
@@ -24,15 +24,12 @@ const AppContent = () => {
   const navigate = useNavigate();
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
 
-  const storedUser = useMemo(() => getUserLocally(), []);
-
   useEffect(() => {
+    const storedUser = getUserLocally();
     if (storedUser) {
       dispatch(setUser(toUserState(storedUser)));
     }
-  }, [dispatch, storedUser]);
-
-  const isAlreadyLoggedIn = isLoggedIn || !!storedUser;
+  }, [dispatch]);
 
   useGoogleOneTapLogin({
     onSuccess: async (credentialResponse) => {
@@ -47,7 +44,7 @@ const AppContent = () => {
     },
     use_fedcm_for_prompt: true,
     cancel_on_tap_outside: false,
-    disabled: isAlreadyLoggedIn,
+    disabled: isLoggedIn,
   });
 
   return (

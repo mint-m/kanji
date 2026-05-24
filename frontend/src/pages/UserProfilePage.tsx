@@ -7,11 +7,15 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateActiveProgressType, getProfile } from 'services/userService';
-import { logout } from 'services/authService';
+import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally } from 'services/authService';
+import { useGoogleLogin } from '@react-oauth/google';
 import deckService from 'services/deckService';
 import { CurrentDeck } from 'services/types';
 import { clsx } from 'clsx';
 import * as styles from './UserProfilePage.css';
+
+const KAKAO_REST_API_KEY = process.env['REACT_APP_KAKAO_REST_API_KEY'];
+const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
@@ -23,22 +27,23 @@ const UserProfilePage: FC = () => {
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkLoading, setLinkLoading] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
-    setError(null);
     const fetchUserData = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = getUserLocally();
         if (storedUser) {
-          setUserData(JSON.parse(storedUser));
+          setUserData(storedUser);
         } else {
           const token = localStorage.getItem('token');
           if (!token) throw new Error('Not authenticated');
           setUserData(await getProfile());
         }
       } catch {
-        setError('Failed to load your profile information');
+        setError('프로필 정보를 불러오지 못했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -61,30 +66,68 @@ const UserProfilePage: FC = () => {
     try {
       await updateActiveProgressType(type);
       dispatch(setActiveProgressType(type));
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        parsed.activeProgressType = type;
-        localStorage.setItem('user', JSON.stringify(parsed));
+      const stored = getUserLocally();
+      if (stored) {
+        stored.activeProgressType = type;
+        saveUserLocally(stored);
       }
     } catch {
-      setError('세션 전환에 실패했습니다. 다시 시도해주세요.');
+      setError('세션 전환에 실패했습니다.');
     } finally {
       setIsUpdatingSession(false);
     }
   };
 
+  const googleLinkLogin = useGoogleLogin({
+    flow: 'auth-code',
+    scope: 'email profile',
+    redirect_uri: 'postmessage',
+    onSuccess: async (response) => {
+      setLinkLoading('google');
+      setLinkError(null);
+      try {
+        const { accessToken } = await exchangeCodeForToken(response.code);
+        const authProviders = await linkGoogleAccount(accessToken);
+        const stored = getUserLocally();
+        if (stored) {
+          stored.authProviders = authProviders;
+          saveUserLocally(stored);
+          setUserData({ ...stored });
+        }
+      } catch {
+        setLinkError('Google 계정 연동에 실패했습니다.');
+      } finally {
+        setLinkLoading(null);
+      }
+    },
+    onError: () => setLinkError('Google 인증에 실패했습니다.'),
+  });
+
+  const handleKakaoLink = () => {
+    if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) return;
+    const url =
+      `https://kauth.kakao.com/oauth/authorize` +
+      `?client_id=${KAKAO_REST_API_KEY}` +
+      `&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}` +
+      `&response_type=code` +
+      `&scope=account_email,profile_nickname` +
+      `&state=link`;
+    window.location.href = url;
+  };
+
+  const linkedProviders: string[] = userData?.authProviders ?? (userData?.type ? [userData.type] : []);
+
   if (isLoading) {
-    return <CenterDiv><div className="loading-text">Loading your profile...</div></CenterDiv>;
+    return <CenterDiv><div className="loading-text">불러오는 중...</div></CenterDiv>;
   }
 
   if (error || !userData) {
     return (
       <CenterDiv>
         <div className="error-box" style={{ textAlign: 'center', maxWidth: '360px' }}>
-          <h2 style={{ color: '#d32f2f', marginTop: 0 }}>Error Loading Profile</h2>
-          <p>{error || 'Failed to load profile data'}</p>
-          <DefaultButton onClick={() => navigate('/login')}>Return to Login</DefaultButton>
+          <h2 style={{ marginTop: 0 }}>프로필 오류</h2>
+          <p>{error || '데이터를 불러올 수 없습니다.'}</p>
+          <DefaultButton onClick={() => navigate('/login')}>로그인으로 돌아가기</DefaultButton>
         </div>
       </CenterDiv>
     );
@@ -92,21 +135,21 @@ const UserProfilePage: FC = () => {
 
   return (
     <div className={styles.page}>
-      {/* Profile Header */}
+
+      {/* 프로필 헤더 */}
       <div className={clsx('card', styles.profileHeader)}>
         <div className={styles.avatar}>
-          {userData.name?.charAt(0) || userData.email.charAt(0)}
+          {(userData.name?.charAt(0) ?? userData.email.charAt(0)).toUpperCase()}
         </div>
         <div className={styles.profileInfo}>
-          <h1 className={styles.profileName}>{userData.name || 'User'}</h1>
+          <p className={styles.profileName}>{userData.name || '사용자'}</p>
           <p className={styles.profileMeta}>{userData.email}</p>
-          <p className={styles.profileMeta}>Account type: {userData.type}</p>
         </div>
       </div>
 
-      {/* Learning Section */}
-      <section className="card" style={{ marginBottom: '32px' }}>
-        <h2 className="section-title">Learning Session</h2>
+      {/* 학습 세션 */}
+      <section className="card" style={{ marginBottom: '24px' }}>
+        <h2 className="section-title">학습 세션</h2>
         <div className={styles.sessionBtns}>
           {(['main', 'sub'] as const).map((type) => (
             <button
@@ -115,51 +158,88 @@ const UserProfilePage: FC = () => {
               onClick={() => handleSessionToggle(type)}
               disabled={isUpdatingSession}
             >
-              {type === 'main' ? 'Main' : 'Sub'}
+              {type === 'main' ? '메인' : '서브'}
             </button>
           ))}
         </div>
 
-        <h2 className="section-title">Current Learning</h2>
+        <h3 className={styles.subTitle}>현재 학습 위치</h3>
         {isLoadingProgress ? (
-          <div className="loading-text" style={{ padding: '16px' }}>Loading progress...</div>
+          <div className="loading-text" style={{ padding: '12px 0' }}>불러오는 중...</div>
         ) : progressData ? (
           <div className={styles.progressRow}>
             <div className={styles.progressCell}>
-              <span className={styles.progressCellLabel}>Level</span>
-              <span className={styles.progressCellValue}>{progressData.level || 'N/A'}</span>
+              <span className={styles.progressCellLabel}>레벨</span>
+              <span className={styles.progressCellValue}>{progressData.level ?? 'N/A'}</span>
             </div>
             <div className={styles.progressCell}>
-              <span className={styles.progressCellLabel}>Steps</span>
+              <span className={styles.progressCellLabel}>스텝</span>
               <span className={styles.progressCellValue}>
-                {progressData.steps ? `${progressData.steps.start} - ${progressData.steps.end}` : 'N/A'}
+                {progressData.steps ? `${progressData.steps.start} – ${progressData.steps.end}` : 'N/A'}
               </span>
             </div>
           </div>
         ) : (
-          <div className={styles.noProgress}>No active learning session. Start by selecting a level!</div>
+          <p className={styles.noProgress}>학습 세션이 없습니다. 단계를 선택해주세요.</p>
         )}
 
         <div className={styles.actionBtns}>
-          <DefaultButton style={{ flex: 1, padding: '12px 16px' }} onClick={() => navigate('/select-level')}>학습 단계 변경</DefaultButton>
-          <DefaultButton style={{ flex: 1, padding: '12px 16px' }} onClick={() => navigate('/flash-cards')}>학습 이어하기</DefaultButton>
+          <DefaultButton style={{ flex: 1 }} onClick={() => navigate('/select-level')}>단계 변경</DefaultButton>
+          <DefaultButton style={{ flex: 1 }} onClick={() => navigate('/flash-cards')}>학습 이어하기</DefaultButton>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section style={{ marginBottom: '32px' }}>
-        <h2 className="section-title">Learning Progress</h2>
+      {/* 학습 통계 */}
+      <section style={{ marginBottom: '24px' }}>
+        <h2 className="section-title">학습 통계</h2>
         <UserProgress />
       </section>
 
-      {/* Account Section */}
-      <section className={clsx('card', styles.accountSection)} style={{ marginBottom: '32px' }}>
-        <h2 className="section-title">Account</h2>
+      {/* 계정 연동 */}
+      <section className="card" style={{ marginBottom: '24px' }}>
+        <h2 className="section-title">계정 연동</h2>
+        <div className={styles.providerList}>
+          {/* Google */}
+          <div className={styles.providerRow}>
+            <span className={styles.providerName}>Google</span>
+            {linkedProviders.includes('google') ? (
+              <span className={styles.linkedBadge}>연동됨</span>
+            ) : (
+              <button
+                className={styles.linkBtn}
+                onClick={() => googleLinkLogin()}
+                disabled={linkLoading === 'google'}
+              >
+                {linkLoading === 'google' ? '연동 중...' : '연동하기'}
+              </button>
+            )}
+          </div>
+          {/* Kakao */}
+          <div className={styles.providerRow}>
+            <span className={styles.providerName}>Kakao</span>
+            {linkedProviders.includes('kakao') ? (
+              <span className={styles.linkedBadge}>연동됨</span>
+            ) : (
+              <button
+                className={styles.linkBtn}
+                onClick={handleKakaoLink}
+                disabled={linkLoading === 'kakao'}
+              >
+                연동하기
+              </button>
+            )}
+          </div>
+        </div>
+        {linkError && <p className={styles.linkErrorMsg}>{linkError}</p>}
+      </section>
+
+      {/* 로그아웃 */}
+      <section className="card" style={{ marginBottom: '24px' }}>
         <DefaultButton
-          style={{ backgroundColor: '#f8f9fa', color: '#d32f2f' }}
+          style={{ backgroundColor: '#f8f9fa', color: '#d32f2f', width: '100%' }}
           onClick={() => { logout(true); navigate('/'); }}
         >
-          Log Out
+          로그아웃
         </DefaultButton>
       </section>
     </div>

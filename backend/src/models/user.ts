@@ -78,12 +78,12 @@ const UserSchema = new mongoose.Schema<UserDocument>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for efficient queries
 UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ 'authProviders.provider': 1, 'authProviders.providerId': 1 });
+UserSchema.index({ 'authProviders.provider': 1, 'authProviders.providerId': 1 }, { unique: true, sparse: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ 'profile.lastActiveAt': 1 });
 UserSchema.index({ 'statistics.currentStreak': -1 });
@@ -177,7 +177,10 @@ UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
   user = await (this as UserModel).findByEmail(authData.email);
 
   if (user) {
-    user.authProviders.push(newProvider);
+    const alreadyLinked = user.authProviders.some(
+      (p: AuthProvider) => p.provider === newProvider.provider && p.providerId === newProvider.providerId,
+    );
+    if (!alreadyLinked) user.authProviders.push(newProvider);
     user.updateLastActive();
     await user.save();
     return user;
@@ -204,7 +207,10 @@ UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
       // 동시 요청으로 이미 생성된 경우 재조회
       user = await (this as UserModel).findByEmail(authData.email);
       if (!user) throw err;
-      user.authProviders.push(newProvider);
+      const alreadyLinked = user.authProviders.some(
+        (p: AuthProvider) => p.provider === newProvider.provider && p.providerId === newProvider.providerId,
+      );
+      if (!alreadyLinked) user.authProviders.push(newProvider);
       user.updateLastActive();
       await user.save();
     } else {
@@ -226,14 +232,14 @@ UserSchema.statics.reactivateUser = async function (userId: mongoose.Types.Objec
     {
       isActive: true,
       'profile.lastActiveAt': new Date(),
-    }
+    },
   );
   return result.modifiedCount > 0;
 };
 
 UserSchema.statics.updatePreferences = function (
   userId: mongoose.Types.ObjectId,
-  preferences: Partial<UserPreferences>
+  preferences: Partial<UserPreferences>,
 ): Promise<UserDocument | null> {
   return this.findByIdAndUpdate(
     userId,
@@ -243,13 +249,13 @@ UserSchema.statics.updatePreferences = function (
         return acc;
       }, {} as any),
     },
-    { new: true }
+    { new: true },
   );
 };
 
 UserSchema.statics.updateProfile = function (
   userId: mongoose.Types.ObjectId,
-  profile: Partial<UserProfile>
+  profile: Partial<UserProfile>,
 ): Promise<UserDocument | null> {
   return this.findByIdAndUpdate(
     userId,
@@ -259,10 +265,9 @@ UserSchema.statics.updateProfile = function (
         return acc;
       }, {} as any),
     },
-    { new: true }
+    { new: true },
   );
 };
-
 
 UserSchema.statics.getActiveUsers = function (days: number = 30): Promise<UserDocument[]> {
   const cutoffDate = new Date();
@@ -281,7 +286,7 @@ UserSchema.statics.getUserStats = async function (userId: mongoose.Types.ObjectI
 
 UserSchema.statics.getTopUsers = function (
   metric: 'streak' | 'wordsStudied' | 'timeSpent',
-  limit: number = 10
+  limit: number = 10,
 ): Promise<UserDocument[]> {
   const sortField = {
     streak: 'statistics.currentStreak',
@@ -295,7 +300,7 @@ UserSchema.statics.getTopUsers = function (
 };
 
 UserSchema.statics.getUsersByStudyLevel = function (
-  level: 'beginner' | 'intermediate' | 'advanced'
+  level: 'beginner' | 'intermediate' | 'advanced',
 ): Promise<UserDocument[]> {
   let wordsRange: { $gte?: number; $lt?: number } = {};
 
@@ -318,7 +323,7 @@ UserSchema.statics.getUsersByStudyLevel = function (
 };
 
 UserSchema.statics.cleanupInactiveUsers = async function (
-  daysSinceLastActive: number
+  daysSinceLastActive: number,
 ): Promise<{ deactivated: number; errors: any[] }> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastActive);
@@ -335,7 +340,7 @@ UserSchema.statics.cleanupInactiveUsers = async function (
           { 'profile.lastActiveAt': { $exists: false }, createdAt: { $lt: cutoffDate } },
         ],
       },
-      { isActive: false }
+      { isActive: false },
     );
     deactivated = result.modifiedCount || 0;
   } catch (error) {
@@ -369,7 +374,7 @@ UserSchema.statics.updateUserStatistics = async function (userId: mongoose.Types
           'statistics.totalWordsStudied': stats[0].totalWords,
           'statistics.totalTimeSpent': stats[0].totalTime,
         },
-      }
+      },
     );
   }
 };
@@ -391,7 +396,6 @@ UserSchema.statics.sendStudyReminders = async function (this): Promise<{ sent: n
 
   return { sent, errors };
 };
-
 
 const User = mongoose.model<UserDocument, UserModel>('User', UserSchema, 'user');
 
