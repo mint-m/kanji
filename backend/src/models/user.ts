@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
   {
     type: {
       type: String,
+
       required: true,
       enum: ['google', 'kakao', 'local'],
     },
