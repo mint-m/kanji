@@ -11,6 +11,8 @@ interface KakaoUserInfo {
   id: number;
   kakao_account?: {
     email?: string;
+    is_email_valid?: boolean;
+    is_email_verified?: boolean;
     profile?: {
       nickname?: string;
     };
@@ -42,8 +44,10 @@ export const getKakaoUserInfo = async (accessToken: string): Promise<{ kakaoId: 
   });
 
   const kakaoId = String(response.data.id);
-  const email = response.data.kakao_account?.email ?? `kakao_${kakaoId}@kakao.local`;
-  const name = response.data.kakao_account?.profile?.nickname || email.split('@')[0];
+  const account = response.data.kakao_account;
+  const isEmailTrusted = account?.is_email_valid === true && account?.is_email_verified === true;
+  const email = isEmailTrusted && account?.email ? account.email : `kakao_${kakaoId}@kakao.local`;
+  const name = account?.profile?.nickname || `kakao_${kakaoId}`;
 
   return { kakaoId, email, name };
 };
