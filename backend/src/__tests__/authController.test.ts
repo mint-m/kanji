@@ -15,7 +15,7 @@ jest.mock('../config', () => ({
 
 jest.mock('../models/user', () => ({
   __esModule: true,
-  default: { findById: jest.fn() },
+  default: { findById: jest.fn(), findOne: jest.fn() },
 }));
 
 jest.mock('../services/kakao', () => ({
@@ -60,7 +60,7 @@ const makeReq = (overrides = {}) =>
 describe('linkGoogle', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('이미 연동된 Google 계정이면 저장 없이 기존 authProviders 반환', async () => {
+  it('이미 Google 연동된 사용자가 재연동 시도 → ConflictError', async () => {
     const mockUser = {
       authProviders: [{ provider: 'google', providerId: 'google-id-456' }],
       save: jest.fn(),
@@ -68,23 +68,11 @@ describe('linkGoogle', () => {
     (User.findById as jest.Mock).mockResolvedValue(mockUser);
 
     const req = makeReq({ body: { accessToken: 'valid-token' } });
-    await authController.linkGoogle(req, makeRes(), makeNext());
+    const next = makeNext();
+    await authController.linkGoogle(req, makeRes(), next);
 
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
     expect(mockUser.save).not.toHaveBeenCalled();
-  });
-
-  it('이미 연동된 Google 계정이면 기존 authProviders를 응답에 반환', async () => {
-    const mockUser = {
-      authProviders: [{ provider: 'google', providerId: 'google-id-456' }],
-      save: jest.fn(),
-    };
-    (User.findById as jest.Mock).mockResolvedValue(mockUser);
-
-    const req = makeReq({ body: { accessToken: 'valid-token' } });
-    const res = makeRes();
-    await authController.linkGoogle(req, res, makeNext());
-
-    expect(res.json).toHaveBeenCalledWith({ success: true, authProviders: ['google'] });
   });
 
   it('미연동 Google 계정이면 authProviders에 추가 후 저장', async () => {
@@ -93,6 +81,7 @@ describe('linkGoogle', () => {
       save: jest.fn(),
     };
     (User.findById as jest.Mock).mockResolvedValue(mockUser);
+    (User.findOne as jest.Mock).mockResolvedValue(null);
 
     const req = makeReq({ body: { accessToken: 'valid-token' } });
     const res = makeRes();
@@ -101,6 +90,22 @@ describe('linkGoogle', () => {
     expect(mockUser.save).toHaveBeenCalledTimes(1);
     expect(mockUser.authProviders).toHaveLength(2);
     expect(res.json).toHaveBeenCalledWith({ success: true, authProviders: ['kakao', 'google'] });
+  });
+
+  it('다른 사용자에게 연동된 Google 계정 → ConflictError', async () => {
+    const mockUser = {
+      authProviders: [{ provider: 'kakao', providerId: 'kakao-id-789' }],
+      save: jest.fn(),
+    };
+    (User.findById as jest.Mock).mockResolvedValue(mockUser);
+    (User.findOne as jest.Mock).mockResolvedValue({ _id: 'other-user-id' });
+
+    const req = makeReq({ body: { accessToken: 'valid-token' } });
+    const next = makeNext();
+    await authController.linkGoogle(req, makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
+    expect(mockUser.save).not.toHaveBeenCalled();
   });
 
   it('인증되지 않은 요청 → UnauthorizedError', async () => {
@@ -141,7 +146,7 @@ describe('linkKakao', () => {
     });
   });
 
-  it('이미 연동된 Kakao 계정이면 저장 없이 기존 authProviders 반환', async () => {
+  it('이미 Kakao 연동된 사용자가 재연동 시도 → ConflictError', async () => {
     const mockUser = {
       authProviders: [{ provider: 'kakao', providerId: 'kakao-id-999' }],
       save: jest.fn(),
@@ -149,11 +154,11 @@ describe('linkKakao', () => {
     (User.findById as jest.Mock).mockResolvedValue(mockUser);
 
     const req = makeReq({ body: { code: 'auth-code', redirectUri: 'http://localhost/callback' } });
-    const res = makeRes();
-    await authController.linkKakao(req, res, makeNext());
+    const next = makeNext();
+    await authController.linkKakao(req, makeRes(), next);
 
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
     expect(mockUser.save).not.toHaveBeenCalled();
-    expect(res.json).toHaveBeenCalledWith({ success: true, authProviders: ['kakao'] });
   });
 
   it('미연동 Kakao 계정이면 authProviders에 추가 후 저장', async () => {
@@ -162,6 +167,7 @@ describe('linkKakao', () => {
       save: jest.fn(),
     };
     (User.findById as jest.Mock).mockResolvedValue(mockUser);
+    (User.findOne as jest.Mock).mockResolvedValue(null);
 
     const req = makeReq({ body: { code: 'auth-code', redirectUri: 'http://localhost/callback' } });
     const res = makeRes();
@@ -170,6 +176,22 @@ describe('linkKakao', () => {
     expect(mockUser.save).toHaveBeenCalledTimes(1);
     expect(mockUser.authProviders).toHaveLength(2);
     expect(res.json).toHaveBeenCalledWith({ success: true, authProviders: ['google', 'kakao'] });
+  });
+
+  it('다른 사용자에게 연동된 Kakao 계정 → ConflictError', async () => {
+    const mockUser = {
+      authProviders: [{ provider: 'google', providerId: 'google-id-123' }],
+      save: jest.fn(),
+    };
+    (User.findById as jest.Mock).mockResolvedValue(mockUser);
+    (User.findOne as jest.Mock).mockResolvedValue({ _id: 'other-user-id' });
+
+    const req = makeReq({ body: { code: 'auth-code', redirectUri: 'http://localhost/callback' } });
+    const next = makeNext();
+    await authController.linkKakao(req, makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 409 }));
+    expect(mockUser.save).not.toHaveBeenCalled();
   });
 
   it('code 누락 → UnauthorizedError', async () => {
