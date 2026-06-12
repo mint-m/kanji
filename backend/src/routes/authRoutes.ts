@@ -22,13 +22,60 @@ router.post(
 );
 
 router.post(
-  '/google-login',
+  '/google/login',
   [
-    authRateLimit(5, 15 * 60 * 1000), // 5 attempts per 15 minutes (more restrictive)
+    authRateLimit(5, 15 * 60 * 1000),
     body('accessToken').notEmpty().isLength({ min: 10 }).withMessage('Valid access token is required'),
     handleValidationErrors,
   ],
   authController.googleLogin
+);
+
+// Google One Tap (ID token credential)
+router.post(
+  '/google/one-tap',
+  [
+    authRateLimit(10, 15 * 60 * 1000),
+    body('credential').notEmpty().withMessage('Credential is required'),
+    handleValidationErrors,
+  ],
+  authController.googleOneTap
+);
+
+// 카카오 로그인 (authorization code)
+router.post(
+  '/kakao/callback',
+  [
+    authRateLimit(10, 15 * 60 * 1000),
+    body('code').notEmpty().withMessage('Authorization code is required'),
+    body('redirectUri').notEmpty().withMessage('redirectUri is required'),
+    handleValidationErrors,
+  ],
+  authController.kakaoCallback
+);
+
+// 계정 연동 (로그인된 사용자)
+router.post(
+  '/link/google',
+  [
+    authenticateUser,
+    authRateLimit(10, 15 * 60 * 1000),
+    body('accessToken').notEmpty().withMessage('Access token is required'),
+    handleValidationErrors,
+  ],
+  authController.linkGoogle,
+);
+
+router.post(
+  '/link/kakao',
+  [
+    authenticateUser,
+    authRateLimit(10, 15 * 60 * 1000),
+    body('code').notEmpty().withMessage('Authorization code is required'),
+    body('redirectUri').notEmpty().withMessage('redirectUri is required'),
+    handleValidationErrors,
+  ],
+  authController.linkKakao,
 );
 
 // 토큰 검증

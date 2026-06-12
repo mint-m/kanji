@@ -32,4 +32,5 @@ export default {
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI as string,
   JWT_SECRET: process.env.JWT_SECRET as string,
   JWT_EXPIRY: process.env.JWT_EXPIRY || '1d',
+  KAKAO_REST_API_KEY: process.env.KAKAO_REST_API_KEY as string,
 };

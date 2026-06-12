@@ -28,3 +28,6 @@ yarn-error.log*
 
 # 불필요한 문서 보관함 (로컬에만 유지, git 추적 제외)
 docs/_archive/
+
+# Claude Code 내부 파일
+.claude/worktrees/

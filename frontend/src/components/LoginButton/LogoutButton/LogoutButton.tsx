@@ -1,18 +1,15 @@
 import { googleLogout } from '@react-oauth/google';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
-import { useNavigate } from 'react-router-dom';
+import { logout } from 'services/authService';
 
 const LogoutButton = () => {
-  const navigate = useNavigate();
-
-  const logout = () => {
+  const handleLogout = () => {
     googleLogout();
-    localStorage.clear();
-    navigate('/');
+    logout();
   };
 
   return (
-    <DefaultButton onClick={logout}>Logout</DefaultButton>
+    <DefaultButton onClick={handleLogout}>Logout</DefaultButton>
   );
 };
 

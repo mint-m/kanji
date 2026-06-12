@@ -6,13 +6,15 @@ import {
   UserPreferences,
   UserProfile,
   UserStats,
-  LearningLevel,
+  AuthProvider,
 } from '../interfaces/user';
+import { ConflictError } from '../utils/errors';
 
 const UserSchema = new mongoose.Schema<UserDocument>(
   {
     type: {
       type: String,
+
       required: true,
       enum: ['google', 'kakao', 'local'],
     },
@@ -28,6 +30,12 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       required: true,
       trim: true,
     },
+    authProviders: [
+      {
+        provider: { type: String, enum: ['google', 'kakao', 'local'], required: true },
+        providerId: { type: String, required: true },
+      },
+    ],
     activeProgressType: {
       type: String,
       enum: ['main', 'sub', null],
@@ -72,12 +80,12 @@ const UserSchema = new mongoose.Schema<UserDocument>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for efficient queries
 UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ type: 1, email: 1 });
+UserSchema.index({ 'authProviders.provider': 1, 'authProviders.providerId': 1 }, { unique: true, sparse: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ 'profile.lastActiveAt': 1 });
 UserSchema.index({ 'statistics.currentStreak': -1 });
@@ -148,30 +156,74 @@ UserSchema.statics.findByEmail = function (email: string): Promise<UserDocument 
 
 UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
   type: UserAuthType;
+  providerId: string;
   email: string;
   name: string;
   profilePicture?: string;
 }): Promise<UserDocument> {
-  let user = await (this as UserModel).findByEmail(authData.email);
+  const newProvider: AuthProvider = { provider: authData.type, providerId: authData.providerId };
 
-  if (!user) {
+  // 1. providerId로 기존 연동 계정 조회
+  let user = await this.findOne({
+    'authProviders.provider': authData.type,
+    'authProviders.providerId': authData.providerId,
+  });
+
+  if (user) {
+    user.updateLastActive();
+    await user.save();
+    return user;
+  }
+
+  // 2. 이메일로 기존 계정 조회 → 새 provider 연동
+  user = await (this as UserModel).findByEmail(authData.email);
+
+  if (user) {
+    const sameProviderDifferentId = user.authProviders.some(
+      (p: AuthProvider) => p.provider === newProvider.provider && p.providerId !== newProvider.providerId,
+    );
+    if (sameProviderDifferentId) {
+      throw new ConflictError(`This account already has a different ${authData.type} account linked`);
+    }
+    const alreadyLinked = user.authProviders.some(
+      (p: AuthProvider) => p.provider === newProvider.provider && p.providerId === newProvider.providerId,
+    );
+    if (!alreadyLinked) user.authProviders.push(newProvider);
+    user.updateLastActive();
+    await user.save();
+    return user;
+  }
+
+  // 3. 신규 계정 생성 (concurrent 요청에 의한 duplicate key 에러 처리)
+  try {
     user = new this({
       type: authData.type,
       email: authData.email.toLowerCase(),
       name: authData.name,
+      authProviders: [newProvider],
       profile: {
         displayName: authData.name,
         profilePicture: authData.profilePicture,
         joinedAt: new Date(),
         lastActiveAt: new Date(),
       },
-      emailVerified: true, // OAuth users are pre-verified
+      emailVerified: true,
     });
     await user.save();
-  } else {
-    // Update last active time
-    user.updateLastActive();
-    await user.save();
+  } catch (err: any) {
+    if (err.code === 11000) {
+      // 동시 요청으로 이미 생성된 경우 재조회
+      user = await (this as UserModel).findByEmail(authData.email);
+      if (!user) throw err;
+      const alreadyLinked = user.authProviders.some(
+        (p: AuthProvider) => p.provider === newProvider.provider && p.providerId === newProvider.providerId,
+      );
+      if (!alreadyLinked) user.authProviders.push(newProvider);
+      user.updateLastActive();
+      await user.save();
+    } else {
+      throw err;
+    }
   }
 
   return user;
@@ -188,14 +240,14 @@ UserSchema.statics.reactivateUser = async function (userId: mongoose.Types.Objec
     {
       isActive: true,
       'profile.lastActiveAt': new Date(),
-    }
+    },
   );
   return result.modifiedCount > 0;
 };
 
 UserSchema.statics.updatePreferences = function (
   userId: mongoose.Types.ObjectId,
-  preferences: Partial<UserPreferences>
+  preferences: Partial<UserPreferences>,
 ): Promise<UserDocument | null> {
   return this.findByIdAndUpdate(
     userId,
@@ -205,13 +257,13 @@ UserSchema.statics.updatePreferences = function (
         return acc;
       }, {} as any),
     },
-    { new: true }
+    { new: true },
   );
 };
 
 UserSchema.statics.updateProfile = function (
   userId: mongoose.Types.ObjectId,
-  profile: Partial<UserProfile>
+  profile: Partial<UserProfile>,
 ): Promise<UserDocument | null> {
   return this.findByIdAndUpdate(
     userId,
@@ -221,10 +273,9 @@ UserSchema.statics.updateProfile = function (
         return acc;
       }, {} as any),
     },
-    { new: true }
+    { new: true },
   );
 };
-
 
 UserSchema.statics.getActiveUsers = function (days: number = 30): Promise<UserDocument[]> {
   const cutoffDate = new Date();
@@ -243,7 +294,7 @@ UserSchema.statics.getUserStats = async function (userId: mongoose.Types.ObjectI
 
 UserSchema.statics.getTopUsers = function (
   metric: 'streak' | 'wordsStudied' | 'timeSpent',
-  limit: number = 10
+  limit: number = 10,
 ): Promise<UserDocument[]> {
   const sortField = {
     streak: 'statistics.currentStreak',
@@ -257,7 +308,7 @@ UserSchema.statics.getTopUsers = function (
 };
 
 UserSchema.statics.getUsersByStudyLevel = function (
-  level: 'beginner' | 'intermediate' | 'advanced'
+  level: 'beginner' | 'intermediate' | 'advanced',
 ): Promise<UserDocument[]> {
   let wordsRange: { $gte?: number; $lt?: number } = {};
 
@@ -280,7 +331,7 @@ UserSchema.statics.getUsersByStudyLevel = function (
 };
 
 UserSchema.statics.cleanupInactiveUsers = async function (
-  daysSinceLastActive: number
+  daysSinceLastActive: number,
 ): Promise<{ deactivated: number; errors: any[] }> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastActive);
@@ -297,7 +348,7 @@ UserSchema.statics.cleanupInactiveUsers = async function (
           { 'profile.lastActiveAt': { $exists: false }, createdAt: { $lt: cutoffDate } },
         ],
       },
-      { isActive: false }
+      { isActive: false },
     );
     deactivated = result.modifiedCount || 0;
   } catch (error) {
@@ -331,7 +382,7 @@ UserSchema.statics.updateUserStatistics = async function (userId: mongoose.Types
           'statistics.totalWordsStudied': stats[0].totalWords,
           'statistics.totalTimeSpent': stats[0].totalTime,
         },
-      }
+      },
     );
   }
 };
@@ -353,7 +404,6 @@ UserSchema.statics.sendStudyReminders = async function (this): Promise<{ sent: n
 
   return { sent, errors };
 };
-
 
 const User = mongoose.model<UserDocument, UserModel>('User', UserSchema, 'user');
 

@@ -1,6 +1,7 @@
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logout } from 'services/authService';
 import { clsx } from 'clsx';
 import * as styles from './Navbar.css';
 
@@ -16,10 +17,9 @@ const Navbar = () => {
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    logout(true);
     setShowUserMenu(false);
-    navigate('/');
+    navigate('/login');
   }, [navigate]);
 
   useEffect(() => {

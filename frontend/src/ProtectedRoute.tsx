@@ -1,21 +1,21 @@
-import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
-import { isTokenExpired, logout } from "./services/authService";
-import { triggerAuthBanner } from "./contexts/authBannerInstance";
+import { useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { getTokenLocally, getUserLocally, isTokenExpired, logout } from './services/authService';
+import { triggerAuthBanner } from './contexts/authBannerInstance';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  const expired = Boolean(token && user && isTokenExpired(token));
+  const token = getTokenLocally();
+  const user = getUserLocally();
+  const isExpired = Boolean(token && user && isTokenExpired(token));
 
   useEffect(() => {
-    if (expired) {
+    if (isExpired) {
       logout(true);
       triggerAuthBanner();
     }
-  }, [expired]);
+  }, [isExpired]);
 
-  if (!user || !token || expired) {
+  if (!token || !user || isExpired) {
     return <Navigate to="/login" replace />;
   }
 

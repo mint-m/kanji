@@ -6,7 +6,7 @@
   "author": "mint-m <fwwfly@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "concurrently --kill-others-on-fail \"cd backend && yarn dev\" \"cd frontend && yarn start\" "
+    "start": "concurrently --kill-others \"cd backend && yarn dev\" \"cd frontend && yarn start\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

@@ -1,17 +1,15 @@
-// src/services/authService.ts
 import axios, { AxiosError } from 'axios';
 import store from 'store';
 import { clearUser } from 'store/modules/user';
 
-// 환경 변수에서 API URL 가져오기 (빈 문자열이면 상대 경로 사용)
-export const GOOGLE_REDIRECT_URI = process.env['REACT_APP_GOOGLE_REDIRECT_URI'] as string;
 
-// 사용자 정보 타입 정의
 export interface UserProfile {
   _id: string;
   email: string;
   name: string;
   type: 'google' | 'kakao' | 'local';
+  activeProgressType: 'main' | 'sub' | null;
+  authProviders?: ('google' | 'kakao' | 'local')[];
   profile?: {
     displayName?: string;
     profilePicture?: string;
@@ -46,52 +44,44 @@ export interface UserProfile {
     accountType?: string;
     isNewUser?: boolean;
     canReceiveReminders?: boolean;
-    hasLearningCheckpoint?: boolean;
   };
-  learningStats?: any;
-  [key: string]: any; // 추가 필드를 위한 인덱스 시그니처
 }
 
-// 로그인 응답 타입 정의
-export interface LoginResponse {
+export interface LoginResult {
   token: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  user: UserProfile;
 }
 
-// 토큰 관리 함수들
-export const saveTokenLocally = (token: string): void => {
-  localStorage.setItem('token', token);
-};
+// Redux user state shape에 맞게 변환
+export const toUserState = (user: UserProfile) => ({
+  isLoggin: true as const,
+  loginStatusType: user.type,
+  email: user.email,
+  name: user.name,
+  activeProgressType: user.activeProgressType ?? null,
+});
 
-export const getTokenLocally = (): string | null => {
-  return localStorage.getItem('token');
-};
+// localStorage helpers
+export const saveTokenLocally = (token: string) => localStorage.setItem('token', token);
+export const getTokenLocally = () => localStorage.getItem('token');
+export const removeTokenLocally = () => localStorage.removeItem('token');
 
-export const removeTokenLocally = (): void => {
-  localStorage.removeItem('token');
-};
-
-// 사용자 정보 관리 함수들
-export const saveUserLocally = (user: UserProfile): void => {
-  localStorage.setItem('user', JSON.stringify(user));
-};
-
+export const saveUserLocally = (user: UserProfile) => localStorage.setItem('user', JSON.stringify(user));
 export const getUserLocally = (): UserProfile | null => {
-  const userData = localStorage.getItem('user');
-  return userData ? JSON.parse(userData) : null;
+  const data = localStorage.getItem('user');
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
 };
+export const removeUserLocally = () => localStorage.removeItem('user');
 
-export const removeUserLocally = (): void => {
-  localStorage.removeItem('user');
-};
+export const getAuthHeaders = (token = getTokenLocally()): Record<string, string> =>
+  token ? { Authorization: `Bearer ${token}` } : {};
 
-// API 호출에 사용할 공통 헤더 생성
-export const getAuthHeaders = (token = getTokenLocally()): Record<string, string> => {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-// 공통 에러 핸들링
 export const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
@@ -100,124 +90,93 @@ export const handleApiError = (error: unknown): never => {
       axiosError.response?.data?.error ||
       axiosError.message ||
       'Unknown API error';
-
-    // 401 handling is done in apiClient interceptor
-    // No need to handle it here (prevents duplication)
-
     throw new Error(errorMessage);
   }
-
   throw error instanceof Error ? error : new Error('Unknown error occurred');
 };
 
-// API 요청 함수들
+const processLoginResponse = (data: { token: string; user: UserProfile }): LoginResult => {
+  saveTokenLocally(data.token);
+  saveUserLocally(data.user);
+  return { token: data.token, user: data.user };
+};
+
 export const exchangeCodeForToken = async (
-  code: string,
-  redirectUri: string = GOOGLE_REDIRECT_URI
+  code: string
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const response = await axios.post(`/api/auth/google/access-token`, {
-      code,
-      redirect_uri: redirectUri,
-    });
-
-    if (!response.data.success) {
-      throw new Error('Failed to exchange code for token');
-    }
-
-    return {
-      accessToken: response.data.accessToken,
-      idToken: response.data.idToken,
-    };
+    const response = await axios.post('/api/auth/google/access-token', { code });
+    return { accessToken: response.data.accessToken, idToken: response.data.idToken };
   } catch (error) {
-    console.error('❌ exchangeCodeForToken error:', error);
-
     return handleApiError(error);
   }
 };
 
-// 사용자 프로필 가져오기 (상세 정보 포함)
-export const fetchUserData = async (token: string): Promise<UserProfile & { learningStats?: any }> => {
+export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResult> => {
   try {
-    // 상세 프로필 정보 가져오기 (이미 통계 정보 포함)
-    const profileResponse = await axios.get('/api/auth/profile', {
-      headers: getAuthHeaders(token),
-    });
-
-    if (!profileResponse.data.success) {
-      throw new Error('Failed to fetch user profile');
-    }
-
-    const userData = profileResponse.data.data;
-
-    // 학습 통계는 필요할 때 별도로 조회 (불필요한 초기 로딩 제거)
-
-    return userData;
+    const response = await axios.post('/api/auth/google/login', { accessToken });
+    return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResponse & { user?: UserProfile }> => {
+export const loginWithGoogleIdToken = async (credential: string): Promise<LoginResult> => {
   try {
-    const loginResponse = await axios.post('/api/auth/google-login', {
-      accessToken,
-    });
-
-    if (!loginResponse.data.success) {
-      throw new Error('Google login failed');
-    }
-
-    // 토큰 저장
-    const token = loginResponse.data.token;
-    saveTokenLocally(token);
-
-    // 사용자 정보 저장 (이미 응답에 포함되어 있음)
-    const userProfile = loginResponse.data.user;
-    saveUserLocally(userProfile);
-
-    return {
-      token: loginResponse.data.token,
-      user: userProfile,
-    };
+    const response = await axios.post('/api/auth/google/one-tap', { credential });
+    return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const fetchUserProfile = async (token: string): Promise<UserProfile> => {
+export const loginWithKakaoCode = async (code: string, redirectUri: string): Promise<LoginResult> => {
   try {
-    const response = await axios.get('/api/auth/profile', {
-      headers: getAuthHeaders(token),
-    });
-
-    if (!response.data.success) {
-      throw new Error('Failed to fetch user profile');
-    }
-
-    return response.data.data;
+    const response = await axios.post('/api/auth/kakao/callback', { code, redirectUri });
+    return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-// 로그아웃 (localStorage + Redux store 동시 초기화)
+
 export const logout = (skipRedirect = false): void => {
   removeTokenLocally();
   removeUserLocally();
-  store.dispatch(clearUser()); // UI 로그아웃 상태 반영
-
+  store.dispatch(clearUser());
   if (!skipRedirect) {
     window.location.href = '/';
   }
 };
 
-// 인증 상태 확인
-export const isAuthenticated = (): boolean => {
-  return !!getTokenLocally();
+export const isAuthenticated = (): boolean => !!getTokenLocally();
+
+export const linkGoogleAccount = async (accessToken: string): Promise<('google' | 'kakao' | 'local')[]> => {
+  try {
+    const response = await axios.post(
+      '/api/auth/link/google',
+      { accessToken },
+      { headers: getAuthHeaders() },
+    );
+    return response.data.authProviders;
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
 
-// JWT 토큰 만료 여부 확인 (디코딩만 수행, 서버 검증 아님)
+export const linkKakaoAccount = async (code: string, redirectUri: string): Promise<('google' | 'kakao' | 'local')[]> => {
+  try {
+    const response = await axios.post(
+      '/api/auth/link/kakao',
+      { code, redirectUri },
+      { headers: getAuthHeaders() },
+    );
+    return response.data.authProviders;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
 export const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;
   try {
@@ -227,21 +186,4 @@ export const isTokenExpired = (token: string | null): boolean => {
   } catch {
     return true;
   }
-};
-
-// 인증 여부에 따라 콜백 실행 (라우터 가드 등에서 사용)
-export const withAuth = <T>(callback: (user: UserProfile) => T, fallback?: () => T): T => {
-  const token = getTokenLocally();
-  const user = getUserLocally();
-
-  if (token && user) {
-    return callback(user);
-  }
-
-  if (fallback) {
-    return fallback();
-  }
-
-  // 인증 실패 시 로그인 페이지로 리다이렉트 등의 기본 동작 추가 가능
-  throw new Error('Authentication required');
 };

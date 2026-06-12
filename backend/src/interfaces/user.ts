@@ -48,11 +48,18 @@ export interface UserProfile {
   timezone?: string;
 }
 
+// Auth provider entry for multi-provider accounts
+export interface AuthProvider {
+  provider: UserAuthType;
+  providerId: string;
+}
+
 // User document interface
 export interface UserDocument extends Document {
   type: UserAuthType;
   email: string;
   name: string;
+  authProviders: AuthProvider[];
   activeProgressType: 'main' | 'sub' | null; // Active learning session type
   preferences: UserPreferences;
   profile: UserProfile;
@@ -82,6 +89,7 @@ export interface UserModel extends Model<UserDocument> {
 
   findOrCreateFromOAuth(authData: {
     type: UserAuthType;
+    providerId: string;
     email: string;
     name: string;
     profilePicture?: string;

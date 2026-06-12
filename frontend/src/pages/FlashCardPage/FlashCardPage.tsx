@@ -1,5 +1,6 @@
 import { FC, useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import deckService from 'services/deckService';
 import { DeckWord } from 'services/types';
 import Kanji from 'components/Kanji';
@@ -16,6 +17,7 @@ const SkeletonFlashCard = () => (
 );
 
 const FlashCardPage: FC = () => {
+  const navigate = useNavigate();
   const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const [deck, setDeck] = useState<DeckWord[] | null>(null);
   const [level, setLevel] = useState('');
@@ -41,8 +43,8 @@ const FlashCardPage: FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to fetch deck:', error);
-      if (error.response?.status === 404) {
-        setError('활성화된 학습 세션이 없습니다. 학습을 시작하려면 레벨을 선택해주세요.');
+      if (error.response?.status === 404 && error.response?.data?.code === 'NO_PROGRESS') {
+        navigate('/level-setup', { replace: true });
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         setError('요청 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.');
       } else {
@@ -51,7 +53,7 @@ const FlashCardPage: FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeProgressType]);
+  }, [activeProgressType, navigate]);
 
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
 

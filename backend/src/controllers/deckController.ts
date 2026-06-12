@@ -146,64 +146,13 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    let progress = await UserCheckpoint.findByUserAndType(userId, progressType);
+    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
 
     if (!progress) {
-      console.log(`[Auto-Create] No ${progressType} session found for user ${userId}`);
-
-      try {
-        let level: LearningLevel;
-        let steps: { start: number; end: number };
-
-        // 신규 사용자
-        level = 'N5';
-        steps = { start: 1, end: 3 };
-
-        console.log(`[Auto-Create] New user: starting at ${level} ${steps.start}-${steps.end}`);
-
-        // 단어 조회
-        const words = await Word.find({
-          level,
-          step: { $gte: steps.start, $lte: steps.end },
-        }).lean();
-
-        if (words.length === 0) {
-          res.status(400).json({
-            success: false,
-            message: `No words found for ${level} steps ${steps.start}-${steps.end}`,
-          });
-          return;
-        }
-
-        // UserCheckpoint 생성
-        const wordIds = words.map((w) => w._id);
-
-        progress = await UserCheckpoint.create({
-          user_id: userId,
-          progress_type: progressType,
-          current_level: level,
-          steps,
-          shuffled_order: wordIds,
-          current_index: 0,
-        });
-
-        console.log(`[Auto-Create] ✅ Created ${progressType} session with ${wordIds.length} words`);
-      } catch (error) {
-        console.error('[Auto-Create] Failed:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Failed to create learning session',
-          error: process.env.NODE_ENV === 'development' ? error : undefined,
-        });
-        return;
-      }
-    }
-
-    // TypeScript assertion: progress is guaranteed to exist here
-    if (!progress) {
-      res.status(500).json({
+      res.status(404).json({
         success: false,
-        message: 'Failed to load or create learning session',
+        code: 'NO_PROGRESS',
+        message: `No active ${progressType} session found. Please select a level to start.`,
       });
       return;
     }
