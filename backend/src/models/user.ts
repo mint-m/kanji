@@ -8,6 +8,7 @@ import {
   UserStats,
   AuthProvider,
 } from '../interfaces/user';
+import { ConflictError } from '../utils/errors';
 
 const UserSchema = new mongoose.Schema<UserDocument>(
   {
@@ -178,6 +179,12 @@ UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
   user = await (this as UserModel).findByEmail(authData.email);
 
   if (user) {
+    const sameProviderDifferentId = user.authProviders.some(
+      (p: AuthProvider) => p.provider === newProvider.provider && p.providerId !== newProvider.providerId,
+    );
+    if (sameProviderDifferentId) {
+      throw new ConflictError(`This account already has a different ${authData.type} account linked`);
+    }
     const alreadyLinked = user.authProviders.some(
       (p: AuthProvider) => p.provider === newProvider.provider && p.providerId === newProvider.providerId,
     );

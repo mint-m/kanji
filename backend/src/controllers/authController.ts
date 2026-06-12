@@ -6,7 +6,7 @@ import User from '../models/user';
 import { UserDocument } from '../interfaces/user';
 import { generateToken } from '../services/auth';
 import { getKakaoAccessToken, getKakaoUserInfo } from '../services/kakao';
-import { NotFoundError, UnauthorizedError, InternalServerError, ConflictError } from '../utils/errors';
+import { NotFoundError, UnauthorizedError, InternalServerError, ConflictError, AppError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { GoogleAuthCodeRequest, GoogleTokenLoginRequest } from '../types/api/requests';
 
@@ -88,6 +88,7 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
 
     return sendLoginResponse(user, res, next);
   } catch (error) {
+    if (error instanceof AppError) return next(error);
     console.error('Google login error:', error);
     next(new InternalServerError('Google login failed'));
   }
@@ -117,6 +118,7 @@ export const googleOneTap = async (req: Request, res: Response, next: NextFuncti
 
     return sendLoginResponse(user, res, next);
   } catch (error) {
+    if (error instanceof AppError) return next(error);
     console.error('Google One Tap error:', error);
     next(new InternalServerError('Google One Tap login failed'));
   }
@@ -137,6 +139,7 @@ export const kakaoCallback = async (req: Request, res: Response, next: NextFunct
 
     return sendLoginResponse(user, res, next);
   } catch (error) {
+    if (error instanceof AppError) return next(error);
     console.error('Kakao login error:', error);
     next(new InternalServerError('Kakao login failed'));
   }
