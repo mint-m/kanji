@@ -6,7 +6,7 @@ import User from '../models/user';
 import { UserDocument } from '../interfaces/user';
 import { generateToken } from '../services/auth';
 import { getKakaoAccessToken, getKakaoUserInfo } from '../services/kakao';
-import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
+import { NotFoundError, UnauthorizedError, InternalServerError, ConflictError } from '../utils/errors';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { GoogleAuthCodeRequest, GoogleTokenLoginRequest } from '../types/api/requests';
 
@@ -276,9 +276,13 @@ export const linkGoogle = async (req: AuthenticatedRequest, res: Response, next:
     const user = await User.findById(req.user._id);
     if (!user) return next(new NotFoundError('User not found'));
 
-    const alreadyLinked = user.authProviders.some((p) => p.provider === 'google' && p.providerId === userInfo.id!);
-    if (!alreadyLinked) {
-      user.authProviders.push({ provider: 'google', providerId: userInfo.id! });
+    const providerId = userInfo.id!;
+    const existing = await User.findOne({ 'authProviders.provider': 'google', 'authProviders.providerId': providerId });
+    if (existing && String(existing._id) !== String(req.user._id)) {
+      return next(new ConflictError('This Google account is already linked to another user'));
+    }
+    if (!existing) {
+      user.authProviders.push({ provider: 'google', providerId });
       await user.save();
     }
 
@@ -302,8 +306,11 @@ export const linkKakao = async (req: AuthenticatedRequest, res: Response, next: 
     const user = await User.findById(req.user._id);
     if (!user) return next(new NotFoundError('User not found'));
 
-    const alreadyLinked = user.authProviders.some((p) => p.provider === 'kakao' && p.providerId === kakaoId);
-    if (!alreadyLinked) {
+    const existing = await User.findOne({ 'authProviders.provider': 'kakao', 'authProviders.providerId': kakaoId });
+    if (existing && String(existing._id) !== String(req.user._id)) {
+      return next(new ConflictError('This Kakao account is already linked to another user'));
+    }
+    if (!existing) {
       user.authProviders.push({ provider: 'kakao', providerId: kakaoId });
       await user.save();
     }

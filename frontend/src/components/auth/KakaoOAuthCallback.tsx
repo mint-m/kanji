@@ -34,14 +34,14 @@ const KakaoOAuthCallback = () => {
           }
           navigate('/profile', { replace: true });
         })
-        .catch(() => navigate('/profile', { replace: true }));
+        .catch(() => navigate('/profile', { replace: true, state: { linkError: '카카오 계정 연동에 실패했습니다.' } }));
     } else {
       loginWithKakaoCode(code, KAKAO_REDIRECT_URI)
         .then((res) => {
           dispatch(setUser(toUserState(res.user)));
           navigate('/', { replace: true });
         })
-        .catch(() => navigate('/login', { replace: true }));
+        .catch(() => navigate('/login', { replace: true, state: { error: '카카오 로그인에 실패했습니다.' } }));
     }
   }, [navigate, dispatch]);
 

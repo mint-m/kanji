@@ -46,8 +46,10 @@ const LevelSetupPage: FC = () => {
           });
         }
       })
-      .catch(() => {
-        // 404 = 세션 없음, 정상 케이스
+      .catch((err) => {
+        if (err?.response?.status !== 404) {
+          setError('학습 세션 정보를 불러오는 데 실패했습니다. 페이지를 새로고침해 주세요.');
+        }
       })
       .finally(() => setIsCheckingSession(false));
   }, []);
@@ -74,7 +76,7 @@ const LevelSetupPage: FC = () => {
     }
   };
 
-  const canStart = !existingSession || confirmed;
+  const canStart = (!existingSession || confirmed) && !error;
   const info = LEVEL_INFO[selected];
 
   if (isCheckingSession) {

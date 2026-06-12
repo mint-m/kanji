@@ -4,7 +4,7 @@ import { RootState } from 'store';
 import UserProgress from 'components/UserProgress';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateActiveProgressType, getProfile } from 'services/userService';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally } from 'services/authService';
@@ -20,6 +20,7 @@ const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
   const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +28,7 @@ const UserProfilePage: FC = () => {
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
-  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>((location.state as any)?.linkError ?? null);
   const [linkLoading, setLinkLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -139,7 +140,7 @@ const UserProfilePage: FC = () => {
       {/* 프로필 헤더 */}
       <div className={clsx('card', styles.profileHeader)}>
         <div className={styles.avatar}>
-          {(userData.name?.charAt(0) ?? userData.email.charAt(0)).toUpperCase()}
+          {(userData.name?.charAt(0) || userData.email.charAt(0)).toUpperCase()}
         </div>
         <div className={styles.profileInfo}>
           <p className={styles.profileName}>{userData.name || '사용자'}</p>

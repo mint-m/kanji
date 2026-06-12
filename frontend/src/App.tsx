@@ -44,7 +44,7 @@ const AppContent = () => {
     },
     use_fedcm_for_prompt: true,
     cancel_on_tap_outside: false,
-    disabled: isLoggedIn,
+    disabled: isLoggedIn || !!getUserLocally(),
   });
 
   return (
