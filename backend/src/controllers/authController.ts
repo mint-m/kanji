@@ -276,6 +276,10 @@ export const linkGoogle = async (req: AuthenticatedRequest, res: Response, next:
     const user = await User.findById(req.user._id);
     if (!user) return next(new NotFoundError('User not found'));
 
+    if (user.authProviders.some((p) => p.provider === 'google')) {
+      return next(new ConflictError('Google account is already linked to this user'));
+    }
+
     const providerId = userInfo.id!;
     const existing = await User.findOne({ 'authProviders.provider': 'google', 'authProviders.providerId': providerId });
     if (existing && String(existing._id) !== String(req.user._id)) {
@@ -305,6 +309,10 @@ export const linkKakao = async (req: AuthenticatedRequest, res: Response, next: 
 
     const user = await User.findById(req.user._id);
     if (!user) return next(new NotFoundError('User not found'));
+
+    if (user.authProviders.some((p) => p.provider === 'kakao')) {
+      return next(new ConflictError('Kakao account is already linked to this user'));
+    }
 
     const existing = await User.findOne({ 'authProviders.provider': 'kakao', 'authProviders.providerId': kakaoId });
     if (existing && String(existing._id) !== String(req.user._id)) {
