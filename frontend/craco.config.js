@@ -13,4 +13,18 @@ module.exports = {
       return webpackConfig;
     },
   },
+  jest: {
+    configure: (jestConfig) => {
+      jestConfig.transform = {
+        '\\.css\\.ts$': '@vanilla-extract/jest-transform',
+        ...jestConfig.transform,
+      };
+      jestConfig.moduleNameMapper = {
+        // axios@1.x: use CJS build so Jest (CommonJS) can resolve it
+        '^axios$': '<rootDir>/node_modules/axios/dist/node/axios.cjs',
+        ...jestConfig.moduleNameMapper,
+      };
+      return jestConfig;
+    },
+  },
 };

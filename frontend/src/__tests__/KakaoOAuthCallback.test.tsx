@@ -99,7 +99,7 @@ describe('KakaoOAuthCallback', () => {
     render(<KakaoOAuthCallback />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true, state: { error: '카카오 로그인에 실패했습니다.' } });
     });
   });
 
@@ -110,7 +110,7 @@ describe('KakaoOAuthCallback', () => {
     render(<KakaoOAuthCallback />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/profile', { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith('/profile', { replace: true, state: { linkError: '카카오 계정 연동에 실패했습니다.' } });
     });
   });
 });

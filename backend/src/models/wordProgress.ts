@@ -9,7 +9,7 @@ import {
   BulkWordOperation,
   StudySessionSummary,
 } from '../interfaces/wordProgress';
-import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
+import { ProgressType, LearningLevel } from '../types/common';
 
 // Type for aggregated word data with progress info
 export interface WordWithProgress {

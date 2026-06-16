@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
+import { LearningLevel } from '../types/common';
 import {
   WordDocument,
   WordModel,
-  LearningLevel,
   WordSearchFilters,
   WordLevelStats,
   StepRangeMinMax,

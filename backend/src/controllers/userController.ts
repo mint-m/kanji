@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import { NotFoundError, BadRequestError, InternalServerError } from '../utils/errors';
-import { ProgressType, LearningLevel } from '../interfaces/userCheckpoint';
+import { ProgressType, LearningLevel } from '../types/common';
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {

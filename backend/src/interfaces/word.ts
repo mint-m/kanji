@@ -2,9 +2,6 @@ import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { LearningLevel } from '../types/common';
 
-// Re-export for backwards compatibility
-export { LearningLevel };
-
 // Parts of speech types
 export type PartOfSpeech =
   | 'noun'

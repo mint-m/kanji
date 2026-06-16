@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import mongoose, { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
-import { ProgressType } from '../interfaces/userCheckpoint';
+import { ProgressType } from '../types/common';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 /**

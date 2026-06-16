@@ -2,9 +2,6 @@ import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { LearningLevel, ProgressType, StepRange, DeckGenerationOptions, SessionStats } from '../types/common';
 
-// Re-export types from common for backwards compatibility
-export { LearningLevel, ProgressType, StepRange, DeckGenerationOptions, SessionStats };
-
 // UserCheckpoint document interface
 export interface UserCheckpointDocument extends Document {
   user_id: mongoose.Types.ObjectId;
@@ -56,8 +53,6 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
 
   // Enhanced sliding window methods
   getAvailableWindows(level: LearningLevel): Promise<StepRange[]>;
-  getWindowStatistics(level: LearningLevel): any;
-  generateWindowTransitionMap(level: LearningLevel): any;
 
   // Utility methods
   shuffleArray<T>(array: T[]): T[];

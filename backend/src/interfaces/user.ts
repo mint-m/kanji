@@ -2,9 +2,6 @@ import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { UserAuthType, LearningLevel, Theme, Language } from '../types/common';
 
-// Re-export for backwards compatibility
-export { UserAuthType, LearningLevel };
-
 // Legacy learning checkpoint interface (for migration)
 export interface LearningCheckpoint {
   level: LearningLevel;
@@ -111,17 +108,6 @@ export interface UserModel extends Model<UserDocument> {
   getActiveUsers(days?: number): Promise<UserDocument[]>;
 
   getUserStats(userId: mongoose.Types.ObjectId): Promise<UserStats | null>;
-
-  getTopUsers(metric: 'streak' | 'wordsStudied' | 'timeSpent', limit?: number): Promise<UserDocument[]>;
-
-  getUsersByStudyLevel(level: 'beginner' | 'intermediate' | 'advanced'): Promise<UserDocument[]>;
-
-  // Maintenance operations
-  cleanupInactiveUsers(daysSinceLastActive: number): Promise<{ deactivated: number; errors: any[] }>;
-
-  updateUserStatistics(userId: mongoose.Types.ObjectId): Promise<void>;
-
-  sendStudyReminders(): Promise<{ sent: number; errors: any[] }>;
 }
 
 export default UserModel;
