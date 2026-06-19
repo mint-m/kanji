@@ -128,7 +128,7 @@ userCheckpointSchema.methods.canMoveToNextWindow = async function (this: UserChe
   if (!this.isCompleted()) return false;
 
   // Use SlidingWindowService to check if next window is available
-  return SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
+  return await SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
 };
 
 userCheckpointSchema.methods.generateNextSlidingWindow = async function (this: UserCheckpointDocument): Promise<void> {
