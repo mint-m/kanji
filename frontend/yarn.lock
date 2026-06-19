@@ -2700,11 +2700,6 @@
     "@types/scheduler" "*"
     csstype "^3.0.2"
 
-"@types/redux-actions@^2.6.2":
-  version "2.6.2"
-  resolved "https://registry.yarnpkg.com/@types/redux-actions/-/redux-actions-2.6.2.tgz#5956d9e7b9a644358e2c0610f47b1fa3060edc21"
-  integrity sha512-TvcINy8rWFANcpc3EiEQX9Yv3owM3d3KIrqr2ryUIOhYIYzXA/bhDZeGSSSuai62iVR2qMZUgz9tQ5kr0Kl+Tg==
-
 "@types/resolve@1.17.1":
   version "1.17.1"
   resolved "https://registry.yarnpkg.com/@types/resolve/-/resolve-1.17.1.tgz#3afd6ad8967c77e4376c598a82ddd58f46ec45d6"
@@ -2965,6 +2960,14 @@
     find-up "^5.0.0"
     javascript-stringify "^2.0.1"
     mlly "^1.4.2"
+
+"@vanilla-extract/jest-transform@^1.1.22":
+  version "1.1.22"
+  resolved "https://registry.yarnpkg.com/@vanilla-extract/jest-transform/-/jest-transform-1.1.22.tgz#96c8da575a675820d629f2cc823a05a74dd8bf8e"
+  integrity sha512-K57yDCMuOFP4koNI03UZXF4rlbbW98gdUf1qTfiQ6SQNQmXwciNzkn/7BBjviMuYyVADw9YmumBGFxhsCCuaoQ==
+  dependencies:
+    "@vanilla-extract/integration" "^8.0.10"
+    esbuild "npm:esbuild@>=0.17.6 <0.29.0"
 
 "@vanilla-extract/private@^1.0.9":
   version "1.0.9"
@@ -7044,11 +7047,6 @@ jsonpointer@^5.0.0:
     object.assign "^4.1.4"
     object.values "^1.1.6"
 
-just-curry-it@5.3.0:
-  version "5.3.0"
-  resolved "https://registry.yarnpkg.com/just-curry-it/-/just-curry-it-5.3.0.tgz#1463602e932c5beb431a2a384dddcd48bb3c9c42"
-  integrity sha512-silMIRiFjUWlfaDhkgSzpuAyQ6EX/o09Eu8ZBfmFwQMbax7+LQzeIU2CBrICT6Ne4l86ITCGvUCBpCubWYy0Yw==
-
 kind-of@^6.0.2:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
@@ -8820,19 +8818,6 @@ redent@^3.0.0:
   dependencies:
     indent-string "^4.0.0"
     strip-indent "^3.0.0"
-
-reduce-reducers@1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/reduce-reducers/-/reduce-reducers-1.0.4.tgz#fb77e751a9eb0201760ac5a605ca8c9c2d0537f8"
-  integrity sha512-Mb2WZ2bJF597exiqX7owBzrqJ74DHLK3yOQjCyPAaNifRncE8OD0wFIuoMhXxTnHK07+8zZ2SJEKy/qtiyR7vw==
-
-redux-actions@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/redux-actions/-/redux-actions-3.0.0.tgz#3c14f32ab27b87ba771b3691bee31c7e0513742d"
-  integrity sha512-5r+G8JizsTfyfWolVDkCLL2SpZA0Sk9ao2MXwfdXkG5+72s0PcO9qEqpo51D2o8dZY2gXLjNmY5yoRB+BuizRw==
-  dependencies:
-    just-curry-it "5.3.0"
-    reduce-reducers "1.0.4"
 
 redux-thunk@^2.4.2:
   version "2.4.2"

@@ -1,4 +1,4 @@
-import { Action, createAction, handleActions } from 'redux-actions';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserState {
   isLoggin: boolean;
@@ -8,18 +8,6 @@ interface UserState {
   activeProgressType: 'main' | 'sub' | null;
 }
 
-// actionType
-export const userActionTypes = {
-  setUser: 'user/SET_USER',
-  clearUser: 'user/CLEAR_USER',
-  setActiveProgressType: 'user/SET_ACTIVE_PROGRESS_TYPE',
-} as const;
-
-// action
-export const setUser = createAction<UserState>(userActionTypes.setUser);
-export const clearUser = createAction(userActionTypes.clearUser);
-export const setActiveProgressType = createAction<'main' | 'sub' | null>(userActionTypes.setActiveProgressType);
-
 const initialState: UserState = {
   isLoggin: false,
   loginStatusType: null,
@@ -27,20 +15,20 @@ const initialState: UserState = {
   activeProgressType: null,
 };
 
-const userReducer = handleActions<UserState, any>(
-  {
-    [userActionTypes.setUser]: (state, action: Action<UserState>) => ({
-      ...state,
-      ...action.payload,
-      isLoggin: true,
-    }),
-    [userActionTypes.clearUser]: () => initialState,
-    [userActionTypes.setActiveProgressType]: (state, action: Action<'main' | 'sub' | null>) => ({
-      ...state,
-      activeProgressType: action.payload,
-    }),
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    setUser: (state, action: PayloadAction<Partial<UserState>>) => {
+      Object.assign(state, action.payload);
+      state.isLoggin = true;
+    },
+    clearUser: () => initialState,
+    setActiveProgressType: (state, action: PayloadAction<'main' | 'sub' | null>) => {
+      state.activeProgressType = action.payload;
+    },
   },
-  initialState
-);
+});
 
-export default userReducer;
+export const { setUser, clearUser, setActiveProgressType } = userSlice.actions;
+export default userSlice.reducer;

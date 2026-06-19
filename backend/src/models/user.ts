@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
+import { UserAuthType } from '../types/common';
 import {
   UserDocument,
   UserModel,
-  UserAuthType,
   UserPreferences,
   UserProfile,
   UserStats,
@@ -290,119 +290,6 @@ UserSchema.statics.getActiveUsers = function (days: number = 30): Promise<UserDo
 UserSchema.statics.getUserStats = async function (userId: mongoose.Types.ObjectId): Promise<UserStats | null> {
   const user = await this.findById(userId);
   return user ? user.statistics : null;
-};
-
-UserSchema.statics.getTopUsers = function (
-  metric: 'streak' | 'wordsStudied' | 'timeSpent',
-  limit: number = 10,
-): Promise<UserDocument[]> {
-  const sortField = {
-    streak: 'statistics.currentStreak',
-    wordsStudied: 'statistics.totalWordsStudied',
-    timeSpent: 'statistics.totalTimeSpent',
-  }[metric];
-
-  return this.find({ isActive: true })
-    .sort({ [sortField]: -1 })
-    .limit(limit);
-};
-
-UserSchema.statics.getUsersByStudyLevel = function (
-  level: 'beginner' | 'intermediate' | 'advanced',
-): Promise<UserDocument[]> {
-  let wordsRange: { $gte?: number; $lt?: number } = {};
-
-  switch (level) {
-    case 'beginner':
-      wordsRange = { $lt: 200 };
-      break;
-    case 'intermediate':
-      wordsRange = { $gte: 200, $lt: 1000 };
-      break;
-    case 'advanced':
-      wordsRange = { $gte: 1000 };
-      break;
-  }
-
-  return this.find({
-    isActive: true,
-    'statistics.totalWordsStudied': wordsRange,
-  });
-};
-
-UserSchema.statics.cleanupInactiveUsers = async function (
-  daysSinceLastActive: number,
-): Promise<{ deactivated: number; errors: any[] }> {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastActive);
-
-  const errors: any[] = [];
-  let deactivated = 0;
-
-  try {
-    const result = await this.updateMany(
-      {
-        isActive: true,
-        $or: [
-          { 'profile.lastActiveAt': { $lt: cutoffDate } },
-          { 'profile.lastActiveAt': { $exists: false }, createdAt: { $lt: cutoffDate } },
-        ],
-      },
-      { isActive: false },
-    );
-    deactivated = result.modifiedCount || 0;
-  } catch (error) {
-    errors.push(error);
-  }
-
-  return { deactivated, errors };
-};
-
-UserSchema.statics.updateUserStatistics = async function (userId: mongoose.Types.ObjectId): Promise<void> {
-  // This would typically aggregate data from WordProgress and UserProgress collections
-  // Implementation depends on the specific analytics requirements
-  const WordProgress = mongoose.model('WordProgress');
-
-  const stats = await WordProgress.aggregate([
-    { $match: { user_id: userId } },
-    {
-      $group: {
-        _id: null,
-        totalWords: { $sum: 1 },
-        totalTime: { $sum: '$time_spent_total' },
-      },
-    },
-  ]);
-
-  if (stats.length > 0) {
-    await this.updateOne(
-      { _id: userId },
-      {
-        $set: {
-          'statistics.totalWordsStudied': stats[0].totalWords,
-          'statistics.totalTimeSpent': stats[0].totalTime,
-        },
-      },
-    );
-  }
-};
-
-UserSchema.statics.sendStudyReminders = async function (this): Promise<{ sent: number; errors: any[] }> {
-  const errors: any[] = [];
-  let sent = 0;
-
-  // Get users eligible for reminders
-  const users = await this.find({
-    'preferences.studyReminders': true,
-    emailVerified: true,
-    isActive: true,
-  });
-
-  // Implementation would depend on email service integration
-  // For now, just return the count of eligible users
-  sent = users.length;
-
-  return { sent, errors };
 };
 
 const User = mongoose.model<UserDocument, UserModel>('User', UserSchema, 'user');

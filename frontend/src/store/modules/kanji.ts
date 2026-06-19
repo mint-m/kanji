@@ -1,8 +1,4 @@
-import { Action, createAction, handleActions } from "redux-actions";
-
-interface kanjiStoreState {
-  kanjis: KanjiDataType[];
-}
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Mean {
   value: string;
@@ -19,34 +15,24 @@ export interface KanjiDataType {
   means: Array<Mean>;
 }
 
-// actionType
-const kanjiActionType = {
-  addKanji: "kanji/ADD_KANJI",
-  reset: "kanji/RESET",
-} as const;
+interface KanjiState {
+  kanjis: KanjiDataType[];
+}
 
-// action
-export const addKanji = createAction<KanjiDataType>(kanjiActionType.addKanji);
-export const reset = createAction<void>(kanjiActionType.reset, () => ({
-  ...initialState,
-}));
-
-const initialState = {
+const initialState: KanjiState = {
   kanjis: [],
 };
 
-// reducer
-const kanjiReducer = handleActions<kanjiStoreState, any>(
-  {
-    [kanjiActionType.reset]: (_state) => ({
-      ...initialState,
-    }),
-    [kanjiActionType.addKanji]: (state, action: Action<KanjiDataType>) => ({
-      ...state,
-      kanjis: [...state.kanjis, action.payload],
-    }),
+const kanjiSlice = createSlice({
+  name: 'kanji',
+  initialState,
+  reducers: {
+    addKanji: (state, action: PayloadAction<KanjiDataType>) => {
+      state.kanjis.push(action.payload);
+    },
+    reset: () => initialState,
   },
-  initialState
-);
+});
 
-export default kanjiReducer;
+export const { addKanji, reset } = kanjiSlice.actions;
+export default kanjiSlice.reducer;

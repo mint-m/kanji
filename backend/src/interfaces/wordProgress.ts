@@ -1,6 +1,6 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { ProgressType, LearningLevel } from './userCheckpoint';
+import { ProgressType, LearningLevel } from '../types/common';
 
 // Word completion status
 export type CompletionStatus = 'not_studied' | 'studying' | 'completed' | 'needs_review';

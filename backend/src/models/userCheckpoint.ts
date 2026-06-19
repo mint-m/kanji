@@ -1,12 +1,8 @@
 import mongoose from 'mongoose';
+import { ProgressType, LearningLevel, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
 import {
   UserCheckpointDocument,
   UserCheckpointModel,
-  ProgressType,
-  LearningLevel,
-  StepRange,
-  SessionStats,
-  DeckGenerationOptions,
 } from '../interfaces/userCheckpoint';
 import SlidingWindowService from '../services/slidingWindowService';
 
@@ -132,7 +128,7 @@ userCheckpointSchema.methods.canMoveToNextWindow = async function (this: UserChe
   if (!this.isCompleted()) return false;
 
   // Use SlidingWindowService to check if next window is available
-  return SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
+  return await SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
 };
 
 userCheckpointSchema.methods.generateNextSlidingWindow = async function (this: UserCheckpointDocument): Promise<void> {
@@ -390,14 +386,6 @@ userCheckpointSchema.statics.getUserLearningStats = async function (userId: mong
 // Enhanced sliding window methods using SlidingWindowService
 userCheckpointSchema.statics.getAvailableWindows = async function (level: LearningLevel): Promise<StepRange[]> {
   return await SlidingWindowService.getAvailableWindows(level);
-};
-
-userCheckpointSchema.statics.getWindowStatistics = function (level: LearningLevel): any {
-  return SlidingWindowService.getWindowStatistics(level);
-};
-
-userCheckpointSchema.statics.generateWindowTransitionMap = function (level: LearningLevel): any {
-  return SlidingWindowService.generateWindowTransitionMap(level);
 };
 
 // Create and export model
