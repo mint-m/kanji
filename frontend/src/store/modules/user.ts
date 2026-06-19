@@ -19,11 +19,10 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<Partial<UserState>>) => ({
-      ...state,
-      ...action.payload,
-      isLoggin: true,
-    }),
+    setUser: (state, action: PayloadAction<Partial<UserState>>) => {
+      Object.assign(state, action.payload);
+      state.isLoggin = true;
+    },
     clearUser: () => initialState,
     setActiveProgressType: (state, action: PayloadAction<'main' | 'sub' | null>) => {
       state.activeProgressType = action.payload;
