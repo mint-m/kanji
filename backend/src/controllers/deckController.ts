@@ -82,7 +82,7 @@ export const generateDeck = async (req: AuthenticatedRequest, res: Response): Pr
     const completedWordIds = await WordProgress.find({
       user_id: userId,
       progress_type: progressType,
-      is_completed: true,
+      is_window_completed: true,
     }).distinct('word_id');
 
     const bookmarkedWordIds = await WordProgress.find({
@@ -177,7 +177,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         ...word,
         index,
         isCurrent: index === progress!.current_index,
-        isCompleted: wordProgress?.is_completed || false,
+        isCompleted: wordProgress?.is_window_completed || false,
         isBookmarked: wordProgress?.is_bookmarked || false,
         studyStats: wordProgress?.getStudyStats(),
         recommendedAction: wordProgress?.getRecommendedAction(),
@@ -197,8 +197,9 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         currentIndex: progress.current_index,
         sessionStats,
         deckStatus: {
-          isCompleted: progress.isCompleted(),
-          canMoveToNext: await progress.canMoveToNextWindow(),
+          isPassComplete: progress.isCompleted(),
+          isWindowComplete: await progress.isWindowCompleted(userId, progressType),
+          canMoveToNext: await progress.canMoveToNextWindow(userId, progressType),
           completionPercentage: sessionStats.progressPercentage,
         },
         createdAt: progress.created_at,
@@ -253,28 +254,20 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
     const previousAttempts = wordProgress.try_count;
 
-    // Record the study attempt
-    const studyResult = {
-      isCorrect,
-      studiedAt: new Date(),
-      timeSpent: timeSpent || 0,
-    };
+    // Record historical study stats
+    wordProgress.recordStudyAttempt({ isCorrect, studiedAt: new Date(), timeSpent: timeSpent || 0 });
 
-    wordProgress.recordStudyAttempt(studyResult);
-
-    // Update completion status
+    // Update window-scoped completion flag
     if (isCorrect) {
-      wordProgress.markCompleted(timeSpent);
+      wordProgress.markCompleted();
     } else {
-      wordProgress.markIncomplete(timeSpent);
+      wordProgress.markIncomplete();
     }
 
     await wordProgress.save();
 
-    // Get updated analytics
     const newMasteryLevel = wordProgress.calculateMasteryLevel();
     const recommendedAction = wordProgress.getRecommendedAction();
-    const shouldRepeat = recommendedAction === 'intensive_practice' || recommendedAction === 'review';
 
     const completionResult: WordCompletionResult = {
       wordId: wordObjectId,
@@ -282,7 +275,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       timeSpent,
       previousAttempts,
       newMasteryLevel,
-      shouldRepeat,
+      shouldRepeat: false,
     };
 
     // Update user statistics
@@ -295,14 +288,23 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       await user.save();
     }
 
-    // Move to next word in progress if not at the end
-    if (progress.current_index < progress.shuffled_order.length - 1) {
-      progress.moveToNext();
-    }
+    // Always advance index (moveToNext guards against overflow)
+    progress.moveToNext();
     await progress.save();
 
-    // Auto-save checkpoint after every word
-    await progress.updateCheckpoint();
+    // Detect pass completion
+    const isPassComplete = progress.isCompleted();
+    let windowComplete = false;
+    let nextPassSize: number | undefined;
+
+    if (isPassComplete) {
+      windowComplete = await progress.isWindowCompleted(userId, progressType);
+      if (!windowComplete) {
+        // Reshuffle unknown words for next pass
+        nextPassSize = await progress.reshuffleUnknownWords(userId, progressType);
+        await progress.save();
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -318,7 +320,9 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
           isBookmarked: wordProgress.is_bookmarked,
         },
         currentIndex: progress.current_index,
-        isSessionCompleted: progress.isCompleted(),
+        passComplete: isPassComplete,
+        windowComplete,
+        ...(isPassComplete && !windowComplete && { nextPassSize }),
       },
     });
   } catch (error) {
@@ -380,9 +384,9 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
         wordProgress.recordStudyAttempt(studyResult);
 
         if (completion.isCorrect) {
-          wordProgress.markCompleted(completion.timeSpent);
+          wordProgress.markCompleted();
         } else {
-          wordProgress.markIncomplete(completion.timeSpent);
+          wordProgress.markIncomplete();
         }
 
         await wordProgress.save();
@@ -479,7 +483,7 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
     // Calculate detailed statistics
     const totalWords = progress.shuffled_order.length;
     const studiedWords = wordProgressList.length;
-    const completedWords = wordProgressList.filter((wp) => wp.is_completed).length;
+    const completedWords = wordProgressList.filter((wp) => wp.is_window_completed).length;
     const bookmarkedWords = wordProgressList.filter((wp) => wp.is_bookmarked).length;
 
     const totalAttempts = wordProgressList.reduce((sum, wp) => sum + wp.try_count, 0);
@@ -568,25 +572,23 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    if (!progress.isCompleted()) {
+    const allKnown = await progress.isWindowCompleted(userId, progressType);
+    if (!allKnown) {
       res.status(400).json({
         success: false,
-        message: 'Deck is not completed yet. Study all words first.',
+        message: 'Window is not completed yet. All words must be marked as known first.',
       });
       return;
     }
 
-    // Save checkpoint before transitioning to next window
-    await progress.updateCheckpoint();
-
     // Get final deck statistics
     const finalStats = progress.getSessionStats();
-    const canMoveToNext = await progress.canMoveToNextWindow();
+    const canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
 
     let nextWindow = null;
     if (autoGenerateNext && canMoveToNext) {
       try {
-        await progress.generateNextSlidingWindow();
+        await progress.generateNextSlidingWindow(userId, progressType);
         await progress.save();
 
         // Save checkpoint after generating next window

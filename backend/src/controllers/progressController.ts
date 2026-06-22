@@ -51,7 +51,7 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response):
         sessionStats: progress.getSessionStats(),
         currentWord: progress.getCurrentWord(),
         remainingWords: progress.getRemainingWords().length,
-        canMoveToNextWindow: await progress.canMoveToNextWindow(),
+        canMoveToNextWindow: await progress.canMoveToNextWindow(userId, type),
         restoredFromCheckpoint: !progress, // Flag if restored
       },
     });
@@ -287,24 +287,17 @@ export const generateNextWindow = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    if (!progress.isCompleted()) {
-      res.status(400).json({
-        success: false,
-        message: 'Current deck is not completed yet. Finish current words first.',
-      });
-      return;
-    }
-
-    const canMove = await progress.canMoveToNextWindow();
+    const { progressType: progressTypeParam } = req.params as { progressType: ProgressType };
+    const canMove = await progress.canMoveToNextWindow(userId, progressTypeParam);
     if (!canMove) {
       res.status(400).json({
         success: false,
-        message: 'No more sliding windows available for this level. Try a higher level or different session type.',
+        message: 'Cannot move to next window. All words must be known or no more windows available.',
       });
       return;
     }
 
-    await progress.generateNextSlidingWindow();
+    await progress.generateNextSlidingWindow(userId, progressTypeParam);
     await progress.save();
     await progress.populate('shuffled_order');
 
@@ -341,8 +334,8 @@ export const getAllSessions = async (req: AuthenticatedRequest, res: Response): 
         level: session.current_level,
         steps: session.steps,
         sessionStats: session.getSessionStats(),
-        isCompleted: session.isCompleted(),
-        canMoveToNextWindow: await session.canMoveToNextWindow(),
+        isPassCompleted: session.isCompleted(),
+        canMoveToNextWindow: await session.canMoveToNextWindow(userId, session.progress_type),
         createdAt: session.created_at,
         updatedAt: session.updated_at,
       }))

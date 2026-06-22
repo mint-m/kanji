@@ -123,41 +123,88 @@ userCheckpointSchema.methods.updateCheckpoint = async function (this: UserCheckp
   }
 };
 
-userCheckpointSchema.methods.canMoveToNextWindow = async function (this: UserCheckpointDocument): Promise<boolean> {
-  // Check if current deck is completed and if there are more steps available
-  if (!this.isCompleted()) return false;
+userCheckpointSchema.methods.isWindowCompleted = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<boolean> {
+  if (this.shuffled_order.length === 0) return false;
+  const WordProgress = mongoose.model('WordProgress');
+  const knownCount = await WordProgress.countDocuments({
+    user_id: userId,
+    word_id: { $in: this.shuffled_order },
+    progress_type: progressType,
+    is_window_completed: true,
+  });
+  return knownCount >= this.shuffled_order.length;
+};
 
-  // Use SlidingWindowService to check if next window is available
+userCheckpointSchema.methods.reshuffleUnknownWords = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<number> {
+  const WordProgress = mongoose.model('WordProgress');
+  const knownIds = await WordProgress.find({
+    user_id: userId,
+    word_id: { $in: this.shuffled_order },
+    progress_type: progressType,
+    is_window_completed: true,
+  }).distinct('word_id');
+
+  const unknownIds = this.shuffled_order.filter(
+    (id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => knownId.equals(id))
+  );
+
+  // Fisher-Yates shuffle
+  const shuffled = [...unknownIds];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  this.shuffled_order = shuffled;
+  this.current_index = 0;
+  return shuffled.length;
+};
+
+userCheckpointSchema.methods.canMoveToNextWindow = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<boolean> {
+  const allKnown = await this.isWindowCompleted(userId, progressType);
+  if (!allKnown) return false;
   return await SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
 };
 
-userCheckpointSchema.methods.generateNextSlidingWindow = async function (this: UserCheckpointDocument): Promise<void> {
-  // 1. 이동 가능 여부 체크
-  const canMove = await this.canMoveToNextWindow();
+userCheckpointSchema.methods.generateNextSlidingWindow = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<void> {
+  const canMove = await this.canMoveToNextWindow(userId, progressType);
   if (!canMove) {
-    throw new Error('Cannot generate next window - no more windows available or current deck not completed');
+    throw new Error('Cannot generate next window - not all words known or no more windows available');
   }
 
-  // 2. 다음 윈도우 가져오기
   const nextWindow = await SlidingWindowService.getNextWindow(this.steps, this.current_level);
-
   if (!nextWindow) {
     throw new Error('No next window available for this level');
   }
 
-  // 3. 새 윈도우에 대한 덱 생성
-  const nextDeck = await SlidingWindowService.generateDeck(
-    this.current_level,
-    nextWindow,
-    true // shuffled
+  // Reset is_window_completed for all words in current deck before moving on
+  const WordProgress = mongoose.model('WordProgress');
+  await WordProgress.updateMany(
+    { user_id: userId, word_id: { $in: this.shuffled_order }, progress_type: progressType },
+    { $set: { is_window_completed: false } }
   );
 
-  // 4. 상태 업데이트
+  const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
+
   this.steps = nextWindow;
   this.shuffled_order = nextDeck.wordIds;
-  this.current_index = 0; // 새 덱 시작점
-
-  // 저장은 호출하는 쪽에서 해야 함
+  this.current_index = 0;
 };
 
 // Static methods
@@ -189,13 +236,13 @@ userCheckpointSchema.statics.createNewSession = async function (
   // Generate deck using SlidingWindowService
   const deckWindow = await SlidingWindowService.generateDeck(level, steps, true);
 
-  // Filter deck based on user progress (exclude completed, prioritize bookmarked)
+  // Filter deck based on user progress (include all words for new session)
   const filteredWordIds = await (this as UserCheckpointModel).filterDeckByUserProgress(
     deckWindow.wordIds,
     userId,
     type,
     {
-      excludeCompleted: true,
+      excludeCompleted: false,
       prioritizeBookmarked: false,
     }
   );
@@ -244,12 +291,12 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 
   let filteredWordIds = [...wordIds];
 
-  // Filter out completed words if requested
+  // Filter out window-completed words if requested
   if (excludeCompleted) {
     const completedWordIds = await WordProgress.find({
       user_id: userId,
       progress_type: progressType,
-      is_completed: true,
+      is_window_completed: true,
     }).distinct('word_id');
 
     filteredWordIds = filteredWordIds.filter(

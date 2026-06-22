@@ -32,7 +32,7 @@ export interface WordWithProgress {
     bookmarkedAt?: Date;
   };
   progressInfo?: {
-    isCompleted: boolean;
+    isWindowCompleted: boolean;
     tryCount: number;
     correctCount: number;
     successRate: number;
@@ -47,7 +47,7 @@ export interface AggregatedWordProgress {
   user_id: mongoose.Types.ObjectId;
   word_id: mongoose.Types.ObjectId;
   progress_type: string;
-  is_completed: boolean;
+  is_window_completed: boolean;
   try_count: number;
   correct_count: number;
   is_bookmarked: boolean;
@@ -77,7 +77,7 @@ const wordProgressSchema = new mongoose.Schema<WordProgressDocument>(
       required: true,
       enum: ['main', 'sub'],
     },
-    is_completed: {
+    is_window_completed: {
       type: Boolean,
       required: true,
       default: false,
@@ -143,54 +143,17 @@ const wordProgressSchema = new mongoose.Schema<WordProgressDocument>(
 wordProgressSchema.index({ user_id: 1, progress_type: 1 });
 wordProgressSchema.index({ user_id: 1, word_id: 1, progress_type: 1 }, { unique: true });
 wordProgressSchema.index({ user_id: 1, is_bookmarked: 1 });
-wordProgressSchema.index({ user_id: 1, is_completed: 1, progress_type: 1 });
+wordProgressSchema.index({ user_id: 1, is_window_completed: 1, progress_type: 1 });
 wordProgressSchema.index({ word_id: 1 });
 wordProgressSchema.index({ last_studied_at: 1 });
 
 // Instance methods
-wordProgressSchema.methods.markCompleted = function (this: WordProgressDocument, timeSpent?: number): void {
-  this.is_completed = true;
-  this.correct_count++;
-  this.try_count++;
-  this.study_streak++;
-  this.last_studied_at = new Date();
-
-  if (!this.first_studied_at) {
-    this.first_studied_at = new Date();
-  }
-
-  if (timeSpent) {
-    this.time_spent_total += timeSpent;
-  }
-
-  // Record study attempt
-  this.study_history.push({
-    isCorrect: true,
-    timeSpent: timeSpent || 0,
-    studiedAt: new Date(),
-  });
+wordProgressSchema.methods.markCompleted = function (this: WordProgressDocument): void {
+  this.is_window_completed = true;
 };
 
-wordProgressSchema.methods.markIncomplete = function (this: WordProgressDocument, timeSpent?: number): void {
-  this.is_completed = false;
-  this.try_count++;
-  this.study_streak = 0; // Reset streak on incorrect answer
-  this.last_studied_at = new Date();
-
-  if (!this.first_studied_at) {
-    this.first_studied_at = new Date();
-  }
-
-  if (timeSpent) {
-    this.time_spent_total += timeSpent;
-  }
-
-  // Record study attempt
-  this.study_history.push({
-    isCorrect: false,
-    timeSpent: timeSpent || 0,
-    studiedAt: new Date(),
-  });
+wordProgressSchema.methods.markIncomplete = function (this: WordProgressDocument): void {
+  this.is_window_completed = false;
 };
 
 wordProgressSchema.methods.recordStudyAttempt = function (this: WordProgressDocument, result: StudyResult): void {
@@ -244,7 +207,7 @@ wordProgressSchema.methods.updateStudyTime = function (this: WordProgressDocumen
 };
 
 wordProgressSchema.methods.resetProgress = function (this: WordProgressDocument): void {
-  this.is_completed = false;
+  this.is_window_completed = false;
   this.try_count = 0;
   this.correct_count = 0;
   this.study_streak = 0;
@@ -402,7 +365,7 @@ wordProgressSchema.statics.getCompletedWords = function (
   return this.find({
     user_id: userId,
     progress_type: type,
-    is_completed: true,
+    is_window_completed: true,
   }).populate('word_id');
 };
 
@@ -413,7 +376,7 @@ wordProgressSchema.statics.getIncompleteWords = function (
   return this.find({
     user_id: userId,
     progress_type: type,
-    is_completed: false,
+    is_window_completed: false,
   }).populate('word_id');
 };
 
@@ -468,7 +431,7 @@ wordProgressSchema.statics.getStudyStats = function (
       $group: {
         _id: null,
         total_words: { $sum: 1 },
-        completed_words: { $sum: { $cond: ['$is_completed', 1, 0] } },
+        completed_words: { $sum: { $cond: ['$is_window_completed', 1, 0] } },
         bookmarked_words: { $sum: { $cond: ['$is_bookmarked', 1, 0] } },
         total_tries: { $sum: '$try_count' },
         total_correct: { $sum: '$correct_count' },
@@ -510,7 +473,7 @@ wordProgressSchema.statics.getLevelProgress = function (
       $group: {
         _id: '$word.step',
         total_words: { $sum: 1 },
-        completed_words: { $sum: { $cond: ['$is_completed', 1, 0] } },
+        completed_words: { $sum: { $cond: ['$is_window_completed', 1, 0] } },
         total_time_spent: { $sum: '$time_spent_total' },
       },
     },
@@ -570,7 +533,7 @@ wordProgressSchema.statics.bulkUpdateProgress = async function (
           },
           {
             $set: {
-              is_completed: true,
+              is_window_completed: true,
               last_studied_at: new Date(),
             },
             $inc: { try_count: 1, correct_count: 1 },
@@ -588,7 +551,7 @@ wordProgressSchema.statics.bulkUpdateProgress = async function (
           },
           {
             $set: {
-              is_completed: false,
+              is_window_completed: false,
               last_studied_at: new Date(),
               study_streak: 0,
             },
@@ -637,7 +600,7 @@ wordProgressSchema.statics.bulkUpdateProgress = async function (
           },
           {
             $set: {
-              is_completed: false,
+              is_window_completed: false,
               try_count: 0,
               correct_count: 0,
               study_streak: 0,
@@ -677,7 +640,7 @@ wordProgressSchema.statics.generateStudySessionSummary = async function (
   }).populate('word_id');
 
   const wordsStudied = recentActivity.length;
-  const wordsCompleted = recentActivity.filter((w) => w.is_completed).length;
+  const wordsCompleted = recentActivity.filter((w) => w.is_window_completed).length;
   const totalTimeSpent = recentActivity.reduce((sum: number, w) => sum + w.time_spent_total, 0);
   const averageAccuracy =
     wordsStudied > 0
@@ -759,7 +722,7 @@ wordProgressSchema.statics.analyzeStudyPatterns = function (
           },
         },
         daily_words_studied: { $sum: 1 },
-        daily_words_completed: { $sum: { $cond: ['$is_completed', 1, 0] } },
+        daily_words_completed: { $sum: { $cond: ['$is_window_completed', 1, 0] } },
         daily_time_spent: { $sum: '$time_spent_total' },
       },
     },
@@ -806,10 +769,10 @@ wordProgressSchema.statics.getBookmarkAnalytics = async function (
         _id: null,
         totalBookmarks: { $sum: 1 },
         completedBookmarks: {
-          $sum: { $cond: ['$is_completed', 1, 0] },
+          $sum: { $cond: ['$is_window_completed', 1, 0] },
         },
         incompleteBookmarks: {
-          $sum: { $cond: [{ $not: '$is_completed' }, 1, 0] },
+          $sum: { $cond: [{ $not: '$is_window_completed' }, 1, 0] },
         },
         avgSuccessRate: {
           $avg: {
@@ -840,7 +803,7 @@ wordProgressSchema.statics.getBookmarkAnalytics = async function (
           $push: {
             date: '$last_studied_at',
             wordId: '$word_id',
-            completed: '$is_completed',
+            completed: '$is_window_completed',
           },
         },
       },
@@ -994,9 +957,36 @@ wordProgressSchema.statics.getBookmarkAnalytics = async function (
   );
 };
 
+wordProgressSchema.statics.resetWindowCompletionForWords = async function (
+  userId: mongoose.Types.ObjectId,
+  wordIds: mongoose.Types.ObjectId[],
+  progressType: ProgressType
+): Promise<number> {
+  const result = await this.updateMany(
+    { user_id: userId, word_id: { $in: wordIds }, progress_type: progressType },
+    { $set: { is_window_completed: false } }
+  );
+  return result.modifiedCount;
+};
+
+wordProgressSchema.statics.getUnknownWordsFromDeck = async function (
+  userId: mongoose.Types.ObjectId,
+  wordIds: mongoose.Types.ObjectId[],
+  progressType: ProgressType
+): Promise<mongoose.Types.ObjectId[]> {
+  const knownIds = await this.find({
+    user_id: userId,
+    word_id: { $in: wordIds },
+    progress_type: progressType,
+    is_window_completed: true,
+  }).distinct('word_id');
+
+  return wordIds.filter((id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => knownId.equals(id)));
+};
+
 // Pre-save middleware to update timestamps and maintain data integrity
 wordProgressSchema.pre('save', function (this: WordProgressDocument, next: Function) {
-  if (this.isModified('is_completed') || this.isModified('try_count')) {
+  if (this.isModified('is_window_completed') || this.isModified('try_count')) {
     this.last_studied_at = new Date();
   }
 
