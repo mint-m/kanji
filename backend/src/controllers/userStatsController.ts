@@ -29,7 +29,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     const totalWordsInDatabase = await Word.countDocuments();
     const totalCompletedWords = await WordProgress.countDocuments({
       user_id: userId,
-      is_completed: true,
+      is_window_completed: true,
     });
     const overallProgressPercentage =
       totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;

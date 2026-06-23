@@ -392,7 +392,7 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
     }
 
     if (typeof isCompleted === 'boolean') {
-      matchConditions.is_completed = isCompleted;
+      matchConditions.is_window_completed = isCompleted;
     }
 
     if (Object.keys(matchConditions).length > 0) {
