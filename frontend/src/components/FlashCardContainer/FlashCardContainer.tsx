@@ -12,22 +12,24 @@ interface FlashCardContainerProps {
   deck: DeckWord[];
   progressType: 'main' | 'sub';
   initialIndex: number;
+  onPassComplete?: (nextPassSize: number) => void;
+  onWindowComplete?: () => void;
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex }) => {
+  ({ deck, progressType, initialIndex, onPassComplete, onWindowComplete }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
     const [showMean, setShowMean] = useState(false);
     const [showHiragana, setShowHiragana] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [masteredCount, setMasteredCount] = useState(0);
     const [learningCount, setLearningCount] = useState(0);
-    const [isResetting, setIsResetting] = useState(false);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
+    const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
     const processingWordIdRef = useRef<string | null>(null);
     const dispatch = useDispatch();
 
-    const isCompleted = wordIndex >= deck.length;
+    const isPassComplete = wordIndex >= deck.length;
     const currentWordId = deck[wordIndex]?._id;
 
     useEffect(() => { setCardStudyTime(Date.now()); }, [wordIndex]);
@@ -53,47 +55,32 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       know ? setMasteredCount(prev => prev + 1) : setLearningCount(prev => prev + 1);
     }, []);
 
-    const completeWordAsync = useCallback(
-      (wordId: string, startedAt: number, know: boolean) =>
-        progressService.completeWord(progressType, {
-          wordId,
-          isCorrect: know,
-          timeSpent: Math.floor((Date.now() - startedAt) / 1000),
-        }),
-      [progressType]
-    );
-
     const handleKnowClick = useCallback((know: boolean) => {
       if (!currentWordId || processingWordIdRef.current === currentWordId) return;
       processingWordIdRef.current = currentWordId;
       updateStats(know);
       moveToNextCard();
-      completeWordAsync(currentWordId, cardStudyTime, know)
-        .catch((err: unknown) => console.warn('⚠️ Progress sync failed', { err, wordIndex }))
+      progressService.completeWord(progressType, {
+        wordId: currentWordId,
+        isCorrect: know,
+        timeSpent: Math.floor((Date.now() - cardStudyTime) / 1000),
+      }).then((res) => {
+        if (res.data?.passComplete) {
+          setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
+          if (res.data.windowComplete) {
+            onWindowComplete?.();
+          } else {
+            onPassComplete?.(res.data.nextPassSize ?? 0);
+          }
+        }
+      }).catch((err: unknown) => console.warn('⚠️ Progress sync failed', { err, wordIndex }))
         .finally(() => { processingWordIdRef.current = null; });
-    }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, completeWordAsync, wordIndex]);
+    }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, progressType, onPassComplete, onWindowComplete, wordIndex]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {
       type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
-    const handleRestartClick = useCallback(async () => {
-      if (isResetting) return;
-      setIsResetting(true);
-      try {
-        await progressService.resetSession(progressType);
-        setWordIndex(0);
-        setMasteredCount(0);
-        setLearningCount(0);
-        setCardStudyTime(Date.now());
-        resetUIState();
-      } catch (e) {
-        console.error('❌ Failed to restart deck', e);
-        setError('Failed to restart deck');
-      } finally {
-        setIsResetting(false);
-      }
-    }, [isResetting, progressType, resetUIState]);
 
     if (deck.length === 0) return null;
 
@@ -104,29 +91,33 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       </div>
     );
 
-    if (isCompleted) {
+    if (isPassComplete) {
+      const isWindowDone = passResult?.windowComplete;
+      const nextCount = passResult?.nextPassSize;
       return (
         <>
           {errorBanner}
           <div className={styles.completedCard}>
-            <h3 className={styles.completedTitle}>🎉 All cards completed!</h3>
+            {isWindowDone ? (
+              <h3 className={styles.completedTitle}>윈도우 완료!</h3>
+            ) : passResult ? (
+              <>
+                <h3 className={styles.completedTitle}>패스 완료</h3>
+                <p>모르는 단어 {nextCount}개로 다음 패스를 시작합니다...</p>
+              </>
+            ) : (
+              <h3 className={styles.completedTitle}>처리 중...</h3>
+            )}
             <div className={styles.statsRow}>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Mastered</span>
+                <span className={styles.statLabel}>알았음</span>
                 <span className={styles.statValueGreen}>{masteredCount}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statLabel}>Still learning</span>
+                <span className={styles.statLabel}>몰랐음</span>
                 <span className={styles.statValueAmber}>{learningCount}</span>
               </div>
             </div>
-            <button
-              className={styles.restartButton}
-              onClick={handleRestartClick}
-              disabled={isResetting}
-            >
-              {isResetting ? '🔄 Restarting...' : '🔄 Restart Deck'}
-            </button>
           </div>
         </>
       );

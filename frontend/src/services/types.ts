@@ -44,7 +44,7 @@ export interface WordProgress {
   user_id: string;
   word_id: string;
   progress_type: ProgressType;
-  is_completed: boolean;
+  is_window_completed: boolean;
   is_bookmarked: boolean;
   try_count: number;
   correct_count: number;
@@ -98,7 +98,8 @@ export interface CurrentDeck {
   currentIndex: number;
   sessionStats: SessionStats;
   deckStatus: {
-    isCompleted: boolean;
+    isPassComplete: boolean;
+    isWindowComplete: boolean;
     canMoveToNext: boolean;
     completionPercentage: number;
   };
@@ -110,7 +111,7 @@ export interface CurrentDeck {
 export interface DeckWord extends Word {
   index: number;
   isCurrent: boolean;
-  isCompleted: boolean;
+  isWindowCompleted: boolean;
   isBookmarked: boolean;
   studyStats?: {
     tryCount: number;
@@ -147,7 +148,9 @@ export interface CompleteWordResponse {
     isBookmarked: boolean;
   };
   currentIndex: number;
-  isSessionCompleted: boolean;
+  passComplete: boolean;
+  windowComplete: boolean;
+  nextPassSize?: number;
 }
 
 // API 응답 래퍼

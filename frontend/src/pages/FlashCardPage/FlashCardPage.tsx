@@ -25,6 +25,8 @@ const FlashCardPage: FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deckKey, setDeckKey] = useState(0);
+  const [windowComplete, setWindowComplete] = useState(false);
 
   const fetchDeck = useCallback(async () => {
     setIsLoading(true);
@@ -55,6 +57,14 @@ const FlashCardPage: FC = () => {
     }
   }, [activeProgressType, navigate]);
 
+  const handlePassComplete = useCallback((_nextPassSize: number) => {
+    fetchDeck().then(() => setDeckKey(k => k + 1));
+  }, [fetchDeck]);
+
+  const handleWindowComplete = useCallback(() => {
+    setWindowComplete(true);
+  }, []);
+
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
 
   return (
@@ -67,13 +77,24 @@ const FlashCardPage: FC = () => {
         />
         {error ? (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
+        ) : windowComplete ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <h3>윈도우 완료!</h3>
+            <p>이 윈도우의 모든 단어를 완전히 습득했습니다.</p>
+            <button onClick={() => { setWindowComplete(false); fetchDeck(); }}>
+              다음 윈도우로 진행
+            </button>
+          </div>
         ) : (
           <>
             {deck && (
               <FlashCardContainer
+                key={deckKey}
                 deck={deck}
                 progressType={activeProgressType || 'main'}
                 initialIndex={currentIndex}
+                onPassComplete={handlePassComplete}
+                onWindowComplete={handleWindowComplete}
               />
             )}
             {isLoading && <SkeletonFlashCard />}
