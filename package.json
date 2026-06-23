@@ -6,9 +6,12 @@
   "author": "mint-m <fwwfly@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "concurrently --kill-others \"cd backend && yarn dev\" \"cd frontend && yarn start\""
+    "start": "concurrently --kill-others \"cd backend && yarn dev\" \"cd frontend && yarn start\"",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "concurrently": "^8.2.2",
     "nodemon": "^2.0.22"
   }
