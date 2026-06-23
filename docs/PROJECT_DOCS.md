@@ -2,8 +2,8 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2025-01-08
-**버전**: 3.0
+**최종 업데이트**: 2026-06-22
+**버전**: 4.0
 
 ---
 
@@ -37,7 +37,7 @@ Kan-ji는 일본어 능력시험(JLPT) 단어를 효율적으로 학습하기 �
 
 - React 18 + TypeScript
 - Redux Toolkit (상태 관리)
-- Styled Components
+- Vanilla Extract (CSS-in-JS, 타입 안전 스타일링)
 - React Router v6
 
 **Backend**:
@@ -109,21 +109,25 @@ backend/src/
 │   ├── authController.ts
 │   ├── progressController.ts
 │   ├── deckController.ts
-│   └── bookmarkController.ts
+│   ├── bookmarkController.ts
+│   ├── userController.ts
+│   ├── userStatsController.ts
+│   └── wordController.ts
 ├── models/              # Mongoose 스키마
-│   ├── User.ts          # 사용자 인증
-│   ├── Word.ts          # 단어 마스터 데이터
-│   ├── UserCheckpoint.ts  # 세션 상태 + 체크포인트 (통합)
-│   └── WordProgress.ts  # 단어별 완료 상태
+│   ├── user.ts          # 사용자 인증
+│   ├── word.ts          # 단어 마스터 데이터
+│   ├── userCheckpoint.ts  # 세션 상태 + 체크포인트 (통합)
+│   └── wordProgress.ts  # 단어별 완료 상태
 ├── routes/              # Express 라우트
 │   ├── authRoutes.ts
 │   ├── progressRoutes.ts
-│   ├── deckRoutes.ts
-│   └── bookmarkRoutes.ts
+│   ├── bookmarkRoutes.ts
+│   ├── userRoutes.ts
+│   └── wordRoutes.ts
 ├── services/            # 비즈니스 로직
 │   └── slidingWindowService.ts
 └── middleware/          # 커스텀 미들웨어
-    └── authMiddleware.ts
+    └── auth.ts
 ```
 
 ---
@@ -147,7 +151,7 @@ backend/src/
   _id: ObjectId,
   email: string,              // 이메일 (unique)
   name: string,               // 사용자 이름
-  type: "google" | "kakao" | "local", // OAuth 제공자 타입 (현재 Google만 구현됨)
+  type: "google" | "kakao" | "local", // OAuth 제공자 타입
   activeProgressType: "main" | "sub" | null, // 현재 활성 세션 타입
 
   // 사용자 설정
@@ -256,11 +260,14 @@ backend/src/
 
 **핵심 메서드**:
 
-- `isCompleted()` - 세션 완료 여부
+- `isCompleted()` - 현재 패스 순회 완료 여부 (`current_index >= shuffled_order.length`)
+- `isWindowCompleted(userId, progressType)` - 윈도우 완료 여부 (모든 단어 `is_window_completed = true`)
+- `reshuffleUnknownWords(userId, progressType)` - 미지 단어만 추출해 재셔플 후 새 패스 시작
+- `canMoveToNextWindow(userId, progressType)` - `isWindowCompleted` 기반으로 이동 가능 여부 판단
+- `generateNextSlidingWindow(userId, progressType)` - 다음 윈도우 생성 + 이전 단어 `is_window_completed` 리셋
 - `getCurrentWord()` - 현재 학습할 단어
 - `moveToNext()` - 다음 단어로 이동
-- `updateCheckpoint()` - 체크포인트 업데이트 (명시적 저장)
-- `generateNextSlidingWindow()` - 다음 윈도우 생성
+- `updateCheckpoint()` - 체크포인트 저장
 
 **특징**:
 
@@ -281,10 +288,10 @@ backend/src/
   user_id: ObjectId,          // ref: User
   word_id: ObjectId,          // ref: Word
   progress_type: "main" | "sub",
-  is_completed: boolean,      // 완료 여부
-  try_count: number,          // 시도 횟수
-  correct_count: number,      // 정답 횟수
-  is_bookmarked: boolean,     // 북마크 여부 (세션 간 공유)
+  is_window_completed: boolean, // 현재 윈도우 완료 여부 (윈도우 이동 시 false로 리셋)
+  try_count: number,            // 누적 시도 횟수 (영구 보존)
+  correct_count: number,        // 누적 정답 횟수 (영구 보존)
+  is_bookmarked: boolean,       // 북마크 여부 (세션 간 공유, 영구 보존)
 
   // 시간 추적
   last_studied_at?: Date,     // 마지막 학습 시간
@@ -315,14 +322,15 @@ backend/src/
 - `{ user_id: 1, progress_type: 1 }` (복합)
 - `{ user_id: 1, word_id: 1, progress_type: 1 }` (unique, 복합)
 - `{ user_id: 1, is_bookmarked: 1 }` (복합)
-- `{ user_id: 1, is_completed: 1, progress_type: 1 }` (복합)
+- `{ user_id: 1, is_window_completed: 1, progress_type: 1 }` (복합)
 - `word_id: 1`
 - `last_studied_at: 1`
 
 **특징**:
 
-- `is_bookmarked`는 progress_type과 무관하게 공유됨
-- Main에서 북마크한 단어는 Sub에서도 북마크 상태
+- `is_window_completed`는 윈도우 범위 플래그 — 다음 윈도우 진행 시 `false`로 초기화
+- `try_count`, `correct_count`, `study_history`, `is_bookmarked`는 영구 보존
+- `is_bookmarked`는 progress_type과 무관하게 공유됨 (Main 북마크 → Sub에서도 유지)
 
 ---
 
@@ -461,7 +469,9 @@ GET /api/progress/:type
       "completedWords": 5,
       "remainingWords": 45,
       "progressPercentage": 10,
-      "isCompleted": false
+      "currentStep": 1,
+      "totalSteps": 3,
+      "averageWordsPerStep": 16.7
     },
     "restoredFromCheckpoint": false
   }
@@ -481,7 +491,7 @@ POST /api/progress/:type
   "level": "N5",
   "steps": { "start": 1, "end": 3 },
   "options": {
-    "excludeCompleted": true, // 완료된 단어 제외
+    "excludeCompleted": false, // 완전습득 학습: 윈도우 내 모든 단어 포함
     "prioritizeBookmarked": true // 북마크 우선 배치
   }
 }
@@ -527,6 +537,10 @@ GET /api/progress/:progressType/current
 {
   "success": true,
   "data": {
+    "deckId": "userId-main",
+    "level": "N5",
+    "steps": { "start": 1, "end": 3 },
+    "progressType": "main",
     "words": [
       {
         "_id": "...",
@@ -535,18 +549,28 @@ GET /api/progress/:progressType/current
         "means": ["안녕하세요"],
         "parts": ["감탄사"],
         "level": "N5",
-        "step": 1
+        "step": 1,
+        "index": 0,
+        "isCurrent": false,
+        "isWindowCompleted": false,
+        "isBookmarked": false
       }
     ],
     "currentIndex": 5,
-    "currentWord": {
-      /* 현재 단어 */
-    },
     "sessionStats": {
       "totalWords": 50,
       "completedWords": 5,
       "remainingWords": 45,
-      "progressPercentage": 10
+      "progressPercentage": 10,
+      "currentStep": 1,
+      "totalSteps": 3,
+      "averageWordsPerStep": 16.7
+    },
+    "deckStatus": {
+      "isPassComplete": false,
+      "isWindowComplete": false,
+      "canMoveToNext": false,
+      "completionPercentage": 10
     }
   }
 }
@@ -568,7 +592,7 @@ POST /api/progress/:progressType/complete-word
 }
 ```
 
-**응답 예시**:
+**응답 예시 (패스 진행 중)**:
 
 ```json
 {
@@ -576,21 +600,39 @@ POST /api/progress/:progressType/complete-word
   "message": "Word marked as completed",
   "data": {
     "currentIndex": 6,
-    "totalWords": 50,
-    "remainingWords": 44,
-    "isSessionCompleted": false,
-    "nextWord": {
-      /* 다음 단어 */
-    }
+    "passComplete": false,
+    "windowComplete": false
   }
 }
 ```
 
-**자동 체크포인트**:
+**응답 예시 (패스 완료, 모름 단어 있음 → 재셔플)**:
 
-- 매 단어 완료 시: 항상 저장
-- 덱 완료 시: 저장
-- 윈도우 전환 시: 저장
+```json
+{
+  "success": true,
+  "data": {
+    "currentIndex": 0,
+    "passComplete": true,
+    "windowComplete": false,
+    "nextPassSize": 12
+  }
+}
+```
+
+**응답 예시 (윈도우 완료)**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "passComplete": true,
+    "windowComplete": true
+  }
+}
+```
+
+> `windowComplete: true` 수신 후 프론트엔드에서 `POST complete-deck` 호출하여 다음 윈도우 진행
 
 #### 덱 완료 및 다음 윈도우
 
@@ -836,7 +878,7 @@ POST /api/bookmarks/search
 **파일**: `backend/src/services/slidingWindowService.ts`
 
 1. **단어 조회**: level + steps 범위의 단어 검색
-2. **필터링**: 완료된 단어 제외 (선택)
+2. **필터링**: 윈도우 내 모든 단어 포함 (`excludeCompleted: false`가 기본값)
 3. **북마크 우선순위**: 북마크된 단어를 앞쪽 40%에 배치
 4. **셔플링**: Fisher-Yates 알고리즘
 5. **저장**: user_checkpoint shuffled_order 저장
@@ -867,7 +909,7 @@ POST /api/bookmarks/search
 
 ## 프론트엔드 마이그레이션
 
-### 현재 상태 (2025-01-18 기준)
+### 현재 상태 (2026-06-23 기준)
 
 #### ✅ 완료된 작업
 
@@ -916,7 +958,7 @@ GET /api/words/level/${level}
 
 ```typescript
 // ✅ 세션 기반 덱 조회
-GET / api / deck / main / current;
+GET /api/progress/main/current
 // 40-120 words (3-step window)
 // 서버에서 필터링, 셔플, 북마크 우선순위 처리 완료
 ```
@@ -928,18 +970,18 @@ GET / api / deck / main / current;
 ```
 1. 앱 진입
 2. GET /api/progress/main → 세션 존재 확인
-   - 있으면: 기존 세션 로드 (체크포인트 복원)
+   - 있으면: 기존 세션 로드
    - 없으면: 세션 생성 UI 표시
-3. POST /api/progress/main → 세션 생성
-   - level: "N5"
-   - steps: { start: 1, end: 3 }
-4. GET /api/progress/main/current → 덱 로딩
-5. 학습 시작:
-   - POST /api/progress/main/complete-word (단어마다)
-   - 자동 체크포인트 저장
-6. 덱 완료:
-   - POST /api/progress/main/complete-deck
-   - 다음 윈도우 자동 생성 (steps 2-4)
+3. POST /api/progress/main → 세션 생성 (level, steps)
+4. GET /api/progress/main/current → 덱 로딩 (전체 윈도우 단어 포함)
+5. 패스 시작:
+   - POST /api/progress/main/complete-word (단어마다 알았음/모름 제출)
+   - 응답에 passComplete, windowComplete 포함
+6. 패스 완료 처리:
+   - passComplete=true, windowComplete=false → 서버가 자동 재셔플
+     프론트엔드는 새 패스 시작 UI 표시 (nextPassSize 활용)
+   - passComplete=true, windowComplete=true → 윈도우 완료
+     POST /api/progress/main/complete-deck 호출 → 다음 윈도우 생성
 7. 반복
 ```
 
@@ -953,8 +995,6 @@ interface UserState {
   email: string | null;
   name?: string;
   activeProgressType: 'main' | 'sub' | null;
-  learningStats: LevelStatistics[];  // 레벨별 학습 통계
-  learningStreak: number;             // 연속 학습일
 }
 
 // store/modules/kanji.ts
@@ -988,11 +1028,11 @@ import { progressService, deckService } from 'services';
 // 세션 조회
 const session = await progressService.getProgress('main');
 
-// 현재 덱 조회
+// 현재 덱 조회 (deckService)
 const deck = await deckService.getCurrentDeck('main');
 
-// 단어 완료
-await deckService.completeWord('main', wordId, isCorrect, timeSpent);
+// 단어 완료 (progressService)
+await progressService.completeWord('main', { wordId, isCorrect, timeSpent });
 ```
 
 ---
@@ -1015,6 +1055,9 @@ NODE_ENV=development
 SESSION_SECRET=your-secret-key
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Kakao OAuth
+KAKAO_REST_API_KEY=your-kakao-rest-api-key
 ```
 
 ### Frontend 환경 변수
@@ -1083,6 +1126,22 @@ yarn start
 ---
 
 ## 변경 이력
+
+### v4.0 (2026-06-22)
+
+- ✅ 학습 철학 기반 완전 습득형 로직 구현
+- ✅ `is_completed` → `is_window_completed` (윈도우 범위 완료 플래그)
+- ✅ `UserCheckpoint.isCompleted()` = 패스 순회 완료 (인덱스 기반, 유지)
+- ✅ `UserCheckpoint.isWindowCompleted()` 추가 (모든 단어 알았음 기반)
+- ✅ `UserCheckpoint.reshuffleUnknownWords()` 추가 (모름 단어 재셔플)
+- ✅ `generateNextSlidingWindow()` 에서 이전 단어 `is_window_completed` 자동 리셋
+- ✅ `completeWord` 응답에 `passComplete`, `windowComplete`, `nextPassSize` 추가
+- ✅ `completeDeck` 완료 조건을 인덱스 기반 → `isWindowCompleted` 기반으로 변경
+- ✅ `markCompleted()`/`markIncomplete()`의 중복 카운팅 버그 수정
+- ✅ 스타일링: Styled Components → Vanilla Extract 마이그레이션 완료
+- ✅ 카카오 로그인 구현 완료
+- ✅ 핵심 비즈니스 로직 단위 테스트 추가 (slidingWindowService, authService, ProtectedRoute, AuthBannerContext)
+- ✅ Redux `redux-actions` → Redux Toolkit `createSlice` 마이그레이션
 
 ### v3.0 (2025-01-08)
 

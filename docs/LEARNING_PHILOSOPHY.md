@@ -92,29 +92,21 @@
 
 ---
 
-## 현재 구현과의 차이
+## 구현 현황 (2026-06-23 기준)
 
-| 항목           | 현재 구현                                | 의도된 구현                            |
-| -------------- | ---------------------------------------- | -------------------------------------- |
-| 완료 판단      | `current_index >= shuffled_order.length` | 모든 단어 `is_window_completed = true` |
-| 패스 종료 후   | 세션 종료                                | 모름 단어 있으면 재셔플 후 새 패스     |
-| 윈도우 이동 시 | `is_completed` 리셋 없음                 | `is_window_completed` 전체 리셋        |
-| 완료 필드      | `is_completed` (영구적)                  | `is_window_completed` (윈도우 범위)    |
+### ✅ Backend 완료
 
----
+1. **`WordProgress.is_window_completed`**: `is_completed` 대체. 윈도우 이동 시 자동 리셋
+2. **`UserCheckpoint.isCompleted()`**: 패스 순회 완료 여부 (인덱스 기반, 그대로 유지)
+3. **`UserCheckpoint.isWindowCompleted(userId, progressType)`**: 모든 단어 `is_window_completed = true` 확인
+4. **`UserCheckpoint.reshuffleUnknownWords(userId, progressType)`**: 미지 단어 추출 후 재셔플, `current_index = 0` 리셋
+5. **`UserCheckpoint.generateNextSlidingWindow(userId, progressType)`**: 다음 윈도우 생성 + 이전 단어 `is_window_completed` 자동 리셋
+6. **`deckController.completeWord()`**: 패스 완료 감지 → 자동 재셔플 또는 윈도우 완료 플래그 반환
+7. **`deckController.completeDeck()`**: `isWindowCompleted` 기반 완료 조건으로 변경
+8. **중복 카운팅 버그 수정**: `markCompleted()`/`markIncomplete()`가 `try_count`를 중복 증가하던 버그 제거
 
-## 구현 변경 범위
+### ✅ Frontend 완료 (2026-06-23)
 
-### Backend
-
-1. **`WordProgress` 모델**: `is_completed` → `is_window_completed` (의미 명확화)
-2. **`UserCheckpoint.isCompleted()`**: index 기반 → 전체 단어 습득 여부 기반
-3. **`UserCheckpoint`에 추가**: `reshuffleUnknownWords()` 메서드
-4. **`UserCheckpoint.generateNextSlidingWindow()`**: 이전 윈도우 단어 `is_window_completed` 리셋
-5. **`deckController.completeWord()`**: 패스 완료 감지 → 모름 단어 재셔플 트리거
-6. **`deckController.completeDeck()`**: 윈도우 완료 조건 변경
-
-### Frontend
-
-7. **응답 처리**: "패스 완료 + 모름 단어 있음" vs "윈도우 완료" 구분
-8. **UI**: 패스 완료 피드백 (재셔플 시작 알림) vs 윈도우 완료 피드백
+- **타입 정의**: `CompleteWordResponse`에 `passComplete`, `windowComplete`, `nextPassSize` 추가
+- **`FlashCardContainer`**: `completeWord` 응답 처리 — 패스 완료/윈도우 완료 콜백 분기
+- **`FlashCardPage`**: 패스 완료 시 덱 재fetch + 리마운트, 윈도우 완료 시 전용 UI 표시

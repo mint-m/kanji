@@ -107,7 +107,7 @@ This is a full-stack Japanese word learning application with a sliding window de
 
 - **Framework**: React 18 + TypeScript
 - **State**: Redux Toolkit (minimal: user auth + kanji lookup only)
-- **Styling**: Styled Components
+- **Styling**: Vanilla Extract
 - **Routing**: React Router v6
 
 ### Backend
