@@ -18,6 +18,7 @@ const FlashCard = lazy(() => import('pages/FlashCardPage'));
 const UserProfile = lazy(() => import('pages/UserProfilePage'));
 const Bookmark = lazy(() => import('pages/BookmarkPage'));
 const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
+const Dashboard = lazy(() => import('pages/DashboardPage'));
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -72,6 +73,12 @@ const AppContent = () => {
           <Route path='/select-level' element={
             <ProtectedRoute>
               <SelectLevel />
+            </ProtectedRoute>
+          } />
+
+          <Route path='/dashboard' element={
+            <ProtectedRoute>
+              <Dashboard />
             </ProtectedRoute>
           } />
 

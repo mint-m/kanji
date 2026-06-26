@@ -4,7 +4,8 @@ import mongoose from 'mongoose';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
-import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
+import { LEARNING_LEVELS } from '../types/common';
+import { NotFoundError, InternalServerError } from '../utils/errors';
 
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -34,6 +35,16 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     const overallProgressPercentage =
       totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;
 
+    // Level breakdown
+    const levelBreakdown = await Promise.all(
+      LEARNING_LEVELS.map(async (level) => {
+        const wordIds = await Word.distinct('_id', { level });
+        const total = wordIds.length;
+        const completed = await WordProgress.countDocuments({ user_id: userId, word_id: { $in: wordIds }, is_window_completed: true });
+        return { level, total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
+      })
+    );
+
     // Format response
     const response: any = {
       overall: {
@@ -41,6 +52,13 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
         completedWords: totalCompletedWords,
         progressPercentage: overallProgressPercentage,
       },
+      streak: {
+        current: user.statistics.currentStreak,
+        longest: user.statistics.longestStreak,
+        studyDays: user.statistics.studyDaysCount,
+      },
+      totalWordsStudied: user.statistics.totalWordsStudied,
+      levelBreakdown,
       sessions: [],
     };
 

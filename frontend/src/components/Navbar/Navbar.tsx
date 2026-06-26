@@ -50,6 +50,7 @@ const Navbar = () => {
           {showUserMenu && (
             <div className={styles.dropdownMenu}>
               <div className={styles.dropdownItem} onClick={() => handleOnClick('profile')}>프로필</div>
+              <div className={styles.dropdownItem} onClick={() => handleOnClick('dashboard')}>대시보드</div>
               <div className={styles.dropdownItem} onClick={() => handleOnClick('bookmark')}>북마크</div>
               <div className={styles.dropdownItem} onClick={handleLogout}>로그아웃</div>
             </div>
