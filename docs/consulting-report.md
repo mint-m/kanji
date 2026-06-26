@@ -14,7 +14,7 @@
 | 체크포인트 저장/복원 | 완료 | 85% |
 | Main / Sub 세션 전환 | 완료 | 80% |
 | 단어 진도 추적 | 완료 | 80% |
-| 테스트 코드 | 부분 완료 | 45% |
+| 테스트 코드 | 부분 완료 | 70% |
 | 학습 알림 시스템 | 미구현 | 0% |
 
 ---
@@ -24,9 +24,9 @@
 ### 🟡 High
 
 **테스트 커버리지 부족**
-- 백엔드: `deckController`, `progressController`, `bookmarkController`
-- 프론트엔드: `FlashCardContainer`, `apiClient` 인터셉터
-- E2E: 로그인 → 레벨 선택 → 학습 → 윈도우 전환
+- ✅ 백엔드: `deckController`, `progressController`, `bookmarkController` 단위 테스트 완료 (32개)
+- ✅ E2E: 로그인, 학습 플로우, 패스/윈도우 완료 흐름 (Playwright)
+- 프론트엔드: `FlashCardContainer`, `apiClient` 인터셉터 미완료
 
 **진도 업데이트 Race Condition**
 `FlashCardContainer`에서 단어 완료 요청이 `await` 없이 발사됨. 빠른 카드 넘기기 시 진도 유실 가능. 요청 큐 또는 순차 처리 필요.
@@ -57,8 +57,8 @@
 
 | # | 작업 | 심각도 | 예상 공수 |
 |---|---|---|---|
-| 1 | E2E 테스트 (Playwright/Cypress) | 🟡 | 3일 |
-| 2 | 나머지 컨트롤러 단위 테스트 | 🟡 | 2일 |
+| 1 | ~~E2E 테스트 (Playwright)~~ | ✅ 완료 | — |
+| 2 | ~~컨트롤러 단위 테스트~~ | ✅ 완료 | — |
 | 3 | Race Condition 해결 (요청 큐) | 🟡 | 1일 |
 | 4 | CORS 화이트리스트 설정 | 🟡 | 0.5일 |
 | 5 | React ErrorBoundary 전 페이지 적용 | 🟠 | 0.5일 |

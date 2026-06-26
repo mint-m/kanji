@@ -53,7 +53,7 @@
 #### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/your-username/kan-ji.git
+git clone https://github.com/mint-m/kan-ji.git
 cd kan-ji
 ```
 
@@ -249,8 +249,7 @@ yarn test        # 테스트 실행
 ### 브랜치 전략
 
 - `main` - 프로덕션 브랜치
-- `develop` - 개발 브랜치
-- `feature/*` - 기능 개발
+- `feat/*` - 기능 개발
 - `fix/*` - 버그 수정
 
 ### 커밋 컨벤션
@@ -336,7 +335,7 @@ chore: 빌드 설정 등
 
 ## 👨‍💻 개발자
 
-**Minwoo** - [GitHub](https://github.com/your-username)
+**Minwoo** - [GitHub](https://github.com/mint-m)
 
 ---
 
@@ -350,8 +349,8 @@ chore: 빌드 설정 등
 
 ## 📧 문의
 
-- GitHub Issues: [Create an issue](https://github.com/your-username/kan-ji/issues)
-- Email: your-email@example.com
+- GitHub Issues: [Create an issue](https://github.com/mint-m/kan-ji/issues)
+- Email: fwwfly@gmail.com
 
 ---
 
