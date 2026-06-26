@@ -26,7 +26,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [learningCount, setLearningCount] = useState(0);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
     const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
-    const processingWordIdRef = useRef<string | null>(null);
+    const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
+    const isDrainingRef = useRef(false);
     const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
@@ -55,16 +56,35 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       know ? setMasteredCount(prev => prev + 1) : setLearningCount(prev => prev + 1);
     }, []);
 
+    const drainQueue = useCallback(async () => {
+      if (isDrainingRef.current) return;
+      isDrainingRef.current = true;
+      while (requestQueueRef.current.length > 0) {
+        const task = requestQueueRef.current.shift()!;
+        try {
+          await task();
+        } catch (err) {
+          console.warn('⚠️ Progress sync failed', err);
+        }
+      }
+      isDrainingRef.current = false;
+    }, []);
+
     const handleKnowClick = useCallback((know: boolean) => {
-      if (!currentWordId || processingWordIdRef.current === currentWordId) return;
-      processingWordIdRef.current = currentWordId;
+      if (!currentWordId) return;
+
+      const wordId = currentWordId;
+      const timeSpent = Math.floor((Date.now() - cardStudyTime) / 1000);
+
       updateStats(know);
       moveToNextCard();
-      progressService.completeWord(progressType, {
-        wordId: currentWordId,
-        isCorrect: know,
-        timeSpent: Math.floor((Date.now() - cardStudyTime) / 1000),
-      }).then((res) => {
+
+      requestQueueRef.current.push(async () => {
+        const res = await progressService.completeWord(progressType, {
+          wordId,
+          isCorrect: know,
+          timeSpent,
+        });
         if (res.data?.passComplete) {
           setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
           if (res.data.windowComplete) {
@@ -73,9 +93,10 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
             onPassComplete?.(res.data.nextPassSize ?? 0);
           }
         }
-      }).catch((err: unknown) => console.warn('⚠️ Progress sync failed', { err, wordIndex }))
-        .finally(() => { processingWordIdRef.current = null; });
-    }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, progressType, onPassComplete, onWindowComplete, wordIndex]);
+      });
+
+      drainQueue();
+    }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, progressType, onPassComplete, onWindowComplete, drainQueue]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {
       type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
