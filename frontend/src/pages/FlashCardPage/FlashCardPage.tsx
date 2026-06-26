@@ -81,7 +81,15 @@ const FlashCardPage: FC = () => {
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <h3>윈도우 완료!</h3>
             <p>이 윈도우의 모든 단어를 완전히 습득했습니다.</p>
-            <button onClick={() => { setWindowComplete(false); fetchDeck(); }}>
+            <button onClick={async () => {
+              setWindowComplete(false);
+              try {
+                await deckService.completeDeck(activeProgressType || 'main');
+              } catch (e) {
+                console.error('Failed to complete deck:', e);
+              }
+              fetchDeck();
+            }}>
               다음 윈도우로 진행
             </button>
           </div>
