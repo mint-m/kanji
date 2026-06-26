@@ -17,16 +17,9 @@ export * from './types';
 
 // Re-export service types
 export type {
-  CreateSessionRequest,
-  CreateSessionResponse,
   GetProgressResponse,
   UpdateIndexRequest,
   LearningStatsResponse,
 } from './progressService';
-
-export type {
-  GenerateDeckRequest,
-  CompleteDeckRequest,
-} from './deckService';
 
 export type { Bookmark, GetBookmarksOptions } from './bookmarkService';
