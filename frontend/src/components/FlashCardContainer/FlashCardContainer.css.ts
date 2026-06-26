@@ -5,9 +5,9 @@ export const errorBanner = style({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space.sm,
-  backgroundColor: '#fee2e2',
-  border: '1px solid #fca5a5',
-  borderRadius: vars.radius.xl,
+  backgroundColor: vars.color.dangerBg,
+  border: `1px solid ${vars.color.dangerBorder}`,
+  borderRadius: vars.radius.lg,
   padding: `${vars.space.md} 20px`,
   marginBottom: vars.space.md,
 });
@@ -17,18 +17,31 @@ export const errorIcon = style({
 });
 
 export const errorText = style({
-  color: '#991b1b',
+  color: vars.color.danger,
   fontSize: vars.fontSize.sm,
   fontWeight: 500,
 });
 
 export const completedCard = style({
-  marginTop: vars.space.xl,
+  width: '85vw',
+  aspectRatio: '3 / 4',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
   padding: vars.space.xl,
-  background: 'linear-gradient(135deg, #f0f7ff, #e6f2ff)',
-  borderRadius: '1rem',
+  backgroundColor: vars.color.bg,
+  borderRadius: vars.radius.lg,
   textAlign: 'center',
-  boxShadow: '0 4px 6px rgba(0,0,0,0.07)',
+  boxShadow: vars.shadow.inner,
+
+  '@media': {
+    'screen and (min-width: 768px)': {
+      width: '35rem',
+      height: '28rem',
+      aspectRatio: 'auto',
+    },
+  },
 });
 
 export const completedTitle = style({
@@ -54,7 +67,7 @@ export const statItem = style({
 
 export const statLabel = style({
   fontSize: vars.fontSize.sm,
-  color: '#64748b',
+  color: vars.color.textMuted,
   fontWeight: 500,
 });
 
@@ -68,24 +81,4 @@ export const statValueAmber = style({
   fontSize: vars.fontSize.xl,
   fontWeight: 'bold',
   color: vars.color.warning,
-});
-
-export const restartButton = style({
-  background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-  color: vars.color.white,
-  border: 'none',
-  borderRadius: vars.radius.xl,
-  padding: `14px ${vars.space.xl}`,
-  marginTop: vars.space.lg,
-  cursor: 'pointer',
-  fontSize: vars.fontSize.base,
-  fontWeight: 600,
-  transition: 'all 0.2s',
-
-  selectors: {
-    '&:disabled': {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-  },
 });

@@ -23,6 +23,7 @@ export const statsGrid = style({
 
 export const statCard = style({
   textAlign: 'center',
+  padding: vars.space.lg,
 });
 
 export const statLabel = style({
