@@ -1,5 +1,4 @@
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
+import { Response } from 'express';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
@@ -287,8 +286,7 @@ export const generateNextWindow = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    const { progressType: progressTypeParam } = req.params as { progressType: ProgressType };
-    const canMove = await progress.canMoveToNextWindow(userId, progressTypeParam);
+    const canMove = await progress.canMoveToNextWindow(userId, type);
     if (!canMove) {
       res.status(400).json({
         success: false,
@@ -297,7 +295,7 @@ export const generateNextWindow = async (req: AuthenticatedRequest, res: Respons
       return;
     }
 
-    await progress.generateNextSlidingWindow(userId, progressTypeParam);
+    await progress.generateNextSlidingWindow(userId, type);
     await progress.save();
     await progress.populate('shuffled_order');
 
@@ -524,12 +522,7 @@ export const updateCheckpoint = async (req: AuthenticatedRequest, res: Response)
       progress.steps = progressCheckpoint.steps;
     }
 
-    // Save changes
-    // Save changes
     await progress.save();
-
-    // Update checkpoint timestamp
-    await progress.updateCheckpoint();
 
     res.status(200).json({
       success: true,

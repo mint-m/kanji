@@ -153,19 +153,13 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   }).distinct('word_id');
 
   const unknownIds = this.shuffled_order.filter(
-    (id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => knownId.equals(id))
+    (id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => id.equals(knownId))
   );
 
-  // Fisher-Yates shuffle
-  const shuffled = [...unknownIds];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  this.shuffled_order = shuffled;
+  const UserCheckpointModel = this.constructor as UserCheckpointModel;
+  this.shuffled_order = UserCheckpointModel.shuffleArray(unknownIds);
   this.current_index = 0;
-  return shuffled.length;
+  return this.shuffled_order.length;
 };
 
 userCheckpointSchema.methods.canMoveToNextWindow = async function (
@@ -183,24 +177,19 @@ userCheckpointSchema.methods.generateNextSlidingWindow = async function (
   userId: mongoose.Types.ObjectId,
   progressType: ProgressType
 ): Promise<void> {
-  const canMove = await this.canMoveToNextWindow(userId, progressType);
-  if (!canMove) {
-    throw new Error('Cannot generate next window - not all words known or no more windows available');
-  }
-
   const nextWindow = await SlidingWindowService.getNextWindow(this.steps, this.current_level);
   if (!nextWindow) {
     throw new Error('No next window available for this level');
   }
 
-  // Reset is_window_completed for all words in current deck before moving on
+  const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
+
+  // Reset only after deck generation succeeds to avoid data loss on failure
   const WordProgress = mongoose.model('WordProgress');
   await WordProgress.updateMany(
     { user_id: userId, word_id: { $in: this.shuffled_order }, progress_type: progressType },
     { $set: { is_window_completed: false } }
   );
-
-  const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
 
   this.steps = nextWindow;
   this.shuffled_order = nextDeck.wordIds;
@@ -300,7 +289,7 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
     }).distinct('word_id');
 
     filteredWordIds = filteredWordIds.filter(
-      (wordId) => !completedWordIds.some((completedId) => completedId.equals(wordId))
+      (wordId) => !completedWordIds.some((completedId) => wordId.equals(completedId))
     );
   }
 
@@ -313,10 +302,10 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 
     // Separate bookmarked and non-bookmarked words
     const bookmarkedWords = filteredWordIds.filter((wordId) =>
-      bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(wordId))
+      bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
     );
     const nonBookmarkedWords = filteredWordIds.filter(
-      (wordId) => !bookmarkedWordIds.some((bookmarkedId) => bookmarkedId.equals(wordId))
+      (wordId) => !bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
     );
 
     // Shuffle both arrays independently for variety

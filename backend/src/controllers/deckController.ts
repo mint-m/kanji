@@ -290,7 +290,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
 
     // Always advance index (moveToNext guards against overflow)
     progress.moveToNext();
-    await progress.save();
 
     // Detect pass completion
     const isPassComplete = progress.isCompleted();
@@ -302,9 +301,10 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       if (!windowComplete) {
         // Reshuffle unknown words for next pass
         nextPassSize = await progress.reshuffleUnknownWords(userId, progressType);
-        await progress.save();
       }
     }
+
+    await progress.save();
 
     res.status(200).json({
       success: true,
@@ -553,14 +553,6 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
 export const completeDeck = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { progressType } = req.params as { progressType: ProgressType };
-    const { autoGenerateNext = true, sessionFeedback } = req.body as {
-      autoGenerateNext?: boolean;
-      sessionFeedback?: {
-        enjoyment: number; // 1-5 scale
-        notes?: string;
-      };
-    };
-
     const userId = req.user!._id;
 
     const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
@@ -581,18 +573,14 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    // Get final deck statistics
     const finalStats = progress.getSessionStats();
     const canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
 
     let nextWindow = null;
-    if (autoGenerateNext && canMoveToNext) {
+    if (canMoveToNext) {
       try {
         await progress.generateNextSlidingWindow(userId, progressType);
         await progress.save();
-
-        // Save checkpoint after generating next window
-        await progress.updateCheckpoint();
 
         nextWindow = {
           level: progress.current_level,
@@ -604,10 +592,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       }
     }
 
-    // Update user completion statistics
     const user = await User.findById(userId);
     if (user && !user.statistics.levelsCompleted.includes(progress.current_level)) {
-      // Check if this level is fully completed
       const levelStats = await Word.getLevelStats(progress.current_level);
       if (levelStats.length > 0) {
         const maxStep = levelStats[0].maxStep;
@@ -632,7 +618,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         nextWindow,
         canGenerateNext: canMoveToNext,
         levelCompleted: user?.statistics.levelsCompleted.includes(progress.current_level),
-        sessionFeedback,
       },
     });
   } catch (error) {
