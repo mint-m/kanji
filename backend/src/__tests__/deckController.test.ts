@@ -155,7 +155,8 @@ describe('completeWord', () => {
       makeMockProgress({ shuffled_order: [fakeWordIdObj], isCompleted: jest.fn().mockReturnValue(false) }),
     );
     (WordProgress.findOrCreate as jest.Mock).mockResolvedValue(makeMockWordProgress());
-    (User.findById as jest.Mock).mockResolvedValue(makeUser());
+    const mockUser = makeUser();
+    (User.findById as jest.Mock).mockResolvedValue(mockUser);
 
     const res = makeRes();
     await deckController.completeWord(
@@ -163,6 +164,8 @@ describe('completeWord', () => {
       res,
     );
 
+    expect(mockUser.updateDailyStreak).toHaveBeenCalled();
+    expect(mockUser.updateStudyStats).toHaveBeenCalledWith(5, 1);
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data.passComplete).toBe(false);
     expect(data.windowComplete).toBe(false);
