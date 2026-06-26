@@ -1,4 +1,4 @@
-# Kan-ji (간지)
+# Kan-ji (칸지)
 
 > 일본어 능력시험(JLPT) 단어 학습 애플리케이션
 
@@ -13,11 +13,12 @@
 
 ## 📚 주요 기능
 
-### 🎯 슬라이딩 윈도우 학습
+### 🎯 완전 습득형 학습 시스템
 
-- **3단계 슬라이딩**: 1-3 → 2-4 → 3-5 방식의 점진적 학습
+- **3단계 슬라이딩 윈도우**: 1-3 → 2-4 → 3-5 방식의 점진적 학습
+- **패스(Pass) 반복**: 모른 단어만 추출해 완전히 알 때까지 반복 순환
+- **윈도우 완료 조건**: 덱 전체 단어를 "알았음" 처리해야 다음 윈도우 진행
 - **순환 복습**: 레벨 경계를 넘어가는 자동 순환 (9-1, 10-2)
-- **완료 필터링**: 이미 학습한 단어 자동 제외
 
 ### 💾 자동 체크포인트
 
@@ -52,7 +53,7 @@
 #### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/your-username/kan-ji.git
+git clone https://github.com/mint-m/kan-ji.git
 cd kan-ji
 ```
 
@@ -148,7 +149,7 @@ kan-ji/
 
 ### 1. 로그인
 
-- Google 계정으로 로그인
+- Google 또는 카카오 계정으로 로그인
 
 ### 2. 학습 세션 시작
 
@@ -161,14 +162,15 @@ kan-ji/
 ### 3. 플래시카드 학습
 
 - 단어 학습 (히라가나 → 한자 → 의미)
-- **정답/오답** 선택
+- **알았음/모름** 선택
 - **북마크** 토글 (⭐)
 - 자동 다음 단어 진행
 
-### 4. 덱 완료
+### 4. 패스(Pass) 반복
 
-- 현재 윈도우 완료 시 자동으로 다음 윈도우 생성
-- 예: 1-3 완료 → 2-4 자동 생성
+- 패스 완료 후 "모름" 단어가 있으면 → 재셔플 후 새 패스 시작
+- 모든 단어 "알았음" → 윈도우 완료 → 다음 윈도우 자동 생성
+- 예: 윈도우 {1,2,3} 완료 → {2,3,4} 자동 생성
 
 ### 5. 진행 상황 확인
 
@@ -183,8 +185,8 @@ kan-ji/
 
 - **React 18** - UI 프레임워크
 - **TypeScript** - 타입 안정성
-- **Redux Toolkit** - 상태 관리
-- **Styled Components** - CSS-in-JS
+- **Redux Toolkit** - 상태 관리 (user, kanji 모듈)
+- **Vanilla Extract** - CSS-in-JS (타입 안전 CSS)
 - **React Router v6** - 라우팅
 - **Axios** - HTTP 클라이언트
 
@@ -200,6 +202,7 @@ kan-ji/
 ### 인프라
 
 - **Google OAuth 2.0** - 소셜 로그인
+- **Kakao OAuth 2.0** - 카카오 로그인
 - **MongoDB Atlas** - 클라우드 DB (옵션)
 - **Vercel/Netlify** - 프론트엔드 배포 (옵션)
 - **Heroku/Railway** - 백엔드 배포 (옵션)
@@ -246,8 +249,7 @@ yarn test        # 테스트 실행
 ### 브랜치 전략
 
 - `main` - 프로덕션 브랜치
-- `develop` - 개발 브랜치
-- `feature/*` - 기능 개발
+- `feat/*` - 기능 개발
 - `fix/*` - 버그 수정
 
 ### 커밋 컨벤션
@@ -296,9 +298,11 @@ chore: 빌드 설정 등
 ### Phase 2 (진행 중)
 
 - ✅ Redux Store 구조 (user, kanji 모듈)
-- ✅ 프론트엔드 핵심 컴포넌트 구현
-  - FlashCard, SelectLevel, SelectStep 등
+- ✅ 프론트엔드 핵심 컴포넌트 구현 (FlashCard, SelectLevel, SelectStep 등)
 - ✅ UserProfilePage (세션 전환)
+- ✅ 카카오 OAuth 로그인 추가
+- ✅ Vanilla Extract 마이그레이션 (Styled Components 제거)
+- ✅ 완전 습득형 학습 로직 구현 (패스 반복, 윈도우 완료 조건)
 - 🔄 학습 통계 대시보드 고도화
 - 🔄 연속 학습일 추적 UI
 
@@ -331,7 +335,7 @@ chore: 빌드 설정 등
 
 ## 👨‍💻 개발자
 
-**Minwoo** - [GitHub](https://github.com/your-username)
+**Minwoo** - [GitHub](https://github.com/mint-m)
 
 ---
 
@@ -345,8 +349,8 @@ chore: 빌드 설정 등
 
 ## 📧 문의
 
-- GitHub Issues: [Create an issue](https://github.com/your-username/kan-ji/issues)
-- Email: your-email@example.com
+- GitHub Issues: [Create an issue](https://github.com/mint-m/kan-ji/issues)
+- Email: fwwfly@gmail.com
 
 ---
 

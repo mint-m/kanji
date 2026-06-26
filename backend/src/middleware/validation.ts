@@ -17,18 +17,6 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
 // Progress type validation
 const progressTypeValidator = param('type').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"');
 
-// Learning level validation
-const learningLevelValidator = body('level')
-  .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
-  .withMessage('Level must be one of: N5, N4, N3, N2, N1');
-
-// Step range validation
-const stepRangeValidator = [
-  body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
-  body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
-  // start > end is valid: circular window (e.g. 9-1 wraps around)
-];
-
 // Action validation for word index updates
 const actionValidator = body('action')
   .isIn(['next', 'previous', 'jump'])
@@ -41,14 +29,6 @@ const indexValidator = body('index').optional().isInt({ min: 0 }).withMessage('I
 export const validateProgressRequest = {
   // GET /api/progress/:type
   getProgress: [progressTypeValidator, handleValidationErrors],
-
-  // POST /api/progress
-  createSession: [
-    body('type').isIn(['main', 'sub']).withMessage('Type must be "main" or "sub"'),
-    learningLevelValidator,
-    ...stepRangeValidator,
-    handleValidationErrors,
-  ],
 
   // PUT /api/progress/:type/index
   updateIndex: [
@@ -64,45 +44,6 @@ export const validateProgressRequest = {
     handleValidationErrors,
   ],
 
-  // POST /api/progress/switch
-  switchSession: [
-    body('fromType').isIn(['main', 'sub']).withMessage('From type must be "main" or "sub"'),
-    body('toType').isIn(['main', 'sub']).withMessage('To type must be "main" or "sub"'),
-    body().custom((_value, { req }) => {
-      if (req.body.fromType === req.body.toType) {
-        throw new Error('From type and to type must be different');
-      }
-      return true;
-    }),
-    handleValidationErrors,
-  ],
-
-  // POST /api/progress/updateCheckpoint
-  updateCheckpoint: [
-    body('progressCheckpoint').exists().withMessage('Progress checkpoint data is required'),
-    body('progressCheckpoint.progress_type')
-      .exists()
-      .withMessage('progress_type is required')
-      .isIn(['main', 'sub'])
-      .withMessage('Progress type must be "main" or "sub"'),
-    body('progressCheckpoint.level')
-      .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
-      .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    body('progressCheckpoint.steps.start')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('Step start must be a positive integer'),
-    body('progressCheckpoint.steps.end')
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage('Step end must be a positive integer'),
-    body('progressCheckpoint.currentWordIndex')
-      .optional()
-      .isInt({ min: 0 })
-      .withMessage('Current word index must be non-negative integer'),
-    handleValidationErrors,
-  ],
 };
 
 // User authentication validation
@@ -247,23 +188,6 @@ export const validatePagination = [
 
 // Deck validation
 export const validateDeckRequest = {
-  // POST /api/progress/generate
-  generateDeck: [
-    body('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    body('steps.start').isInt({ min: 1 }).withMessage('Step start must be a positive integer'),
-    body('steps.end').isInt({ min: 1 }).withMessage('Step end must be a positive integer'),
-    // start > end is valid: circular window (e.g. 9-1 wraps around)
-    body('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
-    body('options.excludeCompleted').optional().isBoolean().withMessage('Exclude completed must be boolean'),
-    body('options.prioritizeBookmarked').optional().isBoolean().withMessage('Prioritize bookmarked must be boolean'),
-    body('options.shuffleOrder').optional().isBoolean().withMessage('Shuffle order must be boolean'),
-    body('options.maxWords')
-      .optional()
-      .isInt({ min: 1, max: 1000 })
-      .withMessage('Max words must be between 1 and 1000'),
-    handleValidationErrors,
-  ],
-
   // GET /api/progress/:progressType/current|deck-stats
   progressType: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
@@ -292,16 +216,6 @@ export const validateDeckRequest = {
   // POST /api/progress/:progressType/complete-deck
   completeDeck: [
     param('progressType').isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
-    body('autoGenerateNext').optional().isBoolean().withMessage('Auto generate next must be boolean'),
-    body('sessionFeedback.enjoyment')
-      .optional()
-      .isInt({ min: 1, max: 5 })
-      .withMessage('Enjoyment must be integer between 1 and 5'),
-    body('sessionFeedback.notes')
-      .optional()
-      .isLength({ max: 500 })
-      .trim()
-      .withMessage('Notes must be less than 500 characters'),
     handleValidationErrors,
   ],
 };

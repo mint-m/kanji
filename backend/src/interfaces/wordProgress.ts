@@ -64,7 +64,7 @@ export interface WordProgressDocument extends Document {
   user_id: mongoose.Types.ObjectId;
   word_id: mongoose.Types.ObjectId;
   progress_type: ProgressType;
-  is_completed: boolean;
+  is_window_completed: boolean;
   try_count: number;
   correct_count: number;
   is_bookmarked: boolean;
@@ -78,8 +78,8 @@ export interface WordProgressDocument extends Document {
   created_at: Date;
 
   // Instance methods
-  markCompleted(timeSpent?: number): void;
-  markIncomplete(timeSpent?: number): void;
+  markCompleted(): void;
+  markIncomplete(): void;
   recordStudyAttempt(result: StudyResult): void;
   toggleBookmark(reason?: string, tags?: string[]): boolean;
   updateStudyTime(timeSpent: number): void;
@@ -110,6 +110,18 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
   getCompletedWords(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<WordProgressDocument[]>;
 
   getIncompleteWords(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<WordProgressDocument[]>;
+
+  resetWindowCompletionForWords(
+    userId: mongoose.Types.ObjectId,
+    wordIds: mongoose.Types.ObjectId[],
+    progressType: ProgressType
+  ): Promise<number>;
+
+  getUnknownWordsFromDeck(
+    userId: mongoose.Types.ObjectId,
+    wordIds: mongoose.Types.ObjectId[],
+    progressType: ProgressType
+  ): Promise<mongoose.Types.ObjectId[]>;
 
   getBookmarkedWords(userId: mongoose.Types.ObjectId, tags?: string[]): Promise<WordProgressDocument[]>;
 

@@ -4,131 +4,12 @@ import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
+import SlidingWindowService from '../services/slidingWindowService';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
-  LearningLevel,
   ProgressType,
-  StepRange,
-  DeckGenerationOptions,
-  DeckGenerationResult,
   WordCompletionResult,
 } from '../types';
-
-/**
- * Generate new sliding window deck
- */
-export const generateDeck = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const {
-      level,
-      steps,
-      progressType = 'main',
-      options = {},
-    } = req.body as {
-      level: LearningLevel;
-      steps: StepRange;
-      progressType: ProgressType;
-      options?: DeckGenerationOptions;
-    };
-
-    const userId = req.user!._id;
-
-    // Validate level and steps
-    if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid level. Must be N5, N4, N3, N2, or N1',
-      });
-      return;
-    }
-
-    if (steps.start < 1 || steps.end < 1) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid step range. Steps must be positive integers',
-      });
-      return;
-    }
-
-    // Set default options
-    const deckOptions: DeckGenerationOptions = {
-      excludeCompleted: options.excludeCompleted ?? true,
-      prioritizeBookmarked: options.prioritizeBookmarked ?? false,
-      shuffleOrder: options.shuffleOrder ?? true,
-      maxWords: options.maxWords,
-    };
-
-    // Generate deck using UserCheckpoint model
-    const shuffledOrder = await UserCheckpoint.generateSlidingWindowDeck(level, steps, userId, deckOptions);
-
-    if (shuffledOrder.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: 'No words found for the specified criteria. Try different level/steps or include completed words.',
-        data: { level, steps, options: deckOptions },
-      });
-      return;
-    }
-
-    // Get detailed word information
-    const words = await Word.find({
-      _id: { $in: shuffledOrder },
-    }).lean();
-
-    // Reorder words according to shuffled order
-    const orderedWords = shuffledOrder.map((id) => words.find((word) => word._id.equals(id))).filter(Boolean);
-
-    // Calculate statistics
-    const completedWordIds = await WordProgress.find({
-      user_id: userId,
-      progress_type: progressType,
-      is_completed: true,
-    }).distinct('word_id');
-
-    const bookmarkedWordIds = await WordProgress.find({
-      user_id: userId,
-      is_bookmarked: true,
-    }).distinct('word_id');
-
-    const excludedCompleted = deckOptions.excludeCompleted ? completedWordIds.length : 0;
-
-    const prioritizedBookmarks = deckOptions.prioritizeBookmarked
-      ? orderedWords.filter((word) => bookmarkedWordIds.some((bookmarkId) => bookmarkId.equals(word!._id))).length
-      : 0;
-
-    // Estimate study time (2 minutes per word on average)
-    const estimatedStudyTime = Math.ceil(orderedWords.length * 2);
-
-    // Generate deck ID for tracking
-    const deckId = `${userId}_${level}_${steps.start}-${steps.end}_${progressType}_${Date.now()}`;
-
-    const deckResult: DeckGenerationResult = {
-      deckId,
-      words: orderedWords,
-      totalWords: orderedWords.length,
-      level,
-      steps,
-      excludedCompleted,
-      prioritizedBookmarks,
-      options: deckOptions,
-      generatedAt: new Date(),
-      estimatedStudyTime,
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Deck generated successfully',
-      data: deckResult,
-    });
-  } catch (error) {
-    console.error('Generate deck error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate deck',
-      error: process.env.NODE_ENV === 'development' ? error : undefined,
-    });
-  }
-};
 
 /**
  * Get current deck from active session
@@ -177,7 +58,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         ...word,
         index,
         isCurrent: index === progress!.current_index,
-        isCompleted: wordProgress?.is_completed || false,
+        isWindowCompleted: wordProgress?.is_window_completed || false,
         isBookmarked: wordProgress?.is_bookmarked || false,
         studyStats: wordProgress?.getStudyStats(),
         recommendedAction: wordProgress?.getRecommendedAction(),
@@ -185,6 +66,9 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     });
 
     const sessionStats = progress.getSessionStats();
+    const isWindowComplete = await progress.isWindowCompleted(userId, progressType);
+    const canMoveToNext = isWindowComplete
+      && await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
 
     res.status(200).json({
       success: true,
@@ -197,8 +81,9 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         currentIndex: progress.current_index,
         sessionStats,
         deckStatus: {
-          isCompleted: progress.isCompleted(),
-          canMoveToNext: await progress.canMoveToNextWindow(),
+          isPassComplete: progress.isCompleted(),
+          isWindowComplete,
+          canMoveToNext,
           completionPercentage: sessionStats.progressPercentage,
         },
         createdAt: progress.created_at,
@@ -253,28 +138,20 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
     const previousAttempts = wordProgress.try_count;
 
-    // Record the study attempt
-    const studyResult = {
-      isCorrect,
-      studiedAt: new Date(),
-      timeSpent: timeSpent || 0,
-    };
+    // Record historical study stats
+    wordProgress.recordStudyAttempt({ isCorrect, studiedAt: new Date(), timeSpent: timeSpent || 0 });
 
-    wordProgress.recordStudyAttempt(studyResult);
-
-    // Update completion status
+    // Update window-scoped completion flag
     if (isCorrect) {
-      wordProgress.markCompleted(timeSpent);
+      wordProgress.markCompleted();
     } else {
-      wordProgress.markIncomplete(timeSpent);
+      wordProgress.markIncomplete();
     }
 
     await wordProgress.save();
 
-    // Get updated analytics
     const newMasteryLevel = wordProgress.calculateMasteryLevel();
     const recommendedAction = wordProgress.getRecommendedAction();
-    const shouldRepeat = recommendedAction === 'intensive_practice' || recommendedAction === 'review';
 
     const completionResult: WordCompletionResult = {
       wordId: wordObjectId,
@@ -282,7 +159,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       timeSpent,
       previousAttempts,
       newMasteryLevel,
-      shouldRepeat,
+      shouldRepeat: recommendedAction === 'intensive_practice' || recommendedAction === 'review',
     };
 
     // Update user statistics
@@ -295,14 +172,23 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       await user.save();
     }
 
-    // Move to next word in progress if not at the end
-    if (progress.current_index < progress.shuffled_order.length - 1) {
-      progress.moveToNext();
-    }
-    await progress.save();
+    // Always advance index (moveToNext guards against overflow)
+    progress.moveToNext();
 
-    // Auto-save checkpoint after every word
-    await progress.updateCheckpoint();
+    // Detect pass completion
+    const isPassComplete = progress.isCompleted();
+    let windowComplete = false;
+    let nextPassSize: number | undefined;
+
+    if (isPassComplete) {
+      windowComplete = await progress.isWindowCompleted(userId, progressType);
+      if (!windowComplete) {
+        // Reshuffle unknown words for next pass
+        nextPassSize = await progress.reshuffleUnknownWords(userId, progressType);
+      }
+    }
+
+    await progress.save();
 
     res.status(200).json({
       success: true,
@@ -318,7 +204,9 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
           isBookmarked: wordProgress.is_bookmarked,
         },
         currentIndex: progress.current_index,
-        isSessionCompleted: progress.isCompleted(),
+        passComplete: isPassComplete,
+        windowComplete,
+        ...(isPassComplete && !windowComplete && { nextPassSize }),
       },
     });
   } catch (error) {
@@ -380,9 +268,9 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
         wordProgress.recordStudyAttempt(studyResult);
 
         if (completion.isCorrect) {
-          wordProgress.markCompleted(completion.timeSpent);
+          wordProgress.markCompleted();
         } else {
-          wordProgress.markIncomplete(completion.timeSpent);
+          wordProgress.markIncomplete();
         }
 
         await wordProgress.save();
@@ -479,7 +367,7 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
     // Calculate detailed statistics
     const totalWords = progress.shuffled_order.length;
     const studiedWords = wordProgressList.length;
-    const completedWords = wordProgressList.filter((wp) => wp.is_completed).length;
+    const completedWords = wordProgressList.filter((wp) => wp.is_window_completed).length;
     const bookmarkedWords = wordProgressList.filter((wp) => wp.is_bookmarked).length;
 
     const totalAttempts = wordProgressList.reduce((sum, wp) => sum + wp.try_count, 0);
@@ -549,14 +437,6 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
 export const completeDeck = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { progressType } = req.params as { progressType: ProgressType };
-    const { autoGenerateNext = true, sessionFeedback } = req.body as {
-      autoGenerateNext?: boolean;
-      sessionFeedback?: {
-        enjoyment: number; // 1-5 scale
-        notes?: string;
-      };
-    };
-
     const userId = req.user!._id;
 
     const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
@@ -568,29 +448,23 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
-    if (!progress.isCompleted()) {
+    const allKnown = await progress.isWindowCompleted(userId, progressType);
+    if (!allKnown) {
       res.status(400).json({
         success: false,
-        message: 'Deck is not completed yet. Study all words first.',
+        message: 'Window is not completed yet. All words must be marked as known first.',
       });
       return;
     }
 
-    // Save checkpoint before transitioning to next window
-    await progress.updateCheckpoint();
-
-    // Get final deck statistics
     const finalStats = progress.getSessionStats();
-    const canMoveToNext = await progress.canMoveToNextWindow();
+    const canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
 
     let nextWindow = null;
-    if (autoGenerateNext && canMoveToNext) {
+    if (canMoveToNext) {
       try {
-        await progress.generateNextSlidingWindow();
+        await progress.generateNextSlidingWindow(userId, progressType);
         await progress.save();
-
-        // Save checkpoint after generating next window
-        await progress.updateCheckpoint();
 
         nextWindow = {
           level: progress.current_level,
@@ -602,10 +476,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       }
     }
 
-    // Update user completion statistics
     const user = await User.findById(userId);
     if (user && !user.statistics.levelsCompleted.includes(progress.current_level)) {
-      // Check if this level is fully completed
       const levelStats = await Word.getLevelStats(progress.current_level);
       if (levelStats.length > 0) {
         const maxStep = levelStats[0].maxStep;
@@ -630,7 +502,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         nextWindow,
         canGenerateNext: canMoveToNext,
         levelCompleted: user?.statistics.levelsCompleted.includes(progress.current_level),
-        sessionFeedback,
       },
     });
   } catch (error) {
@@ -644,7 +515,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 };
 
 export default {
-  generateDeck,
   getCurrentDeck,
   completeWord,
   bulkCompleteWords,

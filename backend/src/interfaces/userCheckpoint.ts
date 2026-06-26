@@ -14,7 +14,8 @@ export interface UserCheckpointDocument extends Document {
   updated_at: Date;
 
   // Instance methods
-  isCompleted(): boolean;
+  isCompleted(): boolean; // pass traversal complete (current_index >= shuffled_order.length)
+  isWindowCompleted(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>; // all words known
   getCurrentWord(): mongoose.Types.ObjectId | null;
   getRemainingWords(): mongoose.Types.ObjectId[];
   moveToNext(): boolean;
@@ -22,8 +23,9 @@ export interface UserCheckpointDocument extends Document {
   resetProgress(): void;
   getSessionStats(): SessionStats;
   updateCheckpoint(): Promise<boolean>;
-  canMoveToNextWindow(): Promise<boolean>;
-  generateNextSlidingWindow(): Promise<void>;
+  canMoveToNextWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
+  reshuffleUnknownWords(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<number>;
+  generateNextSlidingWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
 }
 
 // UserCheckpoint model interface with static methods
