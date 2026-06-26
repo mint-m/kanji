@@ -6,130 +6,13 @@ import Word from '../models/word';
 import User from '../models/user';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
-  LearningLevel,
   ProgressType,
-  StepRange,
-  DeckGenerationOptions,
-  DeckGenerationResult,
   WordCompletionResult,
 } from '../types';
 
 /**
  * Generate new sliding window deck
  */
-export const generateDeck = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const {
-      level,
-      steps,
-      progressType = 'main',
-      options = {},
-    } = req.body as {
-      level: LearningLevel;
-      steps: StepRange;
-      progressType: ProgressType;
-      options?: DeckGenerationOptions;
-    };
-
-    const userId = req.user!._id;
-
-    // Validate level and steps
-    if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid level. Must be N5, N4, N3, N2, or N1',
-      });
-      return;
-    }
-
-    if (steps.start < 1 || steps.end < 1) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid step range. Steps must be positive integers',
-      });
-      return;
-    }
-
-    // Set default options
-    const deckOptions: DeckGenerationOptions = {
-      excludeCompleted: options.excludeCompleted ?? true,
-      prioritizeBookmarked: options.prioritizeBookmarked ?? false,
-      shuffleOrder: options.shuffleOrder ?? true,
-      maxWords: options.maxWords,
-    };
-
-    // Generate deck using UserCheckpoint model
-    const shuffledOrder = await UserCheckpoint.generateSlidingWindowDeck(level, steps, userId, deckOptions);
-
-    if (shuffledOrder.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: 'No words found for the specified criteria. Try different level/steps or include completed words.',
-        data: { level, steps, options: deckOptions },
-      });
-      return;
-    }
-
-    // Get detailed word information
-    const words = await Word.find({
-      _id: { $in: shuffledOrder },
-    }).lean();
-
-    // Reorder words according to shuffled order
-    const orderedWords = shuffledOrder.map((id) => words.find((word) => word._id.equals(id))).filter(Boolean);
-
-    // Calculate statistics
-    const completedWordIds = await WordProgress.find({
-      user_id: userId,
-      progress_type: progressType,
-      is_window_completed: true,
-    }).distinct('word_id');
-
-    const bookmarkedWordIds = await WordProgress.find({
-      user_id: userId,
-      is_bookmarked: true,
-    }).distinct('word_id');
-
-    const excludedCompleted = deckOptions.excludeCompleted ? completedWordIds.length : 0;
-
-    const prioritizedBookmarks = deckOptions.prioritizeBookmarked
-      ? orderedWords.filter((word) => bookmarkedWordIds.some((bookmarkId) => bookmarkId.equals(word!._id))).length
-      : 0;
-
-    // Estimate study time (2 minutes per word on average)
-    const estimatedStudyTime = Math.ceil(orderedWords.length * 2);
-
-    // Generate deck ID for tracking
-    const deckId = `${userId}_${level}_${steps.start}-${steps.end}_${progressType}_${Date.now()}`;
-
-    const deckResult: DeckGenerationResult = {
-      deckId,
-      words: orderedWords,
-      totalWords: orderedWords.length,
-      level,
-      steps,
-      excludedCompleted,
-      prioritizedBookmarks,
-      options: deckOptions,
-      generatedAt: new Date(),
-      estimatedStudyTime,
-    };
-
-    res.status(200).json({
-      success: true,
-      message: 'Deck generated successfully',
-      data: deckResult,
-    });
-  } catch (error) {
-    console.error('Generate deck error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate deck',
-      error: process.env.NODE_ENV === 'development' ? error : undefined,
-    });
-  }
-};
-
 /**
  * Get current deck from active session
  */
@@ -631,7 +514,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 };
 
 export default {
-  generateDeck,
   getCurrentDeck,
   completeWord,
   bulkCompleteWords,

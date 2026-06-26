@@ -52,7 +52,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
   try {
     // authenticateJwt 미들웨어에서 이미 검증됨
     const userId = req.user!._id;
-    const { checkpoint, wordIndex, progressType = 'main', level, steps, currentIndex } = req.body;
+    const { progressType = 'main', level, steps, currentIndex } = req.body;
 
     // 사용자 확인
     const existingUser = await User.findById(userId);
@@ -98,10 +98,6 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         }
 
         await existingProgress.save();
-
-        // Save checkpoint using updateCheckpoint method
-        await existingProgress.updateCheckpoint();
-
         userProgress = existingProgress;
       }
 

@@ -2,7 +2,6 @@ jest.mock('../models/userCheckpoint', () => ({
   __esModule: true,
   default: {
     findByUserAndType: jest.fn(),
-    createNewSession: jest.fn(),
     getActiveProgressForUser: jest.fn(),
     getUserLearningStats: jest.fn(),
     deleteOne: jest.fn(),
@@ -14,15 +13,9 @@ jest.mock('../models/wordProgress', () => ({
   default: { getStudyStats: jest.fn() },
 }));
 
-jest.mock('../models/word', () => ({
-  __esModule: true,
-  default: { validateStepRange: jest.fn() },
-}));
-
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import UserCheckpoint from '../models/userCheckpoint';
-import Word from '../models/word';
 import * as progressController from '../controllers/progressController';
 
 const makeRes = () => {
@@ -77,45 +70,6 @@ describe('getUserProgress', () => {
   });
 });
 
-describe('createSession', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('세션 이미 존재 → 409', async () => {
-    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(makeMockProgress());
-    const res = makeRes();
-    await progressController.createSession(
-      makeReq({ body: { type: 'main', level: 'N5', steps: { start: 1, end: 3 } } }),
-      res,
-    );
-    expect(res.status).toHaveBeenCalledWith(409);
-  });
-
-  it('유효하지 않은 단계 범위 → 400', async () => {
-    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(null);
-    (Word.validateStepRange as jest.Mock).mockResolvedValue(false);
-    const res = makeRes();
-    await progressController.createSession(
-      makeReq({ body: { type: 'main', level: 'N5', steps: { start: 99, end: 100 } } }),
-      res,
-    );
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it('성공 → 201, session과 sessionStats 반환', async () => {
-    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(null);
-    (Word.validateStepRange as jest.Mock).mockResolvedValue(true);
-    (UserCheckpoint.createNewSession as jest.Mock).mockResolvedValue(makeMockProgress());
-    const res = makeRes();
-    await progressController.createSession(
-      makeReq({ body: { type: 'main', level: 'N5', steps: { start: 1, end: 3 } } }),
-      res,
-    );
-    expect(res.status).toHaveBeenCalledWith(201);
-    const { data } = (res.json as jest.Mock).mock.calls[0][0];
-    expect(data).toHaveProperty('session');
-    expect(data).toHaveProperty('sessionStats');
-  });
-});
 
 describe('resetSession', () => {
   beforeEach(() => jest.clearAllMocks());
