@@ -54,7 +54,10 @@ const bookmarkService = {
     const params = new URLSearchParams();
     if (options?.level) params.append('level', options.level);
     if (options?.progressType) params.append('progressType', options.progressType);
-    if (options?.sortBy) params.append('sortBy', options.sortBy);
+    if (options?.sortBy) {
+      const sortMap: Record<string, string> = { recent: 'last_studied_at', level: 'level', step: 'step' };
+      params.append('sortBy', sortMap[options.sortBy] ?? options.sortBy);
+    }
     if (options?.page) params.append('page', options.page.toString());
     if (options?.limit) params.append('limit', options.limit.toString());
 
