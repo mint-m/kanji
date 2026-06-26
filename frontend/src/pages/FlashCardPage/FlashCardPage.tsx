@@ -57,7 +57,7 @@ const FlashCardPage: FC = () => {
     }
   }, [activeProgressType, navigate]);
 
-  const handlePassComplete = useCallback((_nextPassSize: number) => {
+  const handlePassComplete = useCallback(() => {
     fetchDeck().then(() => setDeckKey(k => k + 1));
   }, [fetchDeck]);
 

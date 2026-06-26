@@ -12,7 +12,7 @@ interface FlashCardContainerProps {
   deck: DeckWord[];
   progressType: 'main' | 'sub';
   initialIndex: number;
-  onPassComplete?: (nextPassSize: number) => void;
+  onPassComplete?: () => void;
   onWindowComplete?: () => void;
 }
 
@@ -28,6 +28,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
     const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
     const isDrainingRef = useRef(false);
+    const lastEnqueuedWordIdRef = useRef<string | null>(null);
     const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
@@ -71,7 +72,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     }, []);
 
     const handleKnowClick = useCallback((know: boolean) => {
-      if (!currentWordId) return;
+      if (!currentWordId || lastEnqueuedWordIdRef.current === currentWordId) return;
+      lastEnqueuedWordIdRef.current = currentWordId;
 
       const wordId = currentWordId;
       const timeSpent = Math.floor((Date.now() - cardStudyTime) / 1000);
@@ -90,7 +92,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
           if (res.data.windowComplete) {
             onWindowComplete?.();
           } else {
-            onPassComplete?.(res.data.nextPassSize ?? 0);
+            onPassComplete?.();
           }
         }
       });
