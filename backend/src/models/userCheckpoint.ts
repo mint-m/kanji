@@ -236,6 +236,13 @@ userCheckpointSchema.statics.createNewSession = async function (
     }
   );
 
+  // Reset window completion state for all words in this new session
+  const WordProgress = mongoose.model('WordProgress');
+  await WordProgress.updateMany(
+    { user_id: userId, word_id: { $in: filteredWordIds }, progress_type: type },
+    { $set: { is_window_completed: false } }
+  );
+
   // Create new session
   const session = new this({
     user_id: userId,

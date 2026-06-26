@@ -4,15 +4,13 @@ import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
+import SlidingWindowService from '../services/slidingWindowService';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
   ProgressType,
   WordCompletionResult,
 } from '../types';
 
-/**
- * Generate new sliding window deck
- */
 /**
  * Get current deck from active session
  */
@@ -60,7 +58,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         ...word,
         index,
         isCurrent: index === progress!.current_index,
-        isCompleted: wordProgress?.is_window_completed || false,
+        isWindowCompleted: wordProgress?.is_window_completed || false,
         isBookmarked: wordProgress?.is_bookmarked || false,
         studyStats: wordProgress?.getStudyStats(),
         recommendedAction: wordProgress?.getRecommendedAction(),
@@ -68,6 +66,9 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     });
 
     const sessionStats = progress.getSessionStats();
+    const isWindowComplete = await progress.isWindowCompleted(userId, progressType);
+    const canMoveToNext = isWindowComplete
+      && await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
 
     res.status(200).json({
       success: true,
@@ -81,8 +82,8 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         sessionStats,
         deckStatus: {
           isPassComplete: progress.isCompleted(),
-          isWindowComplete: await progress.isWindowCompleted(userId, progressType),
-          canMoveToNext: await progress.canMoveToNextWindow(userId, progressType),
+          isWindowComplete,
+          canMoveToNext,
           completionPercentage: sessionStats.progressPercentage,
         },
         createdAt: progress.created_at,
@@ -158,7 +159,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       timeSpent,
       previousAttempts,
       newMasteryLevel,
-      shouldRepeat: false,
+      shouldRepeat: recommendedAction === 'intensive_practice' || recommendedAction === 'review',
     };
 
     // Update user statistics

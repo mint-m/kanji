@@ -981,7 +981,7 @@ wordProgressSchema.statics.getUnknownWordsFromDeck = async function (
     is_window_completed: true,
   }).distinct('word_id');
 
-  return wordIds.filter((id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => knownId.equals(id)));
+  return wordIds.filter((id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => id.equals(knownId)));
 };
 
 // Pre-save middleware to update timestamps and maintain data integrity
