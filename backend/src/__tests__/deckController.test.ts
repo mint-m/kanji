@@ -85,7 +85,7 @@ const makeMockWordProgress = (overrides: any = {}) => ({
 
 const makeUser = () => ({
   updateStudyStats: jest.fn(),
-  incrementStreak: jest.fn(),
+  updateDailyStreak: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
 });
 

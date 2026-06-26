@@ -3,6 +3,7 @@ import { Router } from 'express';
 import * as wordController from '../controllers/wordController';
 import { validateWordRequest, handleValidationErrors } from '../middleware/validation';
 import { param, query } from 'express-validator';
+import { LEARNING_LEVELS } from '../types/common';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get('/all', wordController.getAllWords);
 router.get(
   '/level/:level',
   [
-    param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     handleValidationErrors,
   ],
   wordController.getWordsByLevel
@@ -23,7 +24,7 @@ router.get(
 router.get(
   '/level/:level/steps',
   [
-    param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     handleValidationErrors,
   ],
   wordController.getStepsForLevel
@@ -33,7 +34,7 @@ router.get(
 router.get(
   '/level/:level/step/:step',
   [
-    param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     param('step').isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
@@ -48,7 +49,7 @@ router.get(
 router.get(
   '/level/:level/steps/:startStep-:endStep',
   [
-    param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     param('startStep').isInt({ min: 1 }).withMessage('Start step must be over 1'),
     param('endStep').isInt({ min: 1 }).withMessage('step must be over 1 intiger'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
@@ -68,7 +69,7 @@ router.get(
     query('endStep').isInt({ min: 1 }).withMessage('End step must be over 1 intiger'),
     query('level')
       .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .isIn(LEARNING_LEVELS)
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
@@ -90,7 +91,7 @@ router.get('/statistics', wordController.getWordStatistics);
 router.get(
   '/statistics/:level',
   [
-    param('level').isIn(['N5', 'N4', 'N3', 'N2', 'N1']).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     handleValidationErrors,
   ],
   wordController.getWordStatistics

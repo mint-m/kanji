@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ProgressType, LearningLevel, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
+import { ProgressType, LearningLevel, LEARNING_LEVELS, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
 import {
   UserCheckpointDocument,
   UserCheckpointModel,
@@ -23,7 +23,7 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
     current_level: {
       type: String,
       required: true,
-      enum: ['N5', 'N4', 'N3', 'N2', 'N1'],
+      enum: LEARNING_LEVELS,
     },
     steps: {
       start: {

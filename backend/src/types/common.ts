@@ -11,10 +11,8 @@ import mongoose from 'mongoose';
 // Core Learning Types
 // ============================================================================
 
-/**
- * JLPT Learning Levels (N5 is beginner, N1 is advanced)
- */
-export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+export const LEARNING_LEVELS = ['N5', 'N4', 'N3', 'N2', 'N1'] as const;
+export type LearningLevel = (typeof LEARNING_LEVELS)[number];
 
 /**
  * Progress session types
@@ -136,7 +134,7 @@ export interface DateRange {
  * Check if a value is a valid LearningLevel
  */
 export function isValidLearningLevel(value: any): value is LearningLevel {
-  return ['N5', 'N4', 'N3', 'N2', 'N1'].includes(value);
+  return (LEARNING_LEVELS as readonly string[]).includes(value);
 }
 
 /**

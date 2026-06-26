@@ -166,9 +166,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     const user = await User.findById(userId);
     if (user) {
       user.updateStudyStats(timeSpent || 0, 1);
-      if (isCorrect) {
-        user.incrementStreak();
-      }
+      user.updateDailyStreak();
       await user.save();
     }
 
@@ -298,11 +296,7 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
     const user = await User.findById(userId);
     if (user) {
       user.updateStudyStats(totalTimeSpent, results.length);
-      if (correctCount > 0) {
-        user.incrementStreak();
-      } else if (results.length > correctCount) {
-        user.resetStreak();
-      }
+      user.updateDailyStreak();
       await user.save();
     }
 

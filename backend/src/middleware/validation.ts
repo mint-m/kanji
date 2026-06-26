@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { body, param, validationResult } from 'express-validator';
+import { LEARNING_LEVELS } from '../types/common';
 
 // Helper function to handle validation errors
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
@@ -142,7 +143,7 @@ export const validateWordRequest = {
   searchWords: [
     body('level')
       .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .isIn(LEARNING_LEVELS)
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('step').optional().isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     body('stepRange.start').optional().isInt({ min: 1 }).withMessage('Step range start must be a positive integer'),
@@ -162,7 +163,7 @@ export const validateWordRequest = {
   getRandomWords: [
     body('level')
       .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .isIn(LEARNING_LEVELS)
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('count').optional().isInt({ min: 1, max: 100 }).withMessage('Count must be between 1 and 100'),
     body('stepRange.start').optional().isInt({ min: 1 }).withMessage('Step range start must be a positive integer'),

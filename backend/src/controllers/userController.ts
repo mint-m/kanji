@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import { NotFoundError, BadRequestError, InternalServerError } from '../utils/errors';
-import { ProgressType, LearningLevel } from '../types/common';
+import { ProgressType, LearningLevel, LEARNING_LEVELS } from '../types/common';
 
 // 사용자 프로필 조회
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
@@ -68,7 +68,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
       }
 
       // Validate level
-      if (!['N5', 'N4', 'N3', 'N2', 'N1'].includes(level)) {
+      if (!(LEARNING_LEVELS as readonly string[]).includes(level)) {
         return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
       }
 

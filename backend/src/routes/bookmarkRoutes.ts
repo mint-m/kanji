@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bookmarkController from '../controllers/bookmarkController';
-import { validateWordProgressRequest, validatePagination } from '../middleware/validation';
+import { validateWordProgressRequest } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
+import { LEARNING_LEVELS } from '../types/common';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.get(
   [
     query('level')
       .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .isIn(LEARNING_LEVELS)
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     query('tags')
       .optional()
@@ -163,7 +164,7 @@ router.post(
       .withMessage('Search term must be between 1 and 100 characters'),
     body('level')
       .optional()
-      .isIn(['N5', 'N4', 'N3', 'N2', 'N1'])
+      .isIn(LEARNING_LEVELS)
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('step').optional().isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     body('tags').optional().isArray().withMessage('Tags must be an array'),
