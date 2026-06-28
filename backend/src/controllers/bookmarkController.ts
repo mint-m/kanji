@@ -1,8 +1,7 @@
-import { Request, Response } from 'express';
-import mongoose, { PipelineStage } from 'mongoose';
+import { Response } from 'express';
+import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
-import { ProgressType } from '../types/common';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 /**
@@ -180,13 +179,12 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
 export const updateBookmark = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { wordId } = req.params;
-    const { reason, tags, progressType = 'main' } = req.body;
+    const { reason, tags } = req.body;
     const userId = req.user!._id;
 
     const wordProgress = await WordProgress.findOne({
       user_id: userId,
       word_id: wordId,
-      progress_type: progressType,
       is_bookmarked: true,
     });
 
@@ -369,12 +367,9 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
 
     if (searchTerm) {
       matchConditions.$or = [
-        { 'word.kanji': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.hiragana': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.katakana': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.romaji': { $regex: searchTerm, $options: 'i' } },
-        { 'word.meanings.en': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
-        { 'word.meanings.ko': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
+        { 'word.entry': { $regex: searchTerm, $options: 'i' } },
+        { 'word.pron': { $regex: searchTerm, $options: 'i' } },
+        { 'word.means': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
         { bookmark_reason: { $regex: searchTerm, $options: 'i' } },
       ];
     }

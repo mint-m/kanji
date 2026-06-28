@@ -11,16 +11,6 @@ const router = Router();
 // 모든 단어 가져오기
 router.get('/all', wordController.getAllWords);
 
-// 레벨별 단어 가져오기 (레거시 코드. 사용하지 않습니다)
-router.get(
-  '/level/:level',
-  [
-    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
-    handleValidationErrors,
-  ],
-  wordController.getWordsByLevel
-);
-
 // 레벨별 스텝 정보 가져오기
 router.get(
   '/level/:level/steps',
@@ -39,7 +29,7 @@ router.get(
     param('step').isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-    query('sortBy').optional().isIn(['kanji', 'step', 'level', 'readings.hiragana']).withMessage('Invalid sort field'),
+    query('sortBy').optional().isIn(['entry', 'pron', 'step', 'level']).withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be "asc" or "desc"'),
     handleValidationErrors,
   ],
@@ -55,7 +45,7 @@ router.get(
     param('endStep').isInt({ min: 1 }).withMessage('step must be over 1 intiger'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
-    query('sortBy').optional().isIn(['kanji', 'step', 'level', 'readings.hiragana']).withMessage('Invalid sort field'),
+    query('sortBy').optional().isIn(['entry', 'pron', 'step', 'level']).withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be "asc" or "desc"'),
     handleValidationErrors,
   ],
