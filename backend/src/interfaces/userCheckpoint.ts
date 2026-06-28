@@ -42,6 +42,7 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
     level: LearningLevel,
     steps: StepRange,
     userId: mongoose.Types.ObjectId,
+    progressType: ProgressType,
     options?: DeckGenerationOptions
   ): Promise<mongoose.Types.ObjectId[]>;
   filterDeckByUserProgress(
@@ -54,7 +55,6 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
   getUserLearningStats(userId: mongoose.Types.ObjectId): Promise<any>;
 
   // Enhanced sliding window methods
-  getAvailableWindows(level: LearningLevel): Promise<StepRange[]>;
 
   // Utility methods
   shuffleArray<T>(array: T[]): T[];
