@@ -706,7 +706,7 @@ wordProgressSchema.statics.getBookmarkAnalytics = async function (
     },
     {
       $lookup: {
-        from: 'words',
+        from: 'word',
         localField: 'word_id',
         foreignField: '_id',
         as: 'word',

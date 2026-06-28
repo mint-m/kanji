@@ -95,7 +95,7 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
       { $match: filter },
       {
         $lookup: {
-          from: 'words',
+          from: 'word',
           localField: 'word_id',
           foreignField: '_id',
           as: 'word',
@@ -354,7 +354,7 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
       },
       {
         $lookup: {
-          from: 'words',
+          from: 'word',
           localField: 'word_id',
           foreignField: '_id',
           as: 'word',

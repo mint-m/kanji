@@ -36,7 +36,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       { $match: { user_id: userId, is_window_completed: true } },
       {
         $lookup: {
-          from: 'words',
+          from: 'word',
           localField: 'word_id',
           foreignField: '_id',
           as: 'word',
