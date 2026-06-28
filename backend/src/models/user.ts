@@ -105,7 +105,10 @@ UserSchema.methods.updateDailyStreak = function (this: UserDocument): void {
   const last = this.profile.lastActiveAt;
   if (last && last.toDateString() === now.toDateString()) return;
 
-  const diffDays = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : 0;
+  const toMidnight = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+  const diffDays = last ? Math.round((toMidnight(now) - toMidnight(last)) / 86400000) : 0;
   this.statistics.currentStreak = diffDays === 1 ? this.statistics.currentStreak + 1 : 1;
   if (this.statistics.currentStreak > this.statistics.longestStreak) {
     this.statistics.longestStreak = this.statistics.currentStreak;
