@@ -40,14 +40,7 @@
     "testEnvironment": "node",
     "globals": {
       "ts-jest": {
-        "tsconfig": {
-          "types": [
-            "jest",
-            "node"
-          ],
-          "esModuleInterop": true,
-          "strict": false
-        },
+        "tsconfig": "./tsconfig.test.json",
         "diagnostics": false
       }
     },
