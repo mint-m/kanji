@@ -130,13 +130,16 @@ export class SlidingWindowService {
     level: LearningLevel,
     config: WindowConfig = this.DEFAULT_CONFIG
   ): Promise<StepRange[]> {
-    const existingSteps = new Set<number>(
-      await Word.distinct('step', { level }) as number[]
-    );
+    const existingStepsArray = await Word.distinct('step', { level }) as number[];
+    if (existingStepsArray.length === 0) return [];
 
-    const allWindows = this.generateAllWindows(level, config);
+    const existingSteps = new Set<number>(existingStepsArray);
+    const maxStep = Math.max(...existingStepsArray);
+    const finalConfig = { ...config, maxStep };
+
+    const allWindows = this.generateAllWindows(level, finalConfig);
     return allWindows.filter((window) =>
-      this.getWindowSteps(window, config).some((step) => existingSteps.has(step))
+      this.getWindowSteps(window, finalConfig).some((step) => existingSteps.has(step))
     );
   }
 
