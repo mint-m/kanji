@@ -5,9 +5,8 @@
  * KANJIDIC2 (http://www.edrdg.org/wiki/index.php/KANJIDIC_Project) 데이터를
  * 다운로드해 MongoDB kanji 컬렉션에 저장합니다.
  *
- * KANJIDIC2 JLPT 레벨 매핑 (구버전 형식):
- *   4 → N5, 3 → N4, 2 → N3, 1 → N2
- *   (N1은 별도 구분 없음 — N2로 처리)
+ * KANJIDIC2 JLPT 레벨 매핑 (구 4단계 → 현행 N 체계):
+ *   1(1급) → N1, 2(2급) → N2, 3(3급) → N4, 4(4급) → N5
  */
 
 import axios from 'axios';
@@ -25,8 +24,8 @@ const KANJIDIC2_URL = 'https://www.edrdg.org/kanjidic/kanjidic2.xml.gz';
 const JLPT_MAP: Record<string, string> = {
   '4': 'N5',
   '3': 'N4',
-  '2': 'N3',
-  '1': 'N2',
+  '2': 'N2',
+  '1': 'N1',
 };
 
 async function downloadAndParse(): Promise<any> {
