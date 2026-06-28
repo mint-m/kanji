@@ -94,16 +94,6 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
       return;
     }
 
-    // Update last active time (async, don't wait)
-    setImmediate(async () => {
-      try {
-        user.updateLastActive();
-        await user.save();
-      } catch (error) {
-        console.error('Failed to update last active time:', error);
-      }
-    });
-
     // Attach comprehensive user info to request
     req.user = {
       _id: user._id as mongoose.Types.ObjectId,
@@ -188,7 +178,7 @@ export const authRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 6
 
   return (req: Request, res: Response, next: NextFunction): void => {
     // Use multiple identifiers for more robust rate limiting
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const userAgent = req.get('User-Agent') || 'unknown';
     const key = `${ip}:${userAgent.slice(0, 50)}`; // Limit UA length
 
@@ -306,7 +296,7 @@ export const ipWhitelist = (allowedIPs: string[] = []) => {
       return next(); // No restrictions if no IPs specified
     }
 
-    const clientIP = req.ip || req.connection.remoteAddress || '';
+    const clientIP = req.ip || req.socket.remoteAddress || '';
     const isAllowed = allowedIPs.some((ip) => {
       if (ip.includes('/')) {
         // CIDR notation support (basic)
