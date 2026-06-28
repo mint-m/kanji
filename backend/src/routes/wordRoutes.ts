@@ -1,6 +1,7 @@
 // src/routes/wordRoutes.ts
 import { Router } from 'express';
 import * as wordController from '../controllers/wordController';
+import * as kanjiController from '../controllers/kanjiController';
 import { validateWordRequest, handleValidationErrors } from '../middleware/validation';
 import { param, query } from 'express-validator';
 import { LEARNING_LEVELS } from '../types/common';
@@ -98,6 +99,6 @@ router.get(
 );
 
 // 한자 검색 (네이버 API 활용)
-router.get('/kanjiSearch', wordController.searchKanji);
+router.get('/kanjiSearch', kanjiController.searchKanji);
 
 export default router;

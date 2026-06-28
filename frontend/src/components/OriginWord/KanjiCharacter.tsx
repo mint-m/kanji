@@ -13,14 +13,19 @@ const KanjiCharacter: FC<KanjiCharacterProps> = ({ kanji }) => {
   const dispatch = useDispatch();
   const kanjis = useSelector((state: RootState) => state.kanji.kanjis);
   const [kanjiData, setKanjiData] = useState<kanjiActions.KanjiDataType | null>(null);
+  const [lookupDone, setLookupDone] = useState(false);
 
   const isKanjiIncluded = useCallback((k: string): boolean => {
     return kanjis?.map((item) => item.kanji).includes(k) ?? false;
   }, [kanjis]);
 
   useEffect(() => {
+    setLookupDone(false);
     kanjiDataFilter(kanji)
-      .then(setKanjiData)
+      .then((data) => {
+        setKanjiData(data);
+        setLookupDone(true);
+      })
       .catch(console.log);
   }, [kanji]);
 
@@ -30,10 +35,17 @@ const KanjiCharacter: FC<KanjiCharacterProps> = ({ kanji }) => {
     }
   }, [dispatch, kanjiData, isKanjiIncluded]);
 
+  const charClass = kanjiData
+    ? styles.kanjiChar
+    : lookupDone
+      ? styles.notFoundChar
+      : styles.plainChar;
+
   return (
     <div
-      className={kanjiData ? styles.kanjiChar : styles.plainChar}
+      className={charClass}
       onClick={handleOnClick}
+      title={lookupDone && !kanjiData ? '한자 정보 없음' : undefined}
     >
       {kanji}
     </div>

@@ -1,6 +1,5 @@
 // src/controllers/wordController.ts
 import { Request, Response, NextFunction } from 'express';
-import axios from 'axios';
 import Word from '../models/word';
 import { NotFoundError, InternalServerError } from '../utils/errors';
 
@@ -399,20 +398,3 @@ export const getWordStatistics = async (req: Request, res: Response, next: NextF
   }
 };
 
-// 한자 검색 (네이버 API 활용)
-export const searchKanji = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const kanji = req.query.kanji;
-
-    if (!kanji) {
-      return next(new NotFoundError('Kanji query parameter is required'));
-    }
-
-    const baseUrl = 'https://ja.dict.naver.com/api3/jako/search/hanja?query=';
-    const kanjiData = await axios.get(baseUrl + kanji);
-
-    res.json(kanjiData.data);
-  } catch (error) {
-    next(new InternalServerError('Failed to search kanji'));
-  }
-};
