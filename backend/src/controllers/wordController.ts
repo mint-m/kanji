@@ -201,7 +201,7 @@ export const searchWords = async (req: Request, res: Response, next: NextFunctio
       filter.$or = [
         { entry: { $regex: safeSearch, $options: 'i' } },
         { pron: { $regex: safeSearch, $options: 'i' } },
-        { means: { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
+        { means: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

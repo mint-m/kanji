@@ -16,7 +16,7 @@ const fetchFromNaver = async (kanji: string): Promise<object | null> => {
       params: { query: kanji },
       timeout: 3000,
     });
-    return result.data.searchResult?.length > 0 ? result.data : null;
+    return result.data?.searchResult?.length > 0 ? result.data : null;
   } catch (error) {
     if (axios.isCancel(error)) {
       console.warn('Naver API request cancelled');
@@ -36,7 +36,7 @@ const fetchFromDB = async (kanji: string): Promise<object | null> => {
   const levelNum = doc.jlptLevel?.replace('N', '') ?? '';
   const wordWithKanji = await Word.findOne({ pron: { $regex: escapeRegex(kanji), $options: 'i' } });
   const koreanMeaning = wordWithKanji?.means[0] ?? '';
-  const expKoreanPron = koreanMeaning ? `${koreanMeaning} ${doc.koreanPron ?? ''}` : (doc.koreanPron ?? '');
+  const expKoreanPron = [koreanMeaning, doc.koreanPron].filter(Boolean).join(' ');
 
   return {
     searchResult: [{

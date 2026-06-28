@@ -371,7 +371,7 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
       matchConditions.$or = [
         { 'word.entry': { $regex: safeSearch, $options: 'i' } },
         { 'word.pron': { $regex: safeSearch, $options: 'i' } },
-        { 'word.means': { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
+        { 'word.means': { $regex: safeSearch, $options: 'i' } },
         { bookmark_reason: { $regex: safeSearch, $options: 'i' } },
       ];
     }

@@ -180,7 +180,7 @@ wordSchema.statics.searchWords = function (filters: WordSearchFilters, limit: nu
     query.$or = [
       { entry: { $regex: safeSearch, $options: 'i' } },
       { pron: { $regex: safeSearch, $options: 'i' } },
-      { means: { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
+      { means: { $regex: safeSearch, $options: 'i' } },
     ];
   }
 
