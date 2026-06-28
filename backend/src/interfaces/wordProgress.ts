@@ -2,9 +2,6 @@ import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { ProgressType, LearningLevel } from '../types/common';
 
-// Word completion status
-export type CompletionStatus = 'not_studied' | 'studying' | 'completed' | 'needs_review';
-
 // Study result for individual word attempts
 export interface StudyResult {
   isCorrect: boolean;
@@ -35,10 +32,9 @@ export interface BookmarkInfo {
 // Learning analytics for insights
 export interface LearningAnalytics {
   retentionRate: number;
-  forgettingCurve: number[];
   optimalReviewInterval: number; // days
   masteryLevel: 'beginner' | 'intermediate' | 'advanced' | 'mastered';
-  recommendedAction: 'continue' | 'review' | 'skip' | 'intensive_practice';
+  recommendedAction: 'continue' | 'review' | 'skip';
 }
 
 // Bulk operations interface
@@ -47,16 +43,6 @@ export interface BulkWordOperation {
   action: 'mark_completed' | 'mark_incomplete' | 'bookmark' | 'unbookmark' | 'reset_progress';
   userId: mongoose.Types.ObjectId;
   progressType: ProgressType;
-}
-
-// Study session summary
-export interface StudySessionSummary {
-  sessionId: string;
-  wordsStudied: number;
-  wordsCompleted: number;
-  totalTimeSpent: number;
-  averageAccuracy: number;
-  newBookmarks: number;
 }
 
 // WordProgress document interface
@@ -74,6 +60,7 @@ export interface WordProgressDocument extends Document {
   time_spent_total: number; // milliseconds
   bookmark_reason?: string;
   bookmark_tags: string[];
+  bookmarked_at?: Date;
   study_history: StudyResult[];
   created_at: Date;
 
@@ -88,7 +75,7 @@ export interface WordProgressDocument extends Document {
   getBookmarkInfo(): BookmarkInfo;
   getLearningAnalytics(): LearningAnalytics;
   calculateMasteryLevel(): 'beginner' | 'intermediate' | 'advanced' | 'mastered';
-  getRecommendedAction(): 'continue' | 'review' | 'skip' | 'intensive_practice';
+  getRecommendedAction(): 'continue' | 'review' | 'skip';
   isEligibleForReview(): boolean;
   getDaysSinceLastStudy(): number;
 }
@@ -141,12 +128,6 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
 
   bulkUpdateProgress(operation: BulkWordOperation): Promise<{ modified: number; errors: any[] }>;
 
-  generateStudySessionSummary(
-    userId: mongoose.Types.ObjectId,
-    sessionId: string,
-    type: ProgressType
-  ): Promise<StudySessionSummary>;
-
   getWeakestWords(userId: mongoose.Types.ObjectId, type: ProgressType, limit?: number): Promise<WordProgressDocument[]>;
 
   getStrongestWords(
@@ -156,12 +137,6 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
   ): Promise<WordProgressDocument[]>;
 
   analyzeStudyPatterns(userId: mongoose.Types.ObjectId, type: ProgressType, days?: number): Promise<any>;
-
-  predictOptimalReviewTime(
-    userId: mongoose.Types.ObjectId,
-    wordId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<number>;
 
   getBookmarkAnalytics(userId: mongoose.Types.ObjectId): Promise<any>;
 }

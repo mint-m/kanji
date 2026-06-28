@@ -7,7 +7,6 @@ import {
   BookmarkInfo,
   LearningAnalytics,
   BulkWordOperation,
-  StudySessionSummary,
 } from '../interfaces/wordProgress';
 import { ProgressType, LearningLevel } from '../types/common';
 
@@ -123,6 +122,9 @@ const wordProgressSchema = new mongoose.Schema<WordProgressDocument>(
         type: String,
       },
     ],
+    bookmarked_at: {
+      type: Date,
+    },
     study_history: [
       {
         isCorrect: { type: Boolean, required: true },
@@ -193,9 +195,11 @@ wordProgressSchema.methods.toggleBookmark = function (
   if (this.is_bookmarked) {
     this.bookmark_reason = reason;
     this.bookmark_tags = tags || [];
+    this.bookmarked_at = new Date();
   } else {
     this.bookmark_reason = undefined;
     this.bookmark_tags = [];
+    this.bookmarked_at = undefined;
   }
 
   return this.is_bookmarked;
@@ -242,7 +246,7 @@ wordProgressSchema.methods.getStudyStats = function (this: WordProgressDocument)
 wordProgressSchema.methods.getBookmarkInfo = function (this: WordProgressDocument): BookmarkInfo {
   return {
     isBookmarked: this.is_bookmarked,
-    bookmarkedAt: this.is_bookmarked ? this.last_studied_at : undefined,
+    bookmarkedAt: this.bookmarked_at,
     reason: this.bookmark_reason,
     tags: this.bookmark_tags,
   };
@@ -252,22 +256,16 @@ wordProgressSchema.methods.getLearningAnalytics = function (this: WordProgressDo
   const stats = this.getStudyStats();
   const masteryLevel = this.calculateMasteryLevel();
 
-  // Calculate retention rate based on recent performance
   const recentAttempts = this.study_history.slice(-10);
   const retentionRate =
     recentAttempts.length > 0
       ? (recentAttempts.filter((a) => a.isCorrect).length / recentAttempts.length) * 100
       : stats.successRate;
 
-  // Simple forgetting curve simulation
-  const forgettingCurve = this.study_history.slice(-5).map((_, index) => Math.max(0, retentionRate - index * 10));
-
-  // Calculate optimal review interval based on performance
   const optimalReviewInterval = Math.max(1, Math.min(30, Math.floor(stats.successRate / 10) + this.study_streak));
 
   return {
     retentionRate,
-    forgettingCurve,
     optimalReviewInterval,
     masteryLevel,
     recommendedAction: this.getRecommendedAction(),
@@ -624,42 +622,6 @@ wordProgressSchema.statics.bulkUpdateProgress = async function (
   return { modified, errors };
 };
 
-wordProgressSchema.statics.generateStudySessionSummary = async function (
-  userId: mongoose.Types.ObjectId,
-  sessionId: string,
-  type: ProgressType
-): Promise<StudySessionSummary> {
-  // This would typically track session data in a separate collection
-  // For now, we'll generate a summary based on recent activity
-  const recentActivity: WordProgressDocument[] = await this.find({
-    user_id: userId,
-    progress_type: type,
-    last_studied_at: {
-      $gte: new Date(Date.now() - 2 * 60 * 60 * 1000), // Last 2 hours
-    },
-  }).populate('word_id');
-
-  const wordsStudied = recentActivity.length;
-  const wordsCompleted = recentActivity.filter((w) => w.is_window_completed).length;
-  const totalTimeSpent = recentActivity.reduce((sum: number, w) => sum + w.time_spent_total, 0);
-  const averageAccuracy =
-    wordsStudied > 0
-      ? (recentActivity.reduce((sum: number, w) => sum + w.correct_count / Math.max(w.try_count, 1), 0) /
-          wordsStudied) *
-        100
-      : 0;
-
-  const newBookmarks = recentActivity.filter((w) => w.is_bookmarked).length;
-
-  return {
-    sessionId,
-    wordsStudied,
-    wordsCompleted,
-    totalTimeSpent,
-    averageAccuracy,
-    newBookmarks,
-  };
-};
 
 wordProgressSchema.statics.getWeakestWords = function (
   userId: mongoose.Types.ObjectId,
@@ -728,19 +690,6 @@ wordProgressSchema.statics.analyzeStudyPatterns = function (
     },
     { $sort: { _id: 1 } },
   ]);
-};
-
-wordProgressSchema.statics.predictOptimalReviewTime = async function (
-  userId: mongoose.Types.ObjectId,
-  wordId: mongoose.Types.ObjectId,
-  progressType: ProgressType
-): Promise<number> {
-  const progress = await (this as WordProgressModel).findByUserWordAndType(userId, wordId, progressType);
-
-  if (!progress) return 1; // Default to review tomorrow if no progress
-
-  const analytics = progress.getLearningAnalytics();
-  return analytics.optimalReviewInterval;
 };
 
 // Bookmark analytics and statistics
@@ -985,7 +934,7 @@ wordProgressSchema.statics.getUnknownWordsFromDeck = async function (
 };
 
 // Pre-save middleware to update timestamps and maintain data integrity
-wordProgressSchema.pre('save', function (this: WordProgressDocument, next: Function) {
+wordProgressSchema.pre('save', function (this: WordProgressDocument, next: (err?: Error) => void) {
   if (this.isModified('is_window_completed') || this.isModified('try_count')) {
     this.last_studied_at = new Date();
   }
