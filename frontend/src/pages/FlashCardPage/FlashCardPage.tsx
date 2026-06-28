@@ -89,7 +89,7 @@ const FlashCardPage: FC = () => {
               } catch (e) {
                 console.error('Failed to complete deck:', e);
               }
-              fetchDeck();
+              await fetchDeck();
             }}>
               다음 윈도우로 진행
             </DefaultButton>

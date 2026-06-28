@@ -46,10 +46,6 @@ const bookmarkService = {
     return api.post('/api/users/me/bookmarks/toggle', { wordId, progressType });
   },
 
-  async removeBookmark(wordId: string, progressType?: ProgressType): Promise<ApiResponse<any>> {
-    return api.post('/api/users/me/bookmarks/toggle', { wordId, progressType });
-  },
-
   async getBookmarks(options?: GetBookmarksOptions): Promise<ApiResponse<BookmarkListData>> {
     const params = new URLSearchParams();
     if (options?.level) params.append('level', options.level);

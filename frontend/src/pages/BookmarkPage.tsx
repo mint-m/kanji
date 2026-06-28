@@ -1,6 +1,6 @@
 import { FC, useCallback, useEffect, useState } from 'react';
 import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } from 'services/bookmarkService';
-import { LearningLevel } from 'services/types';
+import { LearningLevel, ProgressType } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { clsx } from 'clsx';
 import * as styles from './BookmarkPage.css';
@@ -67,7 +67,7 @@ const BookmarkPage: FC = () => {
   const handleRemoveBookmark = async (wordId: string, progressType?: string) => {
     if (!window.confirm('이 북마크를 삭제하시겠습니까?')) return;
     try {
-      const response = await bookmarkService.removeBookmark(wordId, progressType as any);
+      const response = await bookmarkService.toggleBookmark(wordId, progressType as ProgressType);
       if (response.success) {
         setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
         bookmarkService.getBookmarkStats()
