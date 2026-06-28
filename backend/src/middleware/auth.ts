@@ -37,28 +37,18 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-/**
- * Enhanced JWT Authentication Middleware
- * Validates JWT token and attaches user info to request
- */
+const extractToken = (req: Request): string | null => {
+  const authHeader = req.header('Authorization');
+  if (authHeader) {
+    if (authHeader.startsWith('Bearer ')) return authHeader.slice(7).replace(/"/g, '');
+    if (authHeader.startsWith('Token ')) return authHeader.slice(6).replace(/"/g, '');
+  }
+  return req.cookies?.token || (req.query.token as string) || null;
+};
+
 export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Get token from header (support multiple formats)
-    const authHeader = req.header('Authorization');
-    let token: string | null = null;
-
-    if (authHeader) {
-      if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.slice(7).replace(/"/g, ''); // Remove quotes if present
-      } else if (authHeader.startsWith('Token ')) {
-        token = authHeader.slice(6).replace(/"/g, '');
-      }
-    }
-
-    // Also check for token in cookies or query (for WebSocket connections)
-    if (!token) {
-      token = req.cookies?.token || (req.query.token as string) || null;
-    }
+    const token = extractToken(req);
 
     if (!token) {
       res.status(401).json({
@@ -151,87 +141,6 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
         code: 'AUTH_ERROR',
       });
     }
-  }
-};
-
-/**
- * Session-based Authentication Middleware (Alternative)
- * For applications using session-based authentication
- */
-export const authenticateSession = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-  // Check if user is authenticated via session
-  if (req.session && (req.session as any).userId) {
-    // You could also fetch user details from session or database here
-    req.user = {
-      _id: new mongoose.Types.ObjectId((req.session as any).userId),
-      email: (req.session as any).userEmail || '',
-      name: (req.session as any).userName || '',
-      type: (req.session as any).userType || 'local',
-    };
-    next();
-  } else {
-    res.status(401).json({
-      success: false,
-      message: 'Authentication required. Please log in.',
-    });
-  }
-};
-
-/**
- * Enhanced Optional Authentication Middleware
- * Attaches user info if token is present, but doesn't require authentication
- */
-export const optionalAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    // Get token from multiple sources
-    const authHeader = req.header('Authorization');
-    let token: string | null = null;
-
-    if (authHeader) {
-      if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.slice(7).replace(/"/g, '');
-      } else if (authHeader.startsWith('Token ')) {
-        token = authHeader.slice(6).replace(/"/g, '');
-      }
-    }
-
-    if (!token) {
-      token = req.cookies?.token || (req.query.token as string) || null;
-    }
-
-    if (token && config.JWT_SECRET) {
-      try {
-        const decoded = jwt.verify(token, config.JWT_SECRET) as TokenPayload;
-
-        const user = await User.findById(decoded.userId).select('+isActive');
-        if (user && user.isActive) {
-          // Update last active time (async, don't wait)
-          setImmediate(async () => {
-            try {
-              user.updateLastActive();
-              await user.save();
-            } catch (error) {
-              console.error('Failed to update last active time:', error);
-            }
-          });
-
-          req.user = {
-            _id: user._id as mongoose.Types.ObjectId,
-            email: user.email,
-            name: user.name,
-            type: user.type,
-          };
-        }
-      } catch (error) {
-        // Silently ignore token errors in optional auth
-        console.debug('Optional auth token error:', error);
-      }
-    }
-
-    next();
-  } catch (error) {
-    // Continue without authentication if any error occurs
-    next();
   }
 };
 
@@ -333,8 +242,7 @@ export const refreshTokenIfNeeded = async (
       return next();
     }
 
-    const authHeader = req.header('Authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const token = extractToken(req);
 
     if (token && config.JWT_SECRET) {
       const decoded = jwt.decode(token) as TokenPayload;
@@ -428,8 +336,6 @@ export const ipWhitelist = (allowedIPs: string[] = []) => {
 
 export default {
   authenticateUser,
-  authenticateSession,
-  optionalAuth,
   requireRole,
   authRateLimit,
   refreshTokenIfNeeded,
