@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Word from '../models/word';
 import { NotFoundError, InternalServerError } from '../utils/errors';
+import { escapeRegex } from '../utils/regex';
 
 // 모든 단어 가져오기
 export const getAllWords = async (_req: Request, res: Response, next: NextFunction) => {
@@ -196,10 +197,11 @@ export const searchWords = async (req: Request, res: Response, next: NextFunctio
     }
 
     if (searchTerm) {
+      const safeSearch = escapeRegex(searchTerm);
       filter.$or = [
-        { entry: { $regex: searchTerm, $options: 'i' } },
-        { pron: { $regex: searchTerm, $options: 'i' } },
-        { means: { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
+        { entry: { $regex: safeSearch, $options: 'i' } },
+        { pron: { $regex: safeSearch, $options: 'i' } },
+        { means: { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
       ];
     }
 

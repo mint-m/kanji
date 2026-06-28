@@ -7,6 +7,7 @@ import {
   WordLevelStats,
   StepRangeMinMax,
 } from '../interfaces/word';
+import { escapeRegex } from '../utils/regex';
 
 // Define Word Schema with step field for sliding window system
 const wordSchema = new mongoose.Schema<WordDocument>(
@@ -175,10 +176,11 @@ wordSchema.statics.searchWords = function (filters: WordSearchFilters, limit: nu
   }
 
   if (filters.searchTerm) {
+    const safeSearch = escapeRegex(filters.searchTerm);
     query.$or = [
-      { entry: { $regex: filters.searchTerm, $options: 'i' } },
-      { pron: { $regex: filters.searchTerm, $options: 'i' } },
-      { means: { $in: [new RegExp(filters.searchTerm, 'i')] } },
+      { entry: { $regex: safeSearch, $options: 'i' } },
+      { pron: { $regex: safeSearch, $options: 'i' } },
+      { means: { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
     ];
   }
 

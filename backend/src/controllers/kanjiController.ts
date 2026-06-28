@@ -3,6 +3,7 @@ import axios from 'axios';
 import Kanji from '../models/kanji';
 import Word from '../models/word';
 import { NotFoundError, InternalServerError } from '../utils/errors';
+import { escapeRegex } from '../utils/regex';
 
 const NAVER_KANJI_URL = 'https://ja.dict.naver.com/api3/jako/search/hanja?query=';
 
@@ -11,7 +12,7 @@ const toHiragana = (str: string): string =>
 
 const fetchFromNaver = async (kanji: string): Promise<object | null> => {
   try {
-    const result = await axios.get(NAVER_KANJI_URL + kanji);
+    const result = await axios.get(NAVER_KANJI_URL + kanji, { timeout: 3000 });
     return result.data.searchResult?.length > 0 ? result.data : null;
   } catch {
     return null;
@@ -23,7 +24,7 @@ const fetchFromDB = async (kanji: string): Promise<object | null> => {
   if (!doc) return null;
 
   const levelNum = doc.jlptLevel.replace('N', '');
-  const wordWithKanji = await Word.findOne({ pron: { $regex: kanji } });
+  const wordWithKanji = await Word.findOne({ pron: { $regex: escapeRegex(kanji), $options: 'i' } });
   const koreanMeaning = wordWithKanji?.means[0] ?? '';
   const expKoreanPron = koreanMeaning ? `${koreanMeaning} ${doc.koreanPron}` : doc.koreanPron;
 

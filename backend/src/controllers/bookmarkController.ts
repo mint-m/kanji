@@ -3,6 +3,7 @@ import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { escapeRegex } from '../utils/regex';
 
 /**
  * Toggle bookmark status for a word
@@ -366,11 +367,12 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
     const matchConditions: any = {};
 
     if (searchTerm) {
+      const safeSearch = escapeRegex(searchTerm);
       matchConditions.$or = [
-        { 'word.entry': { $regex: searchTerm, $options: 'i' } },
-        { 'word.pron': { $regex: searchTerm, $options: 'i' } },
-        { 'word.means': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
-        { bookmark_reason: { $regex: searchTerm, $options: 'i' } },
+        { 'word.entry': { $regex: safeSearch, $options: 'i' } },
+        { 'word.pron': { $regex: safeSearch, $options: 'i' } },
+        { 'word.means': { $elemMatch: { $regex: safeSearch, $options: 'i' } } },
+        { bookmark_reason: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
