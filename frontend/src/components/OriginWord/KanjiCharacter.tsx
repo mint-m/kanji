@@ -20,13 +20,19 @@ const KanjiCharacter: FC<KanjiCharacterProps> = ({ kanji }) => {
   }, [kanjis]);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLookupDone(false);
-    kanjiDataFilter(kanji)
+
+    kanjiDataFilter(kanji, controller.signal)
       .then((data) => {
         setKanjiData(data);
         setLookupDone(true);
       })
-      .catch(console.log);
+      .catch((err) => {
+        if (!controller.signal.aborted) console.log(err);
+      });
+
+    return () => controller.abort();
   }, [kanji]);
 
   const handleOnClick = useCallback(() => {
