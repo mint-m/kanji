@@ -89,6 +89,17 @@ router.get(
 );
 
 // 한자 검색 (네이버 API 활용)
-router.get('/kanjiSearch', kanjiController.searchKanji);
+router.get(
+  '/kanjiSearch',
+  [
+    query('kanji')
+      .isString().withMessage('kanji must be a single string, not an array')
+      .trim()
+      .notEmpty().withMessage('kanji query parameter is required')
+      .isLength({ max: 10 }).withMessage('kanji must be 10 characters or fewer'),
+    handleValidationErrors,
+  ],
+  kanjiController.searchKanji,
+);
 
 export default router;
