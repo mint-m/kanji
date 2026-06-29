@@ -183,13 +183,12 @@ export const updateBookmark = async (req: AuthenticatedRequest, res: Response): 
     const { reason, tags } = req.body;
     const userId = req.user!._id;
 
-    const wordProgress = await WordProgress.findOne({
-      user_id: userId,
-      word_id: wordId,
-      is_bookmarked: true,
-    });
+    const result = await WordProgress.updateMany(
+      { user_id: userId, word_id: wordId, is_bookmarked: true },
+      { $set: { bookmark_reason: reason, bookmark_tags: tags || [] } }
+    );
 
-    if (!wordProgress) {
+    if (result.matchedCount === 0) {
       res.status(404).json({
         success: false,
         message: 'Bookmarked word not found',
@@ -197,17 +196,9 @@ export const updateBookmark = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Update bookmark details
-    wordProgress.bookmark_reason = reason;
-    wordProgress.bookmark_tags = tags || [];
-    await wordProgress.save();
-
     res.json({
       success: true,
-      data: {
-        wordId,
-        bookmarkInfo: wordProgress.getBookmarkInfo(),
-      },
+      data: { wordId, reason, tags: tags || [] },
       message: 'Bookmark updated successfully',
     });
   } catch (error) {
