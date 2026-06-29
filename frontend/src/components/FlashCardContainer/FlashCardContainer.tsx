@@ -6,6 +6,7 @@ import ControlPanel from 'components/ControlPanel';
 import { DeckWord } from 'services/types';
 import * as kanjiActions from 'store/modules/kanji';
 import progressService from 'services/progressService';
+import bookmarkService from 'services/bookmarkService';
 import * as styles from './FlashCardContainer.css';
 
 interface FlashCardContainerProps {
@@ -14,10 +15,11 @@ interface FlashCardContainerProps {
   initialIndex: number;
   onPassComplete?: () => void;
   onWindowComplete?: () => void;
+  onIndexChange?: (index: number) => void;
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex, onPassComplete, onWindowComplete }) => {
+  ({ deck, progressType, initialIndex, onPassComplete, onWindowComplete, onIndexChange }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
     const [showMean, setShowMean] = useState(false);
     const [showHiragana, setShowHiragana] = useState(false);
@@ -26,6 +28,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [learningCount, setLearningCount] = useState(0);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
     const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
     const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
     const isDrainingRef = useRef(false);
     const lastEnqueuedWordIdRef = useRef<string | null>(null);
@@ -35,6 +38,20 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const currentWordId = deck[wordIndex]?._id;
 
     useEffect(() => { setCardStudyTime(Date.now()); }, [wordIndex]);
+    useEffect(() => { onIndexChange?.(wordIndex); }, [wordIndex, onIndexChange]);
+
+    useEffect(() => {
+      bookmarkService.getBookmarks({ limit: 200 }).then(res => {
+        if (!res.success || !res.data) return;
+        const deckIds = new Set(deck.map(w => w._id));
+        const alreadyBookmarked = res.data.bookmarks
+          .map(b => b.word._id)
+          .filter(id => deckIds.has(id));
+        if (alreadyBookmarked.length > 0) {
+          setBookmarkedIds(new Set(alreadyBookmarked));
+        }
+      }).catch(() => {});
+    }, [deck]);
 
     useEffect(() => {
       if (!error) return;
@@ -104,6 +121,23 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
+    const handleBookmark = useCallback(async () => {
+      if (!currentWordId) return;
+      const id = currentWordId;
+      setBookmarkedIds(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+      await bookmarkService.toggleBookmark(id, progressType).catch(() => {
+        setBookmarkedIds(prev => {
+          const next = new Set(prev);
+          next.has(id) ? next.delete(id) : next.add(id);
+          return next;
+        });
+      });
+    }, [currentWordId, progressType]);
+
 
     if (deck.length === 0) return null;
 
@@ -149,7 +183,13 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     return (
       <>
         {errorBanner}
-        <FlashCard word={deck[wordIndex]} showMean={showMean} showHiragana={showHiragana} />
+        <FlashCard
+          word={deck[wordIndex]}
+          showMean={showMean}
+          showHiragana={showHiragana}
+          isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
+          onBookmark={handleBookmark}
+        />
         <ControlPanel
           onShowClick={handleShowClick}
           onKnowClick={handleKnowClick}
