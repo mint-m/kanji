@@ -108,8 +108,8 @@ const BookmarkPage: FC = () => {
             { label: '완료율', value: `${stats.totalBookmarks > 0 ? Math.round((stats.completedBookmarks / stats.totalBookmarks) * 100) : 0}%` },
           ].map(({ label, value }) => (
             <div key={label} className={clsx('card', styles.statCard)}>
-              <div className={styles.statLabel}>{label}</div>
               <div className={styles.statValue}>{value}</div>
+              <div className={styles.statLabel}>{label}</div>
             </div>
           ))}
         </div>

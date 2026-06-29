@@ -24,23 +24,23 @@ export const statsGrid = style({
 });
 
 export const statCard = style({
-  textAlign: 'center',
-  padding: `${vars.space.lg} ${vars.space.md}`,
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.md,
+  padding: `${vars.space.sm} ${vars.space.lg}`,
 });
 
 export const statLabel = style({
   fontSize: vars.fontSize.sm,
-  fontWeight: 500,
-  color: vars.color.textMuted,
-  letterSpacing: '0.03em',
-  marginBottom: vars.space.sm,
+  fontWeight: 400,
+  color: vars.color.textFaint,
 });
 
 export const statValue = style({
-  fontSize: '1.75rem',
-  fontWeight: 700,
+  fontSize: '1.25rem',
+  fontWeight: 600,
   color: vars.color.textDark,
-  letterSpacing: '-0.03em',
+  letterSpacing: '-0.02em',
 });
 
 export const filtersBar = style({
