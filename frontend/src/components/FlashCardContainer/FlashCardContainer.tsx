@@ -29,7 +29,9 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [learningCount, setLearningCount] = useState(0);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
     const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
-    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(
+      () => new Set(deck.filter(w => w.isBookmarked).map(w => w._id))
+    );
     const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
     const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
     const isDrainingRef = useRef(false);
@@ -41,20 +43,6 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
 
     useEffect(() => { setCardStudyTime(Date.now()); }, [wordIndex]);
     useEffect(() => { onIndexChange?.(wordIndex); }, [wordIndex, onIndexChange]);
-
-    useEffect(() => {
-      let active = true;
-      // TODO: replace with a deck-scoped bookmark API to avoid the 200-bookmark limit
-      bookmarkService.getBookmarks({ limit: 200 }).then(res => {
-        if (!active) return;
-        const deckIds = new Set(deck.map(w => w._id));
-        const alreadyBookmarked = res.success && res.data
-          ? res.data.bookmarks.map(b => b.word._id).filter(id => deckIds.has(id))
-          : [];
-        setBookmarkedIds(new Set(alreadyBookmarked));
-      }).catch(() => {});
-      return () => { active = false; };
-    }, [deck]);
 
     useEffect(() => {
       if (!error) return;

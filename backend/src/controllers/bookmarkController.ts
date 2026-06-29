@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
-import Word from '../models/word';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { escapeRegex } from '../utils/regex';
 
@@ -47,16 +46,10 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
       const remaining = BOOKMARK_LIMIT - (currentCount + 1);
       const isBookmarked = wordProgress.toggleBookmark(reason, tags);
       await wordProgress.save();
-      const word = await Word.findById(wordId);
 
       res.json({
         success: true,
-        data: {
-          wordId,
-          isBookmarked,
-          bookmarkInfo: wordProgress.getBookmarkInfo(),
-          word: word ? { kanji: word.entry, readings: word.pron, meanings: word.means } : null,
-        },
+        data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
         message: 'Word bookmarked successfully',
         ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
       });
@@ -66,16 +59,10 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
     // Removing bookmark — no limit check needed
     const isBookmarked = wordProgress.toggleBookmark(reason, tags);
     await wordProgress.save();
-    const word = await Word.findById(wordId);
 
     res.json({
       success: true,
-      data: {
-        wordId,
-        isBookmarked,
-        bookmarkInfo: wordProgress.getBookmarkInfo(),
-        word: word ? { kanji: word.entry, readings: word.pron, meanings: word.means } : null,
-      },
+      data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
       message: 'Word unbookmarked successfully',
     });
   } catch (error) {
