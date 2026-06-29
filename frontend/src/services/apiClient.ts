@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getAuthHeaders, handleApiError, logout } from './authService';
+import { getAuthHeaders, logout } from './authService';
 import { triggerAuthBanner } from 'contexts/authBannerInstance';
 
 const apiClient: AxiosInstance = axios.create({
@@ -45,48 +45,28 @@ apiClient.interceptors.response.use(
 
 export const api = {
   get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response = await apiClient.get<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const response = await apiClient.get<T>(url, config);
+    return response.data;
   },
 
   post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response = await apiClient.post<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const response = await apiClient.post<T>(url, data, config);
+    return response.data;
   },
 
   put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response = await apiClient.put<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const response = await apiClient.put<T>(url, data, config);
+    return response.data;
   },
 
   delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response = await apiClient.delete<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const response = await apiClient.delete<T>(url, config);
+    return response.data;
   },
 
   patch: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response = await apiClient.patch<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const response = await apiClient.patch<T>(url, data, config);
+    return response.data;
   },
 };
 
