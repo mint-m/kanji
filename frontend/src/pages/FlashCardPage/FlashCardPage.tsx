@@ -76,7 +76,7 @@ const FlashCardPage: FC = () => {
         <HeaderSection
           title={level}
           subtitle={steps ? `${steps.start} ~ ${steps.end}` : ''}
-          progress={deck ? `${liveIndex + 1} / ${deck.length}` : undefined}
+          progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
         {error ? (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>

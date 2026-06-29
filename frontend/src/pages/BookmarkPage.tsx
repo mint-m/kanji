@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } from 'services/bookmarkService';
 import { LearningLevel, ProgressType } from 'services/types';
@@ -24,14 +24,17 @@ const BookmarkPage: FC = () => {
   const [pagination, setPagination] = useState<BookmarkPagination | null>(null);
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
+  const fetchGenRef = useRef(0);
 
   const fetchBookmarks = useCallback(async (page: number = 1) => {
+    const gen = ++fetchGenRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const options: GetBookmarksOptions = { sortBy, page, limit: 20 };
       if (selectedLevel !== 'all') options.level = selectedLevel;
       const response = await bookmarkService.getBookmarks(options);
+      if (gen !== fetchGenRef.current) return;
       if (response.success && response.data) {
         const { bookmarks: list, pagination: paginationInfo } = response.data;
         if (Array.isArray(list)) {
@@ -47,14 +50,18 @@ const BookmarkPage: FC = () => {
         setError('북마크를 불러오는데 실패했습니다.');
       }
     } catch {
+      if (gen !== fetchGenRef.current) return;
       setBookmarks([]);
       setError('북마크를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
     } finally {
-      setIsLoading(false);
+      if (gen === fetchGenRef.current) setIsLoading(false);
     }
   }, [selectedLevel, sortBy]);
 
-  useEffect(() => { fetchBookmarks(1); }, [fetchBookmarks]);
+  useEffect(() => {
+    fetchBookmarks(1);
+    return () => { fetchGenRef.current++; };
+  }, [fetchBookmarks]);
 
   const handleRemoveBookmark = async (wordId: string, progressType?: string) => {
     if (!window.confirm('이 북마크를 삭제하시겠습니까?')) return;
@@ -62,6 +69,7 @@ const BookmarkPage: FC = () => {
       const response = await bookmarkService.toggleBookmark(wordId, progressType as ProgressType);
       if (response.success) {
         setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
+        setPagination(prev => prev ? { ...prev, totalItems: Math.max(0, prev.totalItems - 1) } : null);
       }
     } catch {
       alert('북마크 삭제에 실패했습니다.');

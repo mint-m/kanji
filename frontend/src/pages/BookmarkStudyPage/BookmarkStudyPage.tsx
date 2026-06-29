@@ -1,8 +1,8 @@
-import { FC, useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import bookmarkService from 'services/bookmarkService';
-import { DeckWord, LearningLevel } from 'services/types';
+import { DeckWord, LearningLevel, ProgressType } from 'services/types';
 import FlashCard, { ShowType } from 'components/FlashCard';
 import ControlPanel from 'components/ControlPanel';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
@@ -22,31 +22,44 @@ const BookmarkStudyPage: FC = () => {
 
   const [deck, setDeck] = useState<DeckWord[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [wordIndex, setWordIndex] = useState(0);
   const [showMean, setShowMean] = useState(false);
   const [showHiragana, setShowHiragana] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
   const [learningCount, setLearningCount] = useState(0);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const progressTypeMapRef = useRef<Map<string, ProgressType | undefined>>(new Map());
 
   useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError(null);
     bookmarkService.getBookmarks({
       level: level !== 'all' ? level : undefined,
       sortBy: (sortBy as any) || 'recent',
       limit: 100,
     }).then(res => {
+      if (!active) return;
       if (res.success && res.data?.bookmarks) {
-        const words: DeckWord[] = res.data.bookmarks.map((b, idx) => ({
-          ...b.word,
-          index: idx,
-          isCurrent: false,
-          isWindowCompleted: false,
-          isBookmarked: true,
-        }));
+        const progressMap = new Map<string, ProgressType | undefined>();
+        const words: DeckWord[] = res.data.bookmarks.map((b, idx) => {
+          progressMap.set(b.word._id, b.progress_type);
+          return { ...b.word, index: idx, isCurrent: false, isWindowCompleted: false, isBookmarked: true };
+        });
+        progressTypeMapRef.current = progressMap;
         setDeck(words);
         setBookmarkedIds(new Set(res.data.bookmarks.map(b => b.word._id)));
+      } else {
+        setError('복습 단어를 불러오는데 실패했습니다.');
       }
-    }).finally(() => setIsLoading(false));
+    }).catch(() => {
+      if (!active) return;
+      setError('복습 단어를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
+    }).finally(() => {
+      if (active) setIsLoading(false);
+    });
+    return () => { active = false; };
   }, [level, sortBy]);
 
   const handleKnowClick = useCallback((know: boolean) => {
@@ -65,12 +78,13 @@ const BookmarkStudyPage: FC = () => {
     if (!deck) return;
     const wordId = deck[wordIndex]?._id;
     if (!wordId) return;
+    const progressType = progressTypeMapRef.current.get(wordId);
     setBookmarkedIds(prev => {
       const next = new Set(prev);
       next.has(wordId) ? next.delete(wordId) : next.add(wordId);
       return next;
     });
-    await bookmarkService.toggleBookmark(wordId).catch(() => {
+    await bookmarkService.toggleBookmark(wordId, progressType).catch(() => {
       setBookmarkedIds(prev => {
         const next = new Set(prev);
         next.has(wordId) ? next.delete(wordId) : next.add(wordId);
@@ -80,6 +94,7 @@ const BookmarkStudyPage: FC = () => {
   }, [deck, wordIndex]);
 
   if (isLoading) return <CenterDiv><div>복습 단어를 불러오는 중...</div></CenterDiv>;
+  if (error) return <CenterDiv><div style={{ textAlign: 'center' }}><p>{error}</p><button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button></div></CenterDiv>;
 
   if (!deck || deck.length === 0) {
     return (

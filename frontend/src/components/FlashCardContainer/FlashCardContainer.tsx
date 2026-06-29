@@ -41,16 +41,16 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     useEffect(() => { onIndexChange?.(wordIndex); }, [wordIndex, onIndexChange]);
 
     useEffect(() => {
+      let active = true;
       bookmarkService.getBookmarks({ limit: 200 }).then(res => {
-        if (!res.success || !res.data) return;
+        if (!active) return;
         const deckIds = new Set(deck.map(w => w._id));
-        const alreadyBookmarked = res.data.bookmarks
-          .map(b => b.word._id)
-          .filter(id => deckIds.has(id));
-        if (alreadyBookmarked.length > 0) {
-          setBookmarkedIds(new Set(alreadyBookmarked));
-        }
+        const alreadyBookmarked = res.success && res.data
+          ? res.data.bookmarks.map(b => b.word._id).filter(id => deckIds.has(id))
+          : [];
+        setBookmarkedIds(new Set(alreadyBookmarked));
       }).catch(() => {});
+      return () => { active = false; };
     }, [deck]);
 
     useEffect(() => {
