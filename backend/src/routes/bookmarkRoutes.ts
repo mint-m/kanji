@@ -40,7 +40,7 @@ router.get(
   [
     query('level')
       .optional()
-      .isIn(LEARNING_LEVELS)
+      .isIn([...LEARNING_LEVELS])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     query('tags')
       .optional()
@@ -164,7 +164,7 @@ router.post(
       .withMessage('Search term must be between 1 and 100 characters'),
     body('level')
       .optional()
-      .isIn(LEARNING_LEVELS)
+      .isIn([...LEARNING_LEVELS])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     body('step').optional().isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     body('tags').optional().isArray().withMessage('Tags must be an array'),

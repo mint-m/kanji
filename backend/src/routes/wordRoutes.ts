@@ -15,7 +15,7 @@ router.get('/all', wordController.getAllWords);
 router.get(
   '/level/:level/steps',
   [
-    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn([...LEARNING_LEVELS]).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     handleValidationErrors,
   ],
   wordController.getStepsForLevel
@@ -25,7 +25,7 @@ router.get(
 router.get(
   '/level/:level/step/:step',
   [
-    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn([...LEARNING_LEVELS]).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     param('step').isInt({ min: 1 }).withMessage('Step must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
@@ -40,7 +40,7 @@ router.get(
 router.get(
   '/level/:level/steps/:startStep-:endStep',
   [
-    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn([...LEARNING_LEVELS]).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     param('startStep').isInt({ min: 1 }).withMessage('Start step must be over 1'),
     param('endStep').isInt({ min: 1 }).withMessage('step must be over 1 intiger'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
@@ -60,7 +60,7 @@ router.get(
     query('endStep').isInt({ min: 1 }).withMessage('End step must be over 1 intiger'),
     query('level')
       .optional()
-      .isIn(LEARNING_LEVELS)
+      .isIn([...LEARNING_LEVELS])
       .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
@@ -82,7 +82,7 @@ router.get('/statistics', wordController.getWordStatistics);
 router.get(
   '/statistics/:level',
   [
-    param('level').isIn(LEARNING_LEVELS).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+    param('level').isIn([...LEARNING_LEVELS]).withMessage('Level must be one of: N5, N4, N3, N2, N1'),
     handleValidationErrors,
   ],
   wordController.getWordStatistics
