@@ -20,7 +20,7 @@ export const statsGrid = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
   gap: vars.space.md,
-  marginBottom: vars.space.xl,
+  marginBottom: '44px',
 });
 
 export const statCard = style({
@@ -47,11 +47,11 @@ export const filtersBar = style({
   display: 'flex',
   gap: vars.space.lg,
   alignItems: 'center',
-  marginBottom: vars.space.lg,
+  marginBottom: '10px',
   padding: `10px ${vars.space.lg}`,
-  backgroundColor: vars.color.white,
-  borderRadius: vars.radius.lg,
-  boxShadow: '3px 3px 8px rgba(163,177,198,0.35), -3px -3px 8px rgba(255,255,255,0.7)',
+  backgroundColor: 'transparent',
+  borderRadius: 0,
+  boxShadow: 'none',
 
   '@media': {
     'screen and (max-width: 640px)': {
@@ -86,7 +86,7 @@ export const filterSelect = style({
   backgroundColor: vars.color.bg,
   border: 'none',
   borderRadius: vars.radius.md,
-  boxShadow: 'inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.8)',
+  boxShadow: '4px 4px 8px rgba(163,177,198,0.55), -4px -4px 8px rgba(255,255,255,0.9)',
   fontSize: vars.fontSize.sm,
   fontWeight: 500,
   color: vars.color.textDark,
@@ -98,8 +98,11 @@ export const filterSelect = style({
   transition: 'box-shadow 0.15s',
 
   selectors: {
+    '&:hover': {
+      boxShadow: '5px 5px 10px rgba(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,1)',
+    },
     '&:focus': {
-      boxShadow: `inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.8), 0 0 0 2px ${vars.color.primaryLight}`,
+      boxShadow: `inset 2px 2px 5px rgba(163,177,198,0.4), inset -2px -2px 5px rgba(255,255,255,0.7)`,
     },
   },
 });
