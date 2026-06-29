@@ -49,8 +49,9 @@ export const filtersBar = style({
   alignItems: 'center',
   marginBottom: vars.space.lg,
   padding: `10px ${vars.space.lg}`,
-  backgroundColor: vars.color.bg,
-  boxShadow: 'none',
+  backgroundColor: vars.color.white,
+  borderRadius: vars.radius.lg,
+  boxShadow: '3px 3px 8px rgba(163,177,198,0.35), -3px -3px 8px rgba(255,255,255,0.7)',
 
   '@media': {
     'screen and (max-width: 640px)': {
