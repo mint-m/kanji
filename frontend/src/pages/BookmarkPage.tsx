@@ -115,11 +115,11 @@ const BookmarkPage: FC = () => {
         </div>
       )}
 
-      <div className={clsx('card', styles.filtersBar)}>
+      <div className={styles.filtersBar}>
         <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>레벨 필터:</label>
+          <label className={styles.filterLabel}>레벨</label>
           <select
-            className="filter-select"
+            className={styles.filterSelect}
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value as LearningLevel | 'all')}
           >
@@ -128,9 +128,9 @@ const BookmarkPage: FC = () => {
           </select>
         </div>
         <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>정렬:</label>
+          <label className={styles.filterLabel}>정렬</label>
           <select
-            className="filter-select"
+            className={styles.filterSelect}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
           >

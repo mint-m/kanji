@@ -48,7 +48,9 @@ export const filtersBar = style({
   gap: vars.space.lg,
   alignItems: 'center',
   marginBottom: vars.space.lg,
-  padding: `${vars.space.md} ${vars.space.lg}`,
+  padding: `10px ${vars.space.lg}`,
+  backgroundColor: vars.color.bg,
+  boxShadow: 'none',
 
   '@media': {
     'screen and (max-width: 640px)': {
@@ -66,10 +68,39 @@ export const filterGroup = style({
 });
 
 export const filterLabel = style({
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  color: vars.color.textFaint,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  whiteSpace: 'nowrap',
+});
+
+export const filterSelect = style({
+  appearance: 'none',
+  paddingTop: '7px',
+  paddingBottom: '7px',
+  paddingLeft: vars.space.md,
+  paddingRight: '32px',
+  backgroundColor: vars.color.bg,
+  border: 'none',
+  borderRadius: vars.radius.md,
+  boxShadow: 'inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.8)',
   fontSize: vars.fontSize.sm,
   fontWeight: 500,
-  color: vars.color.textMuted,
-  whiteSpace: 'nowrap',
+  color: vars.color.textDark,
+  cursor: 'pointer',
+  outline: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2395a5a6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  transition: 'box-shadow 0.15s',
+
+  selectors: {
+    '&:focus': {
+      boxShadow: `inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.8), 0 0 0 2px ${vars.color.primaryLight}`,
+    },
+  },
 });
 
 export const bookmarkList = style({
