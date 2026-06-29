@@ -34,10 +34,11 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     // 완료된 단어 수를 레벨별로 한 번의 aggregation으로 조회
     const completedByLevel: { _id: string; count: number }[] = await WordProgress.aggregate([
       { $match: { user_id: userId, is_window_completed: true } },
+      { $group: { _id: '$word_id' } },
       {
         $lookup: {
           from: 'word',
-          localField: 'word_id',
+          localField: '_id',
           foreignField: '_id',
           as: 'word',
         },
