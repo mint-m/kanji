@@ -40,7 +40,7 @@ const BookmarkStudyPage: FC = () => {
     bookmarkService.getBookmarks({
       level: level !== 'all' ? level : undefined,
       sortBy: (sortBy as any) || 'recent',
-      limit: 100,
+      limit: 150,
     }).then(res => {
       if (!active) return;
       if (res.success && res.data?.bookmarks) {
@@ -105,12 +105,12 @@ const BookmarkStudyPage: FC = () => {
   }, [deck, wordIndex]);
 
   if (isLoading) return <CenterDiv><div>복습 단어를 불러오는 중...</div></CenterDiv>;
-  if (error) return <CenterDiv><div style={{ textAlign: 'center' }}><p>{error}</p><button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button></div></CenterDiv>;
+  if (error) return <CenterDiv><div className={styles.centerContent}><p>{error}</p><button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button></div></CenterDiv>;
 
   if (!deck || deck.length === 0) {
     return (
       <CenterDiv>
-        <div style={{ textAlign: 'center' }}>
+        <div className={styles.centerContent}>
           <p>복습할 단어가 없습니다.</p>
           <button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button>
         </div>
@@ -152,7 +152,7 @@ const BookmarkStudyPage: FC = () => {
           <span className={styles.progress}>{wordIndex + 1} / {deck.length}</span>
         </div>
         {bookmarkWarning && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12, padding: '10px 16px', marginBottom: 12, fontSize: 13, color: '#92400e', fontWeight: 500 }}>
+          <div className={styles.bookmarkWarningBanner}>
             🔖 {bookmarkWarning}
           </div>
         )}

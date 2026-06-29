@@ -2,6 +2,7 @@
 let mockWPInstance: any;
 const MockWordProgress = jest.fn() as any;
 MockWordProgress.findOne = jest.fn();
+MockWordProgress.countDocuments = jest.fn().mockResolvedValue(0);
 MockWordProgress.aggregate = jest.fn();
 MockWordProgress.updateMany = jest.fn();
 MockWordProgress.getBookmarkAnalytics = jest.fn();
@@ -55,6 +56,7 @@ describe('toggleBookmark', () => {
 
   it('기존 북마크 토글 → 북마크 해제', async () => {
     const existingWP = {
+      is_bookmarked: true,
       toggleBookmark: jest.fn().mockReturnValue(false),
       save: jest.fn().mockResolvedValue(undefined),
       getBookmarkInfo: jest.fn().mockReturnValue({ isBookmarked: false, tags: [] }),

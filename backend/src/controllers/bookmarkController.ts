@@ -248,30 +248,18 @@ export const bulkBookmarkOperation = async (req: AuthenticatedRequest, res: Resp
 
     switch (action) {
       case 'bookmark':
-        // Create or update word progress documents to set bookmarks
-        for (const wordId of wordIds) {
-          const wordProgress = await WordProgress.findOneAndUpdate(
-            {
-              user_id: userId,
-              word_id: wordId,
-              progress_type: progressType,
+        const bulkOps = wordIds.map((wordId: string) => ({
+          updateOne: {
+            filter: { user_id: userId, word_id: wordId, progress_type: progressType },
+            update: {
+              $setOnInsert: { user_id: userId, word_id: wordId, progress_type: progressType },
+              $set: { is_bookmarked: true, bookmark_reason: reason, bookmark_tags: tags || [] },
             },
-            {
-              $setOnInsert: {
-                user_id: userId,
-                word_id: wordId,
-                progress_type: progressType,
-              },
-              $set: {
-                is_bookmarked: true,
-                bookmark_reason: reason,
-                bookmark_tags: tags || [],
-              },
-            },
-            { upsert: true, new: true }
-          );
-          if (wordProgress) modified++;
-        }
+            upsert: true,
+          },
+        }));
+        const bulkResult = await WordProgress.bulkWrite(bulkOps);
+        modified = bulkResult.modifiedCount + bulkResult.upsertedCount;
         break;
 
       case 'unbookmark':

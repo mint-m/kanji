@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import bookmarkController from '../controllers/bookmarkController';
-import { validateWordProgressRequest } from '../middleware/validation';
+import { validateWordProgressRequest, handleValidationErrors } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
 import { LEARNING_LEVELS } from '../types/common';
 
@@ -61,6 +61,7 @@ router.get(
       .withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be "asc" or "desc"'),
   ],
+  handleValidationErrors,
   bookmarkController.getBookmarks
 );
 
@@ -92,6 +93,7 @@ router.put(
       .withMessage('Each tag must be between 1 and 50 characters'),
     body('progressType').optional().isIn(['main', 'sub']).withMessage('Progress type must be "main" or "sub"'),
   ],
+  handleValidationErrors,
   bookmarkController.updateBookmark
 );
 
@@ -128,6 +130,7 @@ router.post(
       .trim()
       .withMessage('Each tag must be between 1 and 50 characters'),
   ],
+  handleValidationErrors,
   bookmarkController.bulkBookmarkOperation
 );
 
@@ -182,6 +185,7 @@ router.post(
     body('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     body('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   ],
+  handleValidationErrors,
   bookmarkController.searchBookmarks
 );
 

@@ -23,7 +23,6 @@ export interface Bookmark {
 
 export interface GetBookmarksOptions {
   level?: LearningLevel;
-  progressType?: ProgressType;
   sortBy?: 'recent' | 'level' | 'step';
   page?: number;
   limit?: number;
@@ -49,7 +48,6 @@ const bookmarkService = {
   async getBookmarks(options?: GetBookmarksOptions): Promise<ApiResponse<BookmarkListData>> {
     const params = new URLSearchParams();
     if (options?.level) params.append('level', options.level);
-    if (options?.progressType) params.append('progressType', options.progressType);
     if (options?.sortBy) {
       const sortMap: Record<string, string> = { recent: 'last_studied_at', level: 'level', step: 'step' };
       params.append('sortBy', sortMap[options.sortBy] ?? options.sortBy);

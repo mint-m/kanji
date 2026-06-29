@@ -112,6 +112,28 @@ export const statValueAmber = style({
   color: vars.color.warning,
 });
 
+export const bookmarkWarningBanner = style({
+  background: '#fffbeb',
+  border: '1px solid #fcd34d',
+  borderRadius: vars.radius.lg,
+  padding: `10px ${vars.space.md}`,
+  marginBottom: vars.space.sm,
+  fontSize: vars.fontSize.sm,
+  color: '#92400e',
+  fontWeight: 500,
+  width: '85vw',
+
+  '@media': {
+    'screen and (min-width: 768px)': {
+      width: '35rem',
+    },
+  },
+});
+
+export const centerContent = style({
+  textAlign: 'center',
+});
+
 export const backBtn = style({
   marginTop: vars.space.lg,
   padding: `10px ${vars.space.xl}`,
