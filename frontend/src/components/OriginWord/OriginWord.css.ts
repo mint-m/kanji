@@ -17,3 +17,10 @@ export const kanjiChar = style({
 export const plainChar = style({
   cursor: 'default',
 });
+
+export const notFoundChar = style({
+  cursor: 'default',
+  opacity: 0.4,
+  textDecoration: 'underline',
+  textDecorationStyle: 'dotted',
+});

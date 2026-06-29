@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import mongoose, { PipelineStage } from 'mongoose';
+import { Response } from 'express';
+import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
-import { ProgressType } from '../types/common';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { escapeRegex } from '../utils/regex';
 
 /**
  * Toggle bookmark status for a word
@@ -95,7 +95,7 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
       { $match: filter },
       {
         $lookup: {
-          from: 'words',
+          from: 'word',
           localField: 'word_id',
           foreignField: '_id',
           as: 'word',
@@ -180,17 +180,15 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
 export const updateBookmark = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { wordId } = req.params;
-    const { reason, tags, progressType = 'main' } = req.body;
+    const { reason, tags } = req.body;
     const userId = req.user!._id;
 
-    const wordProgress = await WordProgress.findOne({
-      user_id: userId,
-      word_id: wordId,
-      progress_type: progressType,
-      is_bookmarked: true,
-    });
+    const result = await WordProgress.updateMany(
+      { user_id: userId, word_id: wordId, is_bookmarked: true },
+      { $set: { bookmark_reason: reason, bookmark_tags: tags || [] } }
+    );
 
-    if (!wordProgress) {
+    if (result.matchedCount === 0) {
       res.status(404).json({
         success: false,
         message: 'Bookmarked word not found',
@@ -198,17 +196,9 @@ export const updateBookmark = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Update bookmark details
-    wordProgress.bookmark_reason = reason;
-    wordProgress.bookmark_tags = tags || [];
-    await wordProgress.save();
-
     res.json({
       success: true,
-      data: {
-        wordId,
-        bookmarkInfo: wordProgress.getBookmarkInfo(),
-      },
+      data: { wordId, reason, tags: tags || [] },
       message: 'Bookmark updated successfully',
     });
   } catch (error) {
@@ -355,7 +345,7 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
       },
       {
         $lookup: {
-          from: 'words',
+          from: 'word',
           localField: 'word_id',
           foreignField: '_id',
           as: 'word',
@@ -368,14 +358,12 @@ export const searchBookmarks = async (req: AuthenticatedRequest, res: Response):
     const matchConditions: any = {};
 
     if (searchTerm) {
+      const safeSearch = escapeRegex(searchTerm);
       matchConditions.$or = [
-        { 'word.kanji': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.hiragana': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.katakana': { $regex: searchTerm, $options: 'i' } },
-        { 'word.readings.romaji': { $regex: searchTerm, $options: 'i' } },
-        { 'word.meanings.en': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
-        { 'word.meanings.ko': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
-        { bookmark_reason: { $regex: searchTerm, $options: 'i' } },
+        { 'word.entry': { $regex: safeSearch, $options: 'i' } },
+        { 'word.pron': { $regex: safeSearch, $options: 'i' } },
+        { 'word.means': { $regex: safeSearch, $options: 'i' } },
+        { bookmark_reason: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 

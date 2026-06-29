@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ProgressType, LearningLevel, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
+import { ProgressType, LearningLevel, LEARNING_LEVELS, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
 import {
   UserCheckpointDocument,
   UserCheckpointModel,
@@ -23,7 +23,7 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
     current_level: {
       type: String,
       required: true,
-      enum: ['N5', 'N4', 'N3', 'N2', 'N1'],
+      enum: LEARNING_LEVELS,
     },
     steps: {
       start: {
@@ -260,16 +260,15 @@ userCheckpointSchema.statics.generateSlidingWindowDeck = async function (
   level: LearningLevel,
   steps: StepRange,
   userId: mongoose.Types.ObjectId,
+  progressType: ProgressType,
   options: DeckGenerationOptions = {}
 ): Promise<mongoose.Types.ObjectId[]> {
-  // Use SlidingWindowService for deck generation
   const deckWindow = await SlidingWindowService.generateDeck(level, steps, options.shuffleOrder !== false);
 
-  // Filter deck based on user progress
   return await (this as UserCheckpointModel).filterDeckByUserProgress(
     deckWindow.wordIds,
     userId,
-    'main', // Default to main for filtering
+    progressType,
     options
   );
 };
@@ -424,11 +423,6 @@ userCheckpointSchema.statics.getUserLearningStats = async function (userId: mong
   ]);
 
   return stats;
-};
-
-// Enhanced sliding window methods using SlidingWindowService
-userCheckpointSchema.statics.getAvailableWindows = async function (level: LearningLevel): Promise<StepRange[]> {
-  return await SlidingWindowService.getAvailableWindows(level);
 };
 
 // Create and export model

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { UserAuthType } from '../types/common';
+import { UserAuthType, LEARNING_LEVELS } from '../types/common';
 import {
   UserDocument,
   UserModel,
@@ -64,7 +64,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       totalTimeSpent: { type: Number, default: 0, min: 0 },
       currentStreak: { type: Number, default: 0, min: 0 },
       longestStreak: { type: Number, default: 0, min: 0 },
-      levelsCompleted: [{ type: String, enum: ['N5', 'N4', 'N3', 'N2', 'N1'] }],
+      levelsCompleted: [{ type: String, enum: LEARNING_LEVELS }],
       averageSessionTime: { type: Number, default: 0, min: 0 },
       studyDaysCount: { type: Number, default: 0, min: 0 },
       favoriteStudyTime: { type: String },
@@ -99,26 +99,27 @@ UserSchema.methods.updateLastActive = function (this: UserDocument): void {
   this.profile.lastActiveAt = new Date();
 };
 
-UserSchema.methods.incrementStreak = function (this: UserDocument): void {
-  this.statistics.currentStreak++;
+// 하루에 한 번만 streak/studyDaysCount 증가, lastActiveAt 갱신
+UserSchema.methods.updateDailyStreak = function (this: UserDocument): void {
+  const now = new Date();
+  const last = this.profile.lastActiveAt;
+  if (last && last.toDateString() === now.toDateString()) return;
+
+  const toMidnight = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+  const diffDays = last ? Math.round((toMidnight(now) - toMidnight(last)) / 86400000) : 0;
+  this.statistics.currentStreak = diffDays === 1 ? this.statistics.currentStreak + 1 : 1;
   if (this.statistics.currentStreak > this.statistics.longestStreak) {
     this.statistics.longestStreak = this.statistics.currentStreak;
   }
-};
-
-UserSchema.methods.resetStreak = function (this: UserDocument): void {
-  this.statistics.currentStreak = 0;
+  this.statistics.studyDaysCount++;
+  this.profile.lastActiveAt = now;
 };
 
 UserSchema.methods.updateStudyStats = function (this: UserDocument, timeSpent: number, wordsStudied: number): void {
   this.statistics.totalTimeSpent += timeSpent;
   this.statistics.totalWordsStudied += wordsStudied;
-  this.statistics.studyDaysCount++;
-
-  // Update average session time
-  this.statistics.averageSessionTime = this.statistics.totalTimeSpent / this.statistics.studyDaysCount;
-
-  this.updateLastActive();
 };
 
 UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | 'intermediate' | 'advanced' {

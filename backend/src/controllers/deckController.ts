@@ -159,16 +159,14 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       timeSpent,
       previousAttempts,
       newMasteryLevel,
-      shouldRepeat: recommendedAction === 'intensive_practice' || recommendedAction === 'review',
+      shouldRepeat: recommendedAction === 'review',
     };
 
     // Update user statistics
     const user = await User.findById(userId);
     if (user) {
       user.updateStudyStats(timeSpent || 0, 1);
-      if (isCorrect) {
-        user.incrementStreak();
-      }
+      user.updateDailyStreak();
       await user.save();
     }
 
@@ -251,10 +249,7 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
       try {
         const wordObjectId = new mongoose.Types.ObjectId(completion.wordId);
 
-        let wordProgress = await WordProgress.findByUserWordAndType(userId, wordObjectId, progressType);
-        if (!wordProgress) {
-          wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
-        }
+        const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
 
         const previousAttempts = wordProgress.try_count;
 
@@ -281,7 +276,7 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
           timeSpent: completion.timeSpent,
           previousAttempts,
           newMasteryLevel: wordProgress.calculateMasteryLevel(),
-          shouldRepeat: wordProgress.getRecommendedAction() === 'intensive_practice',
+          shouldRepeat: wordProgress.getRecommendedAction() === 'review',
         });
       } catch (error) {
         errors.push({
@@ -298,11 +293,7 @@ export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response
     const user = await User.findById(userId);
     if (user) {
       user.updateStudyStats(totalTimeSpent, results.length);
-      if (correctCount > 0) {
-        user.incrementStreak();
-      } else if (results.length > correctCount) {
-        user.resetStreak();
-      }
+      user.updateDailyStreak();
       await user.save();
     }
 
@@ -415,8 +406,6 @@ export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Pr
         },
         recommendations: {
           wordsNeedingReview: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'review').length,
-          wordsForIntensivePractice: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'intensive_practice')
-            .length,
           readyToSkip: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'skip').length,
         },
       },

@@ -1,32 +1,16 @@
 // src/controllers/wordController.ts
 import { Request, Response, NextFunction } from 'express';
-import axios from 'axios';
 import Word from '../models/word';
 import { NotFoundError, InternalServerError } from '../utils/errors';
+import { escapeRegex } from '../utils/regex';
 
 // 모든 단어 가져오기
-export const getAllWords = async (req: Request, res: Response, next: NextFunction) => {
+export const getAllWords = async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const words = await Word.find();
     res.json(words);
   } catch (error) {
     next(new InternalServerError('Failed to fetch words'));
-  }
-};
-
-// 레벨별 단어 가져오기
-export const getWordsByLevel = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const level = req.params.level;
-    const words = await Word.find({ level: level });
-
-    if (words.length === 0) {
-      return next(new NotFoundError(`No words found for level ${level}`));
-    }
-
-    res.json(words);
-  } catch (error) {
-    next(new InternalServerError('Failed to fetch words by level'));
   }
 };
 
@@ -68,7 +52,7 @@ export const getStepsForLevel = async (req: Request, res: Response, next: NextFu
 export const getWordsByLevelAndStep = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { level, step } = req.params;
-    const { limit = 50, page = 1, sortBy = 'kanji', sortOrder = 'asc' } = req.query;
+    const { limit = 50, page = 1, sortBy = 'entry', sortOrder = 'asc' } = req.query;
 
     const filter: any = { level: level };
 
@@ -192,7 +176,7 @@ export const searchWords = async (req: Request, res: Response, next: NextFunctio
       hasKanji,
       limit = 50,
       page = 1,
-      sortBy = 'kanji',
+      sortBy = 'entry',
       sortOrder = 'asc',
     } = req.body;
 
@@ -213,25 +197,23 @@ export const searchWords = async (req: Request, res: Response, next: NextFunctio
     }
 
     if (searchTerm) {
+      const safeSearch = escapeRegex(searchTerm);
       filter.$or = [
-        { kanji: { $regex: searchTerm, $options: 'i' } },
-        { 'readings.hiragana': { $regex: searchTerm, $options: 'i' } },
-        { 'readings.katakana': { $regex: searchTerm, $options: 'i' } },
-        { 'readings.romaji': { $regex: searchTerm, $options: 'i' } },
-        { 'meanings.en': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
-        { 'meanings.ko': { $elemMatch: { $regex: searchTerm, $options: 'i' } } },
+        { entry: { $regex: safeSearch, $options: 'i' } },
+        { pron: { $regex: safeSearch, $options: 'i' } },
+        { means: { $regex: safeSearch, $options: 'i' } },
       ];
     }
 
     if (partsOfSpeech && partsOfSpeech.length > 0) {
-      filter.partsOfSpeech = { $in: partsOfSpeech };
+      filter.parts = { $in: partsOfSpeech };
     }
 
     if (typeof hasKanji === 'boolean') {
       if (hasKanji) {
-        filter.kanji = { $nin: [null, ''] };
+        filter.pron = { $nin: [null, ''] };
       } else {
-        filter.$or = [{ kanji: null }, { kanji: '' }];
+        filter.$or = [{ pron: null }, { pron: '' }];
       }
     }
 
@@ -341,10 +323,10 @@ export const getWordStatistics = async (req: Request, res: Response, next: NextF
           wordCount: { $sum: 1 },
           hasKanjiCount: {
             $sum: {
-              $cond: [{ $and: [{ $ne: ['$kanji', null] }, { $ne: ['$kanji', ''] }] }, 1, 0],
+              $cond: [{ $and: [{ $ne: ['$pron', null] }, { $ne: ['$pron', ''] }] }, 1, 0],
             },
           },
-          partsOfSpeech: { $addToSet: '$partsOfSpeech' },
+          partsOfSpeech: { $addToSet: '$parts' },
         },
       },
       {
@@ -373,7 +355,7 @@ export const getWordStatistics = async (req: Request, res: Response, next: NextF
           totalWords: { $sum: 1 },
           totalWithKanji: {
             $sum: {
-              $cond: [{ $and: [{ $ne: ['$kanji', null] }, { $ne: ['$kanji', ''] }] }, 1, 0],
+              $cond: [{ $and: [{ $ne: ['$pron', null] }, { $ne: ['$pron', ''] }] }, 1, 0],
             },
           },
           levelBreakdown: {
@@ -399,20 +381,3 @@ export const getWordStatistics = async (req: Request, res: Response, next: NextF
   }
 };
 
-// 한자 검색 (네이버 API 활용)
-export const searchKanji = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const kanji = req.query.kanji;
-
-    if (!kanji) {
-      return next(new NotFoundError('Kanji query parameter is required'));
-    }
-
-    const baseUrl = 'https://ja.dict.naver.com/api3/jako/search/hanja?query=';
-    const kanjiData = await axios.get(baseUrl + kanji);
-
-    res.json(kanjiData.data);
-  } catch (error) {
-    next(new InternalServerError('Failed to search kanji'));
-  }
-};

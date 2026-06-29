@@ -6,6 +6,7 @@ import { DeckWord } from 'services/types';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
+import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { RootState } from 'store';
 import * as styles from './FlashCardPage.css';
 
@@ -78,20 +79,20 @@ const FlashCardPage: FC = () => {
         {error ? (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
         ) : windowComplete ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <h3>윈도우 완료!</h3>
-            <p>이 윈도우의 모든 단어를 완전히 습득했습니다.</p>
-            <button onClick={async () => {
+          <div className={styles.windowCompleteCard}>
+            <h3 className={styles.windowCompleteTitle}>윈도우 완료!</h3>
+            <p className={styles.windowCompleteDesc}>이 윈도우의 모든 단어를 완전히 습득했습니다.</p>
+            <DefaultButton onClick={async () => {
               setWindowComplete(false);
               try {
                 await deckService.completeDeck(activeProgressType || 'main');
               } catch (e) {
                 console.error('Failed to complete deck:', e);
               }
-              fetchDeck();
+              await fetchDeck();
             }}>
               다음 윈도우로 진행
-            </button>
+            </DefaultButton>
           </div>
         ) : (
           <>

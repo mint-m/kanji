@@ -69,8 +69,7 @@ export interface UserDocument extends Document {
   // Instance methods
   getDisplayName(): string;
   updateLastActive(): void;
-  incrementStreak(): void;
-  resetStreak(): void;
+  updateDailyStreak(): void;
   updateStudyStats(timeSpent: number, wordsStudied: number): void;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
   getPreferredStudyTime(): string | null;

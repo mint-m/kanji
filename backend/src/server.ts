@@ -10,7 +10,7 @@ const { MONGO_URI, PORT } = config;
 
 // MongoDB 연결
 mongoose
-  .connect(MONGO_URI, { dbName: "kanji-db" })
+  .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connecting Success!!!");
     

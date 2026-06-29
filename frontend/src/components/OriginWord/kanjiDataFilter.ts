@@ -1,9 +1,10 @@
+import axios from 'axios';
 import { api } from 'services/apiClient';
 import { KanjiDataType, Mean } from 'store/modules/kanji';
 
-const kanjiDataFilter = async (kanji: string): Promise<KanjiDataType | null> => {
+const kanjiDataFilter = async (kanji: string, signal?: AbortSignal): Promise<KanjiDataType | null> => {
   try {
-    const data = await api.get('/api/words/kanjiSearch', { params: { kanji } });
+    const data = await api.get('/api/words/kanjiSearch', { params: { kanji }, signal });
     const { searchResult } = data;
 
     if (searchResult.length > 0) {
@@ -28,6 +29,7 @@ const kanjiDataFilter = async (kanji: string): Promise<KanjiDataType | null> => 
 
     return null;
   } catch (error) {
+    if (axios.isCancel(error)) throw error;
     console.log(error);
     return null;
   }

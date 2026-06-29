@@ -9,7 +9,8 @@
     "google-auth-library": "^9.1.0",
     "googleapis": "^127.0.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^7.3.4"
+    "mongoose": "^7.3.4",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.13",
@@ -20,6 +21,7 @@
     "@types/node": "^20.3.2",
     "@types/passport": "^1.0.12",
     "@types/passport-google-oauth20": "^2.0.11",
+    "@types/xml2js": "^0.4.14",
     "concurrently": "^8.2.0",
     "jest": "27",
     "nodemon": "^2.0.22",
@@ -30,18 +32,15 @@
   "scripts": {
     "start": "node src/server.ts",
     "dev": "nodemon src/server.ts",
-    "test": "jest"
+    "test": "jest",
+    "seed:kanji": "ts-node src/scripts/seedKanji.ts"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
     "globals": {
       "ts-jest": {
-        "tsconfig": {
-          "types": ["jest", "node"],
-          "esModuleInterop": true,
-          "strict": false
-        },
+        "tsconfig": "./tsconfig.test.json",
         "diagnostics": false
       }
     },

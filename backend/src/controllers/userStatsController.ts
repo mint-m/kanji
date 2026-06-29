@@ -1,10 +1,11 @@
 // src/controllers/userStatsController.ts
 import { Request, Response, NextFunction } from 'express';
-import mongoose from 'mongoose';
 import User from '../models/user';
+import Word from '../models/word';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
-import { NotFoundError, UnauthorizedError, InternalServerError } from '../utils/errors';
+import { LEARNING_LEVELS } from '../types/common';
+import { NotFoundError, InternalServerError } from '../utils/errors';
 
 // Get learning stats for a user
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -18,29 +19,63 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       return next(new NotFoundError('User not found'));
     }
 
-    // Get active UserCheckpoint sessions (main and sub)
-    const mainProgress = await UserCheckpoint.findByUserAndType(userId, 'main');
-    const subProgress = await UserCheckpoint.findByUserAndType(userId, 'sub');
+    const [mainProgress, subProgress] = await Promise.all([
+      UserCheckpoint.findByUserAndType(userId, 'main'),
+      UserCheckpoint.findByUserAndType(userId, 'sub'),
+    ]);
 
-    // Get Word model for total word count
-    const Word = mongoose.model('Word');
+    // 전체 단어 수 + 레벨별 단어 수를 한 번의 aggregation으로 조회
+    const wordCountByLevel: { _id: string; count: number }[] = await Word.aggregate([
+      { $group: { _id: '$level', count: { $sum: 1 } } },
+    ]);
 
-    // Calculate overall learning progress (all levels combined)
-    const totalWordsInDatabase = await Word.countDocuments();
-    const totalCompletedWords = await WordProgress.countDocuments({
-      user_id: userId,
-      is_window_completed: true,
-    });
+    const totalWordsInDatabase = wordCountByLevel.reduce((sum, l) => sum + l.count, 0);
+
+    // 완료된 단어 수를 레벨별로 한 번의 aggregation으로 조회
+    const completedByLevel: { _id: string; count: number }[] = await WordProgress.aggregate([
+      { $match: { user_id: userId, is_window_completed: true } },
+      { $group: { _id: '$word_id' } },
+      {
+        $lookup: {
+          from: 'word',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'word',
+        },
+      },
+      { $unwind: '$word' },
+      { $group: { _id: '$word.level', count: { $sum: 1 } } },
+    ]);
+
+    const totalCompletedWords = completedByLevel.reduce((sum, l) => sum + l.count, 0);
     const overallProgressPercentage =
       totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;
 
-    // Format response
-    const response: any = {
+    const levelBreakdown = LEARNING_LEVELS.map((level) => {
+      const total = wordCountByLevel.find((l) => l._id === level)?.count ?? 0;
+      const completed = completedByLevel.find((l) => l._id === level)?.count ?? 0;
+      return { level, total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
+    });
+
+    const response: {
+      overall: { totalWords: number; completedWords: number; progressPercentage: number };
+      streak: { current: number; longest: number; studyDays: number };
+      totalWordsStudied: number;
+      levelBreakdown: { level: string; total: number; completed: number; percentage: number }[];
+      sessions: { type: string; currentLevel: string; steps: object; cycleProgress: object }[];
+    } = {
       overall: {
         totalWords: totalWordsInDatabase,
         completedWords: totalCompletedWords,
         progressPercentage: overallProgressPercentage,
       },
+      streak: {
+        current: user.statistics.currentStreak,
+        longest: user.statistics.longestStreak,
+        studyDays: user.statistics.studyDaysCount,
+      },
+      totalWordsStudied: user.statistics.totalWordsStudied,
+      levelBreakdown,
       sessions: [],
     };
 

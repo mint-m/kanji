@@ -5,6 +5,7 @@ import KakaoLoginButton from 'components/LoginButton/KakaoLoginButton';
 import LogoutButton from 'components/LoginButton/LogoutButton';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import type { RootState } from 'store';
+import * as styles from './Login.css';
 
 const Login = () => {
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
@@ -16,9 +17,9 @@ const Login = () => {
       {isLoggedIn ? (
         <LogoutButton />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+        <div className={styles.loginButtons}>
           {errorMessage && (
-            <p style={{ color: '#d32f2f', fontSize: '14px', margin: 0 }}>{errorMessage}</p>
+            <p className={styles.errorText}>{errorMessage}</p>
           )}
           <GoogleLoginButton />
           <KakaoLoginButton />

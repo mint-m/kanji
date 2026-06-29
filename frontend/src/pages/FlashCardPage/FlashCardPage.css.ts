@@ -59,3 +59,39 @@ export const skeletonWrapper = style({
   flexDirection: 'column',
   gap: vars.space.lg,
 });
+
+export const windowCompleteCard = style({
+  width: '85vw',
+  aspectRatio: '3 / 4',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: vars.space.md,
+  padding: vars.space.xl,
+  backgroundColor: vars.color.bg,
+  borderRadius: vars.radius.lg,
+  textAlign: 'center',
+  boxShadow: vars.shadow.inner,
+
+  '@media': {
+    'screen and (min-width: 768px)': {
+      width: '35rem',
+      height: '28rem',
+      aspectRatio: 'auto',
+    },
+  },
+});
+
+export const windowCompleteTitle = style({
+  fontSize: vars.fontSize.lg,
+  fontWeight: 'bold',
+  color: vars.color.textDark,
+  margin: 0,
+});
+
+export const windowCompleteDesc = style({
+  fontSize: vars.fontSize.base,
+  color: vars.color.textMuted,
+  margin: 0,
+});

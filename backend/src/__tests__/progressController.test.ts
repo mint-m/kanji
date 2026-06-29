@@ -69,8 +69,6 @@ describe('getUserProgress', () => {
     expect((res.json as jest.Mock).mock.calls[0][0].data).toHaveProperty('sessionStats');
   });
 });
-
-
 describe('resetSession', () => {
   beforeEach(() => jest.clearAllMocks());
 

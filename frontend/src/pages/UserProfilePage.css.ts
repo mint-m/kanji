@@ -33,7 +33,7 @@ export const profileInfo = style({});
 export const profileName = style({
   margin: 0,
   marginBottom: vars.space.sm,
-  fontSize: '1.8rem',
+  fontSize: vars.fontSize.xl,
 });
 
 export const profileMeta = style({
