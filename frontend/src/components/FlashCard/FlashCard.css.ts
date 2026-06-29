@@ -2,6 +2,7 @@ import { style } from '@vanilla-extract/css';
 import { vars } from 'styles/vars.css';
 
 export const card = style({
+  position: 'relative',
   width: '85vw',
   aspectRatio: '3 / 4',
   textAlign: 'center',
@@ -17,6 +18,38 @@ export const card = style({
       aspectRatio: 'auto',
     },
   },
+});
+
+export const bookmarkBtn = style({
+  position: 'absolute',
+  top: vars.space.md,
+  right: vars.space.md,
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '1.6rem',
+  lineHeight: 1,
+  padding: vars.space.xs,
+  color: vars.color.textFaint,
+  filter: 'drop-shadow(1px 1px 2px rgba(163,177,198,0.6)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.9))',
+  transition: 'color 0.2s, filter 0.2s, transform 0.2s',
+
+  selectors: {
+    '&:hover': {
+      color: vars.color.warning,
+      transform: 'scale(1.08)',
+      filter: 'drop-shadow(2px 2px 3px rgba(163,177,198,0.7)) drop-shadow(-1px -1px 2px rgba(255,255,255,1))',
+    },
+    '&:active': {
+      transform: 'scale(0.96)',
+      filter: 'drop-shadow(0px 0px 1px rgba(163,177,198,0.3))',
+    },
+  },
+});
+
+export const bookmarkBtnActive = style({
+  color: vars.color.warning,
+  filter: 'drop-shadow(1px 1px 2px rgba(163,177,198,0.5)) drop-shadow(-1px -1px 1px rgba(255,255,255,0.8))',
 });
 
 export const hiraganaRow = style({

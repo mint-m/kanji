@@ -22,6 +22,23 @@ export const errorText = style({
   fontWeight: 500,
 });
 
+export const warningBanner = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.sm,
+  backgroundColor: '#fffbeb',
+  border: `1px solid #fcd34d`,
+  borderRadius: vars.radius.lg,
+  padding: `${vars.space.md} 20px`,
+  marginBottom: vars.space.md,
+});
+
+export const warningText = style({
+  color: '#92400e',
+  fontSize: vars.fontSize.sm,
+  fontWeight: 500,
+});
+
 export const completedCard = style({
   width: '85vw',
   aspectRatio: '3 / 4',

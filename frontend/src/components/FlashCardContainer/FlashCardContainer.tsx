@@ -6,6 +6,8 @@ import ControlPanel from 'components/ControlPanel';
 import { DeckWord } from 'services/types';
 import * as kanjiActions from 'store/modules/kanji';
 import progressService from 'services/progressService';
+import bookmarkService from 'services/bookmarkService';
+import { ApiError } from 'services/authService';
 import * as styles from './FlashCardContainer.css';
 
 interface FlashCardContainerProps {
@@ -14,10 +16,11 @@ interface FlashCardContainerProps {
   initialIndex: number;
   onPassComplete?: () => void;
   onWindowComplete?: () => void;
+  onIndexChange?: (index: number) => void;
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex, onPassComplete, onWindowComplete }) => {
+  ({ deck, progressType, initialIndex, onPassComplete, onWindowComplete, onIndexChange }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
     const [showMean, setShowMean] = useState(false);
     const [showHiragana, setShowHiragana] = useState(false);
@@ -26,6 +29,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [learningCount, setLearningCount] = useState(0);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
     const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+    const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
     const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
     const isDrainingRef = useRef(false);
     const lastEnqueuedWordIdRef = useRef<string | null>(null);
@@ -35,12 +40,33 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const currentWordId = deck[wordIndex]?._id;
 
     useEffect(() => { setCardStudyTime(Date.now()); }, [wordIndex]);
+    useEffect(() => { onIndexChange?.(wordIndex); }, [wordIndex, onIndexChange]);
+
+    useEffect(() => {
+      let active = true;
+      // TODO: replace with a deck-scoped bookmark API to avoid the 200-bookmark limit
+      bookmarkService.getBookmarks({ limit: 200 }).then(res => {
+        if (!active) return;
+        const deckIds = new Set(deck.map(w => w._id));
+        const alreadyBookmarked = res.success && res.data
+          ? res.data.bookmarks.map(b => b.word._id).filter(id => deckIds.has(id))
+          : [];
+        setBookmarkedIds(new Set(alreadyBookmarked));
+      }).catch(() => {});
+      return () => { active = false; };
+    }, [deck]);
 
     useEffect(() => {
       if (!error) return;
       const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }, [error]);
+
+    useEffect(() => {
+      if (!bookmarkWarning) return;
+      const timer = setTimeout(() => setBookmarkWarning(null), 5000);
+      return () => clearTimeout(timer);
+    }, [bookmarkWarning]);
 
     const resetUIState = useCallback(() => {
       dispatch(kanjiActions.reset());
@@ -104,6 +130,32 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
+    const handleBookmark = useCallback(async () => {
+      if (!currentWordId) return;
+      const id = currentWordId;
+      const revert = () => setBookmarkedIds(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+      setBookmarkedIds(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+      try {
+        const res = await bookmarkService.toggleBookmark(id, progressType);
+        if (res.warning) {
+          setBookmarkWarning(`북마크 ${res.warning.remaining}개 남았습니다. 복습 후 정리해보세요.`);
+        }
+      } catch (err) {
+        revert();
+        if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
+          setError('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');
+        }
+      }
+    }, [currentWordId, progressType]);
+
 
     if (deck.length === 0) return null;
 
@@ -114,12 +166,20 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       </div>
     );
 
+    const warningBanner = bookmarkWarning && (
+      <div className={styles.warningBanner}>
+        <span className={styles.errorIcon}>🔖</span>
+        <span className={styles.warningText}>{bookmarkWarning}</span>
+      </div>
+    );
+
     if (isPassComplete) {
       const isWindowDone = passResult?.windowComplete;
       const nextCount = passResult?.nextPassSize;
       return (
         <>
           {errorBanner}
+          {warningBanner}
           <div className={styles.completedCard}>
             {isWindowDone ? (
               <h3 className={styles.completedTitle}>윈도우 완료!</h3>
@@ -149,7 +209,14 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     return (
       <>
         {errorBanner}
-        <FlashCard word={deck[wordIndex]} showMean={showMean} showHiragana={showHiragana} />
+        {warningBanner}
+        <FlashCard
+          word={deck[wordIndex]}
+          showMean={showMean}
+          showHiragana={showHiragana}
+          isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
+          onBookmark={handleBookmark}
+        />
         <ControlPanel
           onShowClick={handleShowClick}
           onKnowClick={handleKnowClick}

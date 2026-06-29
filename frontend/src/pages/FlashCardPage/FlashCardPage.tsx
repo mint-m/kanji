@@ -24,6 +24,7 @@ const FlashCardPage: FC = () => {
   const [level, setLevel] = useState('');
   const [steps, setSteps] = useState<{ start: number; end: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [liveIndex, setLiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deckKey, setDeckKey] = useState(0);
@@ -75,6 +76,7 @@ const FlashCardPage: FC = () => {
         <HeaderSection
           title={level}
           subtitle={steps ? `${steps.start} ~ ${steps.end}` : ''}
+          progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
         {error ? (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
@@ -104,6 +106,7 @@ const FlashCardPage: FC = () => {
                 initialIndex={currentIndex}
                 onPassComplete={handlePassComplete}
                 onWindowComplete={handleWindowComplete}
+                onIndexChange={setLiveIndex}
               />
             )}
             {isLoading && <SkeletonFlashCard />}

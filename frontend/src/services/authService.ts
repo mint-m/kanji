@@ -83,15 +83,23 @@ export const removeUserLocally = () => localStorage.removeItem('user');
 export const getAuthHeaders = (token = getTokenLocally()): Record<string, string> =>
   token ? { Authorization: `Bearer ${token}` } : {};
 
+export class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 export const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+    const axiosError = error as AxiosError<{ message?: string; error?: string; code?: string }>;
     const errorMessage =
       axiosError.response?.data?.message ||
       axiosError.response?.data?.error ||
       axiosError.message ||
       'Unknown API error';
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, axiosError.response?.data?.code);
   }
   throw error instanceof Error ? error : new Error('Unknown error occurred');
 };

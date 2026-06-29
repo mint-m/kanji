@@ -96,34 +96,31 @@ describe('updateBookmark', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('북마크된 단어 없음 → 404', async () => {
-    (WordProgress.findOne as jest.Mock).mockResolvedValue(null);
+    (WordProgress.updateMany as jest.Mock).mockResolvedValue({ matchedCount: 0, modifiedCount: 0 });
     const res = makeRes();
     await bookmarkController.updateBookmark(
-      makeReq({ params: { wordId: 'word-id-1' }, body: { reason: '어렵다', progressType: 'main' } }),
+      makeReq({ params: { wordId: 'word-id-1' }, body: { reason: '어렵다' } }),
       res,
     );
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  it('성공 → reason·tags 업데이트 후 bookmarkInfo 반환', async () => {
-    const existingWP = {
-      bookmark_reason: undefined as string | undefined,
-      bookmark_tags: [] as string[],
-      save: jest.fn().mockResolvedValue(undefined),
-      getBookmarkInfo: jest.fn().mockReturnValue({ isBookmarked: true, reason: '어렵다', tags: ['문법'] }),
-    };
-    (WordProgress.findOne as jest.Mock).mockResolvedValue(existingWP);
+  it('성공 → reason·tags 업데이트 후 반환', async () => {
+    (WordProgress.updateMany as jest.Mock).mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
 
     const res = makeRes();
     await bookmarkController.updateBookmark(
-      makeReq({ params: { wordId: 'word-id-1' }, body: { reason: '어렵다', tags: ['문법'], progressType: 'main' } }),
+      makeReq({ params: { wordId: 'word-id-1' }, body: { reason: '어렵다', tags: ['문법'] } }),
       res,
     );
 
-    expect(existingWP.save).toHaveBeenCalled();
-    expect(existingWP.bookmark_reason).toBe('어렵다');
-    expect(existingWP.bookmark_tags).toEqual(['문법']);
+    expect(WordProgress.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ word_id: 'word-id-1', is_bookmarked: true }),
+      expect.objectContaining({ $set: { bookmark_reason: '어렵다', bookmark_tags: ['문법'] } }),
+    );
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
-    expect(data.bookmarkInfo.reason).toBe('어렵다');
+    expect(data.wordId).toBe('word-id-1');
+    expect(data.reason).toBe('어렵다');
+    expect(data.tags).toEqual(['문법']);
   });
 });
