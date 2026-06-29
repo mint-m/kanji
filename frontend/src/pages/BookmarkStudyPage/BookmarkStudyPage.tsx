@@ -2,6 +2,7 @@ import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import bookmarkService from 'services/bookmarkService';
+import { ApiError } from 'services/authService';
 import { DeckWord, LearningLevel, ProgressType } from 'services/types';
 import FlashCard, { ShowType } from 'components/FlashCard';
 import ControlPanel from 'components/ControlPanel';
@@ -29,6 +30,7 @@ const BookmarkStudyPage: FC = () => {
   const [masteredCount, setMasteredCount] = useState(0);
   const [learningCount, setLearningCount] = useState(0);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
   const progressTypeMapRef = useRef<Map<string, ProgressType | undefined>>(new Map());
 
   useEffect(() => {
@@ -79,18 +81,27 @@ const BookmarkStudyPage: FC = () => {
     const wordId = deck[wordIndex]?._id;
     if (!wordId) return;
     const progressType = progressTypeMapRef.current.get(wordId);
+    const revert = () => setBookmarkedIds(prev => {
+      const next = new Set(prev);
+      next.has(wordId) ? next.delete(wordId) : next.add(wordId);
+      return next;
+    });
     setBookmarkedIds(prev => {
       const next = new Set(prev);
       next.has(wordId) ? next.delete(wordId) : next.add(wordId);
       return next;
     });
-    await bookmarkService.toggleBookmark(wordId, progressType).catch(() => {
-      setBookmarkedIds(prev => {
-        const next = new Set(prev);
-        next.has(wordId) ? next.delete(wordId) : next.add(wordId);
-        return next;
-      });
-    });
+    try {
+      const res = await bookmarkService.toggleBookmark(wordId, progressType);
+      if (res.warning) {
+        setBookmarkWarning(`북마크 ${res.warning.remaining}개 남았습니다. 복습 후 정리해보세요.`);
+      }
+    } catch (err) {
+      revert();
+      if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
+        setBookmarkWarning('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');
+      }
+    }
   }, [deck, wordIndex]);
 
   if (isLoading) return <CenterDiv><div>복습 단어를 불러오는 중...</div></CenterDiv>;
@@ -140,6 +151,11 @@ const BookmarkStudyPage: FC = () => {
           <button className={styles.backLink} onClick={() => navigate('/bookmark')}>← 북마크</button>
           <span className={styles.progress}>{wordIndex + 1} / {deck.length}</span>
         </div>
+        {bookmarkWarning && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12, padding: '10px 16px', marginBottom: 12, fontSize: 13, color: '#92400e', fontWeight: 500 }}>
+            🔖 {bookmarkWarning}
+          </div>
+        )}
         <FlashCard
           word={deck[wordIndex]}
           showMean={showMean}

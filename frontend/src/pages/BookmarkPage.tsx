@@ -68,8 +68,8 @@ const BookmarkPage: FC = () => {
     try {
       const response = await bookmarkService.toggleBookmark(wordId, progressType as ProgressType);
       if (response.success) {
-        setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
-        setPagination(prev => prev ? { ...prev, totalItems: Math.max(0, prev.totalItems - 1) } : null);
+        const targetPage = bookmarks.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+        fetchBookmarks(targetPage);
       }
     } catch {
       alert('북마크 삭제에 실패했습니다.');

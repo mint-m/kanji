@@ -5,6 +5,9 @@ import Word from '../models/word';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { escapeRegex } from '../utils/regex';
 
+const BOOKMARK_LIMIT = 150;
+const BOOKMARK_WARNING_THRESHOLD = 10;
+
 /**
  * Toggle bookmark status for a word
  * @route POST /api/bookmarks/toggle
@@ -22,7 +25,6 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
     });
 
     if (!wordProgress) {
-      // Create new word progress if it doesn't exist
       wordProgress = new WordProgress({
         user_id: userId,
         word_id: wordId,
@@ -30,11 +32,40 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
       });
     }
 
-    // Toggle bookmark using the model method
+    // Check limit only when adding a new bookmark
+    if (!wordProgress.is_bookmarked) {
+      const currentCount = await WordProgress.countDocuments({ user_id: userId, is_bookmarked: true });
+      if (currentCount >= BOOKMARK_LIMIT) {
+        res.status(409).json({
+          success: false,
+          code: 'BOOKMARK_LIMIT_EXCEEDED',
+          message: `북마크 최대 개수(${BOOKMARK_LIMIT}개)에 도달했습니다. 기존 북마크를 정리해주세요.`,
+        });
+        return;
+      }
+
+      const remaining = BOOKMARK_LIMIT - (currentCount + 1);
+      const isBookmarked = wordProgress.toggleBookmark(reason, tags);
+      await wordProgress.save();
+      const word = await Word.findById(wordId);
+
+      res.json({
+        success: true,
+        data: {
+          wordId,
+          isBookmarked,
+          bookmarkInfo: wordProgress.getBookmarkInfo(),
+          word: word ? { kanji: word.entry, readings: word.pron, meanings: word.means } : null,
+        },
+        message: 'Word bookmarked successfully',
+        ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
+      });
+      return;
+    }
+
+    // Removing bookmark — no limit check needed
     const isBookmarked = wordProgress.toggleBookmark(reason, tags);
     await wordProgress.save();
-
-    // Get word details for response
     const word = await Word.findById(wordId);
 
     res.json({
@@ -43,15 +74,9 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
         wordId,
         isBookmarked,
         bookmarkInfo: wordProgress.getBookmarkInfo(),
-        word: word
-          ? {
-              kanji: word.entry,
-              readings: word.pron,
-              meanings: word.means,
-            }
-          : null,
+        word: word ? { kanji: word.entry, readings: word.pron, meanings: word.means } : null,
       },
-      message: isBookmarked ? 'Word bookmarked successfully' : 'Word unbookmarked successfully',
+      message: 'Word unbookmarked successfully',
     });
   } catch (error) {
     console.error('Toggle bookmark error:', error);
