@@ -128,6 +128,49 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-id
 
 ---
 
+## Commit Convention
+
+### Format
+
+```
+<type>: <description>
+```
+
+- **scope 없음**: `fix(auth):` ❌ → `fix:` ✅
+- **설명은 한국어**로 작성
+- 제목 끝에 마침표 없음
+
+### Types
+
+| type | 사용 시점 |
+|------|-----------|
+| `feat` | 새 기능 추가 |
+| `fix` | 버그 수정 |
+| `refactor` | 동작 변경 없는 코드 구조 개선 |
+| `perf` | 성능 개선 |
+| `test` | 테스트 추가·수정 |
+| `style` | 스타일·디자인 변경 (로직 무관) |
+| `chore` | 빌드·설정·의존성 변경 |
+| `docs` | 문서 수정 |
+
+### Rules
+
+- 하나의 커밋은 하나의 논리적 변경만 포함
+- 여러 파일이 같은 목적이면 함께 커밋, 다른 목적이면 분리
+- 완료된 작업 단위로 커밋 (WIP 커밋 지양)
+
+### Examples
+
+```
+feat: 학습 대시보드 추가
+fix: $lookup collection name 'words' → 'word' 수정
+refactor: 미사용 미들웨어 제거 및 토큰 추출 함수 분리
+perf: 레벨별 진행률 조회 쿼리 aggregation으로 최적화
+test: userStatsController 테스트 보강
+```
+
+---
+
 ## Development Workflow
 
 ### When Starting a New Feature
