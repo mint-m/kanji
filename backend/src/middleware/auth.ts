@@ -43,7 +43,9 @@ const extractToken = (req: Request): string | null => {
     if (authHeader.startsWith('Bearer ')) return authHeader.slice(7).replace(/"/g, '');
     if (authHeader.startsWith('Token ')) return authHeader.slice(6).replace(/"/g, '');
   }
-  return req.cookies?.token || (req.query.token as string) || null;
+  const rawToken = req.query.token;
+  const queryToken = typeof rawToken === 'string' ? rawToken : Array.isArray(rawToken) ? rawToken[0] : null;
+  return req.cookies?.token || queryToken || null;
 };
 
 export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
