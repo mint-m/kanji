@@ -17,6 +17,7 @@ const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCardPage'));
 const UserProfile = lazy(() => import('pages/UserProfilePage'));
 const Bookmark = lazy(() => import('pages/BookmarkPage'));
+const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
 const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
 const Dashboard = lazy(() => import('pages/DashboardPage'));
 
@@ -67,6 +68,12 @@ const AppContent = () => {
           <Route path='/bookmark' element={
             <ProtectedRoute>
               <Bookmark />
+            </ProtectedRoute>
+          } />
+
+          <Route path='/bookmark-study' element={
+            <ProtectedRoute>
+              <BookmarkStudy />
             </ProtectedRoute>
           } />
 

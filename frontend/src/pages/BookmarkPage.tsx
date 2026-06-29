@@ -1,22 +1,20 @@
 import { FC, useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } from 'services/bookmarkService';
 import { LearningLevel, ProgressType } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { clsx } from 'clsx';
 import * as styles from './BookmarkPage.css';
 
-interface BookmarkStats {
-  totalBookmarks: number;
-  completedBookmarks: number;
-}
-
 type SortOption = 'recent' | 'level';
+
 
 const LEVEL_COLORS: Record<string, string> = {
   N5: '#e74c3c', N4: '#e67e22', N3: '#f39c12', N2: '#3498db', N1: '#9b59b6',
 };
 
 const BookmarkPage: FC = () => {
+  const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +22,6 @@ const BookmarkPage: FC = () => {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<BookmarkPagination | null>(null);
-  const [stats, setStats] = useState<BookmarkStats | null>(null);
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
 
@@ -58,11 +55,6 @@ const BookmarkPage: FC = () => {
   }, [selectedLevel, sortBy]);
 
   useEffect(() => { fetchBookmarks(1); }, [fetchBookmarks]);
-  useEffect(() => {
-    bookmarkService.getBookmarkStats()
-      .then(response => { if (response.success && response.data) setStats(response.data); })
-      .catch(() => {});
-  }, []);
 
   const handleRemoveBookmark = async (wordId: string, progressType?: string) => {
     if (!window.confirm('이 북마크를 삭제하시겠습니까?')) return;
@@ -70,9 +62,6 @@ const BookmarkPage: FC = () => {
       const response = await bookmarkService.toggleBookmark(wordId, progressType as ProgressType);
       if (response.success) {
         setBookmarks(prev => prev.filter(b => b.word._id !== wordId));
-        bookmarkService.getBookmarkStats()
-          .then(res => { if (res.success && res.data) setStats(res.data); })
-          .catch(() => {});
       }
     } catch {
       alert('북마크 삭제에 실패했습니다.');
@@ -98,22 +87,10 @@ const BookmarkPage: FC = () => {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.pageTitle}>내 북마크</h1>
-
-      {stats && (
-        <div className={styles.statsGrid}>
-          {[
-            { label: '총 북마크', value: stats.totalBookmarks || 0 },
-            { label: '완료한 단어', value: stats.completedBookmarks || 0 },
-            { label: '완료율', value: `${stats.totalBookmarks > 0 ? Math.round((stats.completedBookmarks / stats.totalBookmarks) * 100) : 0}%` },
-          ].map(({ label, value }) => (
-            <div key={label} className={clsx('card', styles.statCard)}>
-              <div className={styles.statValue}>{value}</div>
-              <div className={styles.statLabel}>{label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className={styles.titleRow}>
+        <h1 className={styles.pageTitle}>내 북마크</h1>
+        {pagination && <span className={styles.totalCount}>{pagination.totalItems}</span>}
+      </div>
 
       <div className={styles.filtersBar}>
         <div className={styles.filterGroup}>
@@ -136,9 +113,15 @@ const BookmarkPage: FC = () => {
           >
             <option value="recent">최근 순</option>
             <option value="level">레벨 순</option>
-            <option value="step">단계 순</option>
           </select>
         </div>
+        <button
+          className={styles.studyBtn}
+          onClick={() => navigate('/bookmark-study', { state: { level: selectedLevel, sortBy } })}
+          disabled={bookmarks.length === 0}
+        >
+          복습 시작
+        </button>
       </div>
 
       {error && <div className="error-box" style={{ marginBottom: '16px' }}>{error}</div>}
@@ -152,29 +135,38 @@ const BookmarkPage: FC = () => {
         <div className={styles.bookmarkList}>
           {bookmarks.map((bookmark) => (
             <div key={bookmark._id} className={clsx('card', styles.bookmarkCard)}>
+
               <div className={styles.bookmarkHeader}>
-                <div className={styles.wordMain}>
-                  <div className={styles.wordPron}>{bookmark.word.pron || bookmark.word.entry}</div>
-                  <div className={styles.wordEntry}>{bookmark.word.entry}</div>
-                </div>
                 <span
                   className={styles.levelBadge}
                   style={{ backgroundColor: LEVEL_COLORS[bookmark.word.level] || '#95a5a6' }}
                 >
-                  {bookmark.word.level} - Step {bookmark.word.step}
+                  {bookmark.word.level}·{bookmark.word.step}
                 </span>
+                <button className={styles.deleteBtn} onClick={() => handleRemoveBookmark(bookmark.word._id, bookmark.progress_type)}>×</button>
               </div>
 
-              <div className={styles.meanings}>
-                {bookmark.word.means.map((meaning, idx) => (
-                  <div key={idx} className={styles.meaningItem}>{meaning}</div>
-                ))}
+              <div className={styles.wordArea}>
+                {bookmark.word.pron ? (
+                  <ruby className={styles.wordKanji}>
+                    {bookmark.word.pron}
+                    <rt className={styles.wordReading}>{bookmark.word.entry}</rt>
+                  </ruby>
+                ) : (
+                  <span className={styles.wordKanji}>{bookmark.word.entry}</span>
+                )}
               </div>
 
-              <div className={styles.partsRow}>
-                {bookmark.word.parts.map((part, idx) => (
-                  <span key={idx} className={styles.partTag}>{part}</span>
-                ))}
+
+              <div className={styles.metaArea}>
+                {bookmark.word.parts.length > 0 && (
+                  <div className={styles.partsRow}>
+                    {bookmark.word.parts.map((part, idx) => (
+                      <span key={idx} className={styles.partTag}>{part}</span>
+                    ))}
+                  </div>
+                )}
+                <p className={styles.meanings}>{bookmark.word.means.join(', ')}</p>
               </div>
 
               <div className={styles.notesBox}>
@@ -208,10 +200,6 @@ const BookmarkPage: FC = () => {
                 )}
               </div>
 
-              <div className={styles.cardFooter}>
-                <span className={styles.dateText}>{new Date(bookmark.bookmarked_at).toLocaleDateString('ko-KR')}</span>
-                <button className={styles.deleteBtn} onClick={() => handleRemoveBookmark(bookmark.word._id, bookmark.progress_type)}>삭제</button>
-              </div>
             </div>
           ))}
         </div>
