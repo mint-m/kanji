@@ -153,7 +153,16 @@ export const studyBtn = style({
 export const bookmarkList = style({
   display: 'grid',
   gap: vars.space.md,
-  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+  gridTemplateColumns: '1fr',
+
+  '@media': {
+    'screen and (min-width: 480px)': {
+      gridTemplateColumns: 'repeat(2, 1fr)',
+    },
+    'screen and (min-width: 768px)': {
+      gridTemplateColumns: 'repeat(3, 1fr)',
+    },
+  },
 });
 
 export const bookmarkCard = style({
