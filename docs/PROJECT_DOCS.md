@@ -2,7 +2,7 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2026-06-26
+**최종 업데이트**: 2026-06-29
 **버전**: 4.0
 
 ---
@@ -13,9 +13,10 @@
 2. [시스템 아키텍처](#시스템-아키텍처)
 3. [데이터베이스 구조](#데이터베이스-구조)
 4. [API 엔드포인트](#api-엔드포인트)
-5. [슬라이딩 윈도우 시스템](#슬라이딩-윈도우-시스템)
-6. [프론트엔드 마이그레이션](#프론트엔드-마이그레이션)
-7. [환경 설정](#환경-설정)
+5. [북마크 시스템](#북마크-시스템)
+6. [슬라이딩 윈도우 시스템](#슬라이딩-윈도우-시스템)
+7. [프론트엔드 마이그레이션](#프론트엔드-마이그레이션)
+8. [환경 설정](#환경-설정)
 
 ---
 
@@ -76,7 +77,8 @@ frontend/src/
 │   ├── FlashCardPage/   # 플래시카드 학습 페이지
 │   ├── LevelSelectionPage/ # 레벨 선택 페이지
 │   ├── UserProfilePage.tsx # 사용자 프로필 (Main/Sub 전환)
-│   ├── BookmarkPage.tsx # 북마크 관리 페이지
+│   ├── BookmarkPage.tsx # 북마크 관리 페이지 (레벨 필터, 정렬, 페이지네이션)
+│   ├── BookmarkStudyPage/ # 북마크 복습 플래시카드 페이지
 │   └── NotFound/        # 404 페이지
 ├── store/               # Redux 스토어
 │   └── modules/
@@ -582,59 +584,25 @@ POST /api/users/me/progress/:progressType/complete-deck
 
 ### 북마크 관리 (Bookmarks)
 
+```
+POST /api/users/me/bookmarks/toggle   # 북마크 토글 (추가/해제)
+GET  /api/users/me/bookmarks          # 북마크 목록 조회
+PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
+```
+
 #### 북마크 토글
 
-```
-POST /api/users/me/bookmarks
-```
+**요청**: `{ wordId, progressType }` — `progressType`은 원래 세션 타입(`"main"` | `"sub"`)을 그대로 전달해야 올바른 레코드가 토글된다.
 
-**요청 본문**:
-
-```json
-{
-  "wordId": "64f5a1b2c3d4e5f6g7h8i9j0",
-  "progressType": "main"
-}
-```
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "isBookmarked": true,
-    "bookmarkInfo": { "isBookmarked": true, "tags": [] }
-  }
-}
-```
+**응답**: 기본 `{ success, data }`. 잔여 10개 이하면 `warning: { remaining: N }` 추가. 150개 초과 시 409 + `code: "BOOKMARK_LIMIT_EXCEEDED"`.
 
 #### 북마크 목록 조회
 
-```
-GET /api/users/me/bookmarks?page=1&limit=20
-```
+**쿼리 파라미터**: `page`(기본 1), `limit`(기본 20), `level`(N5~N1), `sortBy`(`last_studied_at` | `level` | `step`), `sortOrder`(`desc` | `asc`)
 
-**쿼리 파라미터**:
+**응답**: `{ bookmarks: [...], pagination: { currentPage, itemsPerPage, totalItems, totalPages } }`
 
-- `page`: 페이지 번호 (기본값: 1)
-- `limit`: 페이지당 개수 (기본값: 20)
-
-#### 북마크 정보 수정
-
-```
-PATCH /api/users/me/bookmarks/:wordId
-```
-
-**요청 본문**:
-
-```json
-{
-  "reason": "발음 어려움",
-  "tags": ["발음", "복습필요"],
-  "progressType": "main"
-}
-```
+각 bookmark 객체는 `word`, `progress_type`, `notes`, `is_bookmarked`, `bookmarked_at` 포함.
 
 ---
 
@@ -645,6 +613,34 @@ GET /api/words/all                                    # 전체 단어 조회
 GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 (minStep, maxStep)
 GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 ```
+
+---
+
+## 북마크 시스템
+
+북마크는 `WordProgress.is_bookmarked` 필드로 관리된다. `progress_type`별로 레코드가 분리되므로 토글 시 원래 세션의 `progressType`을 함께 전달해야 올바른 레코드가 토글된다.
+
+### 제한 정책
+
+- 유저당 최대 **150개**. 초과 시 409 `BOOKMARK_LIMIT_EXCEEDED` 반환.
+- 잔여 **10개 이하**가 되면 성공 응답에 `warning: { remaining: N }` 포함 → 프론트에서 5초 배너 표시.
+
+### 주요 동작 규칙
+
+| 상황 | 동작 |
+|---|---|
+| 북마크 추가, 잔여 > 10 | `{ success: true }` |
+| 북마크 추가, 잔여 ≤ 10 | `{ success: true, warning: { remaining: N } }` |
+| 북마크 추가, 이미 150개 | 409, 저장 안 함 |
+| 북마크 해제 | 제한 체크 없이 토글 |
+| API 오류 | 낙관적 업데이트 롤백 |
+
+### 구현 참고
+
+- `ApiError` 클래스(`services/authService.ts`)가 409 응답의 `code` 필드를 보존 — `apiClient`가 4xx를 모두 throw로 변환하기 때문에 필요.
+- `BookmarkStudyPage`는 로딩 시 `progress_type`을 `Map<wordId, ProgressType>`으로 캐싱하여 토글에 전달.
+- `BookmarkPage` 필터 변경 시 generation 카운터로 stale 응답을 무시. 삭제 후에는 `fetchBookmarks(targetPage)` 재호출로 서버 상태와 동기화.
+- `FlashCardContainer` 북마크 초기화는 `limit: 200` 제한이 있어 총 북마크 200개 초과 시 일부 미표시 가능 (추후 덱 범위 기반 API로 개선 예정).
 
 ---
 
@@ -714,7 +710,7 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 
 ## 프론트엔드 마이그레이션
 
-### 현재 상태 (2026-06-26 기준)
+### 현재 상태 (2026-06-29 기준)
 
 #### ✅ 완료된 작업
 
@@ -722,12 +718,15 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 2. **Redux Store**: 인증 상태 + 활성 세션 타입만 관리. API 상태는 서비스 레이어로 분리
 3. **핵심 컴포넌트**: FlashCard, FlashCardContainer, ControlPanel, LevelSetup, Bookmark 등
 4. **완전 습득형 학습 로직**: 패스 반복 + 윈도우 완료 판정 + 재셔플 흐름
-5. **테스트**: 백엔드 컨트롤러 단위 테스트 (32개), Playwright E2E 테스트
+5. **북마크 시스템 고도화**: 제한(150개) + warning 알림 + progress_type 보존 + race condition 방어
+6. **북마크 복습 페이지**: `BookmarkStudyPage` — 레벨/정렬 필터 기반 플래시카드 복습
+7. **테스트**: 백엔드 컨트롤러 단위 테스트, Playwright E2E 테스트
 
 #### 🔄 진행 중
 
 - 학습 통계 대시보드 고도화
 - 연속 학습일 추적 UI
+- FlashCardContainer 북마크 초기화: 덱 범위 기반 API로 개선 (현재 limit: 200 한계)
 
 ### 마이그레이션 전략
 
@@ -894,6 +893,19 @@ yarn start
 ---
 
 ## 변경 이력
+
+### v4.2 (2026-06-29)
+
+- ✅ 북마크 유저당 최대 150개 하드 제한 추가 (초과 시 409 `BOOKMARK_LIMIT_EXCEEDED`)
+- ✅ 잔여 10개 이하 시 `warning.remaining` 포함 응답 → 프론트 warning 배너 (5초 자동 소멸)
+- ✅ `ApiError` 클래스 도입: 409 에러의 `code` 필드 보존
+- ✅ `BookmarkStudyPage`: `progress_type` Map 캐싱으로 토글 시 올바른 세션 타입 전달
+- ✅ `BookmarkStudyPage`: useEffect active flag + API 에러 상태 처리
+- ✅ `BookmarkPage`: generation 카운터로 필터 변경/언마운트 race condition 방어
+- ✅ `BookmarkPage`: 삭제 후 `fetchBookmarks(targetPage)` 재호출로 페이지네이션 완전 동기화
+- ✅ `FlashCardContainer`: active flag + 성공 시 항상 `setBookmarkedIds` 갱신 (스탤 상태 방지)
+- ✅ `FlashCardPage`: 진행 표시를 `Math.min(index + 1, deck.length)`로 클램프 (11/10 방지)
+- ✅ 북마크 시스템 문서 섹션 신규 추가
 
 ### v4.1 (2026-06-26)
 
