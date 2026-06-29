@@ -1,9 +1,11 @@
 import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import progressService from 'services/progressService';
 import { LearningLevel } from 'services/types';
+import { RootState } from 'store';
 import * as styles from './LevelSetupPage.css';
 
 const LEVELS: LearningLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
@@ -26,6 +28,8 @@ interface ExistingSession {
 
 const LevelSetupPage: FC = () => {
   const navigate = useNavigate();
+  const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
+  const progressType = activeProgressType || 'main';
   const [selected, setSelected] = useState<LearningLevel>('N5');
   const [existingSession, setExistingSession] = useState<ExistingSession | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -34,7 +38,7 @@ const LevelSetupPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    progressService.getUserProgress('main')
+    progressService.getUserProgress(progressType)
       .then((res) => {
         if (res.success && res.data?.progress) {
           const p = res.data.progress;
@@ -52,7 +56,7 @@ const LevelSetupPage: FC = () => {
         }
       })
       .finally(() => setIsCheckingSession(false));
-  }, []);
+  }, [progressType]);
 
   const handleSelect = (level: LearningLevel) => {
     setSelected(level);
@@ -65,9 +69,9 @@ const LevelSetupPage: FC = () => {
     setError(null);
     try {
       if (existingSession) {
-        await progressService.deleteSession('main');
+        await progressService.deleteSession(progressType);
       }
-      await progressService.saveCheckpoint('main', selected, DEFAULT_STEPS);
+      await progressService.saveCheckpoint(progressType, selected, DEFAULT_STEPS);
       navigate('/flash-cards', { replace: true });
     } catch {
       setError('레벨 설정에 실패했습니다. 다시 시도해주세요.');
