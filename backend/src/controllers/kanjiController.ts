@@ -34,7 +34,7 @@ const fetchFromDB = async (kanji: string): Promise<object | null> => {
   if (!doc) return null;
 
   const levelNum = doc.jlptLevel?.replace('N', '') ?? '';
-  const wordWithKanji = await Word.findOne({ pron: { $regex: escapeRegex(kanji), $options: 'i' } });
+  const wordWithKanji = await Word.findOne({ pron: { $regex: escapeRegex(kanji) } });
   const koreanMeaning = wordWithKanji?.means[0] ?? '';
   const expKoreanPron = [koreanMeaning, doc.koreanPron].filter(Boolean).join(' ');
 
