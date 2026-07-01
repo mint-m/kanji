@@ -33,6 +33,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     );
     const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
     const lastSubmittedWordIdRef = useRef<string | null>(null);
+    const isProcessingRef = useRef(false);
     const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
@@ -61,6 +62,9 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
 
     const handleKnowClick = useCallback((know: boolean) => {
       if (!currentWordId || lastSubmittedWordIdRef.current === currentWordId) return;
+      if (isProcessingRef.current) return;
+
+      isProcessingRef.current = true;
       lastSubmittedWordIdRef.current = currentWordId;
 
       const wordId = currentWordId;
@@ -78,7 +82,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
             else onPassComplete?.();
           }
         })
-        .catch(err => console.warn('⚠️ Progress sync failed', err));
+        .catch(err => console.warn('⚠️ Progress sync failed', err))
+        .finally(() => { isProcessingRef.current = false; });
     }, [currentWordId, cardStudyTime, progressType, resetUIState, onPassComplete, onWindowComplete]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {

@@ -115,7 +115,10 @@ const LevelSelectionPage: FC = () => {
       dispatch(setActiveProgressType('sub'));
       const stored = getUserLocally();
       if (stored) { stored.activeProgressType = 'sub'; saveUserLocally(stored); }
-      await saveAndStart('sub');
+      const subSteps = { start: selectedSteps.start, end: selectedSteps.start };
+      await progressService.deleteSession('sub').catch(() => {});
+      await progressService.saveCheckpoint('sub', selectedLevel as any, subSteps);
+      navigate('/flash-cards');
     } catch {
       alert('서브 세션 전환에 실패했습니다. 다시 시도해주세요.');
     } finally {
