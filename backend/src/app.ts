@@ -13,14 +13,15 @@ const app = express();
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cors({ credentials: true, origin: true }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4200'];
+app.use(cors({ credentials: true, origin: allowedOrigins }));
 
 // 세션 설정
 app.use(
   session({
     secret: SESSION_SECRET as string,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: {
       sameSite: "none",
       secure: true,
