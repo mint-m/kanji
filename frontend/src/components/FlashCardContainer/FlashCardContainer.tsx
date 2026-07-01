@@ -33,6 +33,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     );
     const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
     const lastSubmittedWordIdRef = useRef<string | null>(null);
+    const requestQueueRef = useRef<Promise<any>>(Promise.resolve());
     const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
@@ -70,7 +71,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       setWordIndex(prev => prev + 1);
       resetUIState();
 
-      progressService.completeWord(progressType, { wordId, isCorrect: know, timeSpent })
+      requestQueueRef.current = requestQueueRef.current
+        .then(() => progressService.completeWord(progressType, { wordId, isCorrect: know, timeSpent }))
         .then(res => {
           if (res.data?.passComplete) {
             setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });

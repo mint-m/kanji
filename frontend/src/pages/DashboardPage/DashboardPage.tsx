@@ -45,12 +45,14 @@ const DashboardPage: FC = () => {
 
   useEffect(() => {
     if (!activeProgressType) { setProgressData(null); return; }
+    let active = true;
     setProgressData(null);
     setIsLoadingProgress(true);
     deckService.getCurrentDeck(activeProgressType)
-      .then(res => { if (res.success && res.data) setProgressData(res.data); })
+      .then(res => { if (active && res.success && res.data) setProgressData(res.data); })
       .catch(() => {})
-      .finally(() => setIsLoadingProgress(false));
+      .finally(() => { if (active) setIsLoadingProgress(false); });
+    return () => { active = false; };
   }, [activeProgressType]);
 
   const handleSessionToggle = async (type: 'main' | 'sub') => {

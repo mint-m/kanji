@@ -80,9 +80,11 @@ const LevelSelectionPage: FC = () => {
 
   useEffect(() => {
     if (!selectedLevel) return;
+    let active = true;
     api.get<LevelStepData>(`/api/words/level/${selectedLevel}/steps`)
-      .then(setLevelData)
-      .catch(() => setLevelData(null));
+      .then(res => { if (active) setLevelData(res); })
+      .catch(() => { if (active) setLevelData(null); });
+    return () => { active = false; };
   }, [selectedLevel]);
 
   const handleSelectLevel = useCallback((level: string) => {
