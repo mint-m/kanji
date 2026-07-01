@@ -1,7 +1,7 @@
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout } from 'services/authService';
+import { logout, getUserLocally } from 'services/authService';
 import { clsx } from 'clsx';
 import * as styles from './Navbar.css';
 
@@ -9,8 +9,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const profileData = localStorage.getItem('user');
-  const userProfile = profileData ? JSON.parse(profileData) : null;
+  const userProfile = getUserLocally();
 
   const handleOnClick = useCallback((path: string) => {
     navigate(`/${path}`);
