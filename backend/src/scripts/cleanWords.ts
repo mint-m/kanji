@@ -65,7 +65,6 @@ async function cleanWords() {
 
   // ── C. 완전 중복 (entry + pron + level 모두 동일) ───────────────────────
   const dupGroups = await Word.aggregate([
-    { $sort: { createdAt: -1 } },
     {
       $group: {
         _id: { entry: '$entry', pron: { $ifNull: ['$pron', ''] }, level: '$level' },
@@ -81,8 +80,13 @@ async function cleanWords() {
   const dupRemoveIds: mongoose.Types.ObjectId[] = [];
 
   for (const group of dupGroups) {
-    // ids 중 하나(첫 번째)를 남기고 나머지 제거
-    const [, ...toRemove] = group.ids;
+    // createdAt 기준 내림차순 정렬 후 최신 1개 제외하고 나머지 제거
+    const mapped = (group.ids as mongoose.Types.ObjectId[]).map((id, i) => ({
+      id,
+      createdAt: new Date(group.createdAts[i]),
+    }));
+    mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const [, ...toRemove] = mapped.map(item => item.id);
     dupRemoveIds.push(...toRemove);
     dupRemoveCount += toRemove.length;
   }
