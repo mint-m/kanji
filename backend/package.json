@@ -33,7 +33,14 @@
     "start": "node src/server.ts",
     "dev": "nodemon src/server.ts",
     "test": "jest",
-    "seed:kanji": "ts-node src/scripts/seedKanji.ts"
+    "seed:kanji": "ts-node src/scripts/seedKanji.ts",
+    "augment:frequency": "ts-node src/scripts/augmentFrequency.ts",
+    "clean:words": "ts-node src/scripts/cleanWords.ts",
+    "clean:words:dry": "ts-node src/scripts/cleanWords.ts --dry-run",
+    "create:daily": "ts-node src/scripts/createDailyWords.ts",
+    "create:daily:dry": "ts-node src/scripts/createDailyWords.ts --dry-run",
+    "reorder:frequency": "ts-node src/scripts/reorderByFrequency.ts",
+    "reorder:frequency:dry": "ts-node src/scripts/reorderByFrequency.ts --dry-run"
   },
   "jest": {
     "preset": "ts-jest",

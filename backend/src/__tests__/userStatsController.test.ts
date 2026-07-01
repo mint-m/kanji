@@ -67,13 +67,13 @@ describe('getUserStats', () => {
     expect(body.totalWordsStudied).toBe(55);
   });
 
-  it('levelBreakdown 배열이 N5~N1 5개 반환', async () => {
+  it('levelBreakdown 배열이 daily·N5~N1 6개 반환', async () => {
     (User.findById as jest.Mock).mockResolvedValue(makeUser());
     const res = makeRes();
     await getUserStats(makeReq(), res, makeNext());
     const body = (res.json as jest.Mock).mock.calls[0][0];
-    expect(body.levelBreakdown).toHaveLength(5);
-    expect(body.levelBreakdown.map((l: any) => l.level)).toEqual(['N5', 'N4', 'N3', 'N2', 'N1']);
+    expect(body.levelBreakdown).toHaveLength(6);
+    expect(body.levelBreakdown.map((l: any) => l.level)).toEqual(['N5', 'N4', 'N3', 'N2', 'N1', 'daily']);
   });
 
   it('overall 진행률 포함', async () => {
