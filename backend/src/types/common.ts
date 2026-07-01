@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
 // Core Learning Types
 // ============================================================================
 
-export const LEARNING_LEVELS = ['N5', 'N4', 'N3', 'N2', 'N1'] as const;
+export const LEARNING_LEVELS = ['N5', 'N4', 'N3', 'N2', 'N1', 'daily'] as const;
 export type LearningLevel = (typeof LEARNING_LEVELS)[number];
 
 /**
@@ -158,6 +158,7 @@ export function isValidStepRange(range: StepRange): boolean {
  */
 export function getLevelOrder(level: LearningLevel): number {
   const order: Record<LearningLevel, number> = {
+    daily: 6,
     N5: 5,
     N4: 4,
     N3: 3,

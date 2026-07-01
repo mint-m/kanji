@@ -8,10 +8,11 @@ import { LearningLevel } from 'services/types';
 import { RootState } from 'store';
 import * as styles from './LevelSetupPage.css';
 
-const LEVELS: LearningLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
+const LEVELS: LearningLevel[] = ['daily', 'N5', 'N4', 'N3', 'N2', 'N1'];
 const DEFAULT_STEPS = { start: 1, end: 3 };
 
 const LEVEL_INFO: Record<LearningLevel, { label: string; description: string }> = {
+  daily: { label: '일상', description: '인사말·기초회화·고빈도 일상어·중요 의성어 등 시험과 무관하지만 실생활에 꼭 필요한 표현 모음.' },
   N5: { label: '입문', description: '일본 초등학생 저학년 수준. 숫자·날짜·간단한 인사말을 이해할 수 있어요.' },
   N4: { label: '초급', description: '일본 초등학생 고학년 수준. 일상적인 대화와 쉬운 글을 읽을 수 있어요.' },
   N3: { label: '중급', description: '일본 중학생 수준. 자연스러운 일상 대화와 신문 요약을 이해할 수 있어요.' },

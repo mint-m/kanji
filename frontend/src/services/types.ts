@@ -3,7 +3,7 @@
  */
 
 // 학습 레벨
-export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1';
+export type LearningLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1' | 'daily';
 
 // 진행 타입 (Main/Sub 세션)
 export type ProgressType = 'main' | 'sub';
