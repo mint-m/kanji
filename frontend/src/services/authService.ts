@@ -11,41 +11,6 @@ export interface UserProfile {
   type: 'google' | 'kakao' | 'local';
   activeProgressType: 'main' | 'sub' | null;
   authProviders?: ('google' | 'kakao' | 'local')[];
-  profile?: {
-    displayName?: string;
-    profilePicture?: string;
-    bio?: string;
-    studyGoals?: string[];
-    joinedAt?: Date;
-    lastActiveAt?: Date;
-    daysSinceJoined?: number;
-  };
-  preferences?: {
-    studyReminders?: boolean;
-    reminderTime?: string;
-    dailyGoal?: number;
-    theme?: 'light' | 'dark' | 'auto';
-    language?: 'ko' | 'en' | 'ja';
-    soundEffects?: boolean;
-    autoPlayAudio?: boolean;
-  };
-  statistics?: {
-    totalWordsStudied?: number;
-    totalTimeSpent?: number;
-    currentStreak?: number;
-    longestStreak?: number;
-    levelsCompleted?: string[];
-    averageSessionTime?: number;
-    studyDaysCount?: number;
-    favoriteStudyTime?: string;
-  };
-  authInfo?: {
-    lastActive?: Date;
-    isVerified?: boolean;
-    accountType?: string;
-    isNewUser?: boolean;
-    canReceiveReminders?: boolean;
-  };
 }
 
 export interface LoginResult {

@@ -1,16 +1,10 @@
 import { FC, useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from 'store';
-import UserProgress from 'components/UserProgress';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { setActiveProgressType } from 'store/modules/user';
-import { updateActiveProgressType, getProfile } from 'services/userService';
+import { getProfile } from 'services/userService';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
-import deckService from 'services/deckService';
-import { CurrentDeck } from 'services/types';
 import { clsx } from 'clsx';
 import * as styles from './UserProfilePage.css';
 
@@ -19,15 +13,10 @@ const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const location = useLocation();
-  const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isUpdatingSession, setIsUpdatingSession] = useState(false);
-  const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
-  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [linkError, setLinkError] = useState<string | null>((location.state as any)?.linkError ?? null);
   const [linkLoading, setLinkLoading] = useState<string | null>(null);
 
@@ -51,33 +40,6 @@ const UserProfilePage: FC = () => {
     };
     fetchUserData();
   }, []);
-
-  useEffect(() => {
-    if (!activeProgressType) { setProgressData(null); return; }
-    setIsLoadingProgress(true);
-    deckService.getCurrentDeck(activeProgressType)
-      .then(res => { if (res.success && res.data) setProgressData(res.data); })
-      .catch(() => {})
-      .finally(() => setIsLoadingProgress(false));
-  }, [activeProgressType]);
-
-  const handleSessionToggle = async (type: 'main' | 'sub') => {
-    if (isUpdatingSession || type === activeProgressType) return;
-    setIsUpdatingSession(true);
-    try {
-      await updateActiveProgressType(type);
-      dispatch(setActiveProgressType(type));
-      const stored = getUserLocally();
-      if (stored) {
-        stored.activeProgressType = type;
-        saveUserLocally(stored);
-      }
-    } catch {
-      setError('세션 전환에 실패했습니다.');
-    } finally {
-      setIsUpdatingSession(false);
-    }
-  };
 
   const googleLinkLogin = useGoogleLogin({
     flow: 'auth-code',
@@ -148,59 +110,18 @@ const UserProfilePage: FC = () => {
         </div>
       </div>
 
-      {/* 학습 세션 */}
+      {/* 통계 */}
       <section className="card" style={{ marginBottom: '24px' }}>
-        <h2 className="section-title">학습 세션</h2>
-        <div className={styles.sessionBtns}>
-          {(['main', 'sub'] as const).map((type) => (
-            <button
-              key={type}
-              className={clsx(styles.sessionBtn, activeProgressType === type && styles.sessionBtnActive)}
-              onClick={() => handleSessionToggle(type)}
-              disabled={isUpdatingSession}
-            >
-              {type === 'main' ? '메인' : '서브'}
-            </button>
-          ))}
-        </div>
-
-        <h3 className={styles.subTitle}>현재 학습 위치</h3>
-        {isLoadingProgress ? (
-          <div className="loading-text" style={{ padding: '12px 0' }}>불러오는 중...</div>
-        ) : progressData ? (
-          <div className={styles.progressRow}>
-            <div className={styles.progressCell}>
-              <span className={styles.progressCellLabel}>레벨</span>
-              <span className={styles.progressCellValue}>{progressData.level ?? 'N/A'}</span>
-            </div>
-            <div className={styles.progressCell}>
-              <span className={styles.progressCellLabel}>스텝</span>
-              <span className={styles.progressCellValue}>
-                {progressData.steps ? `${progressData.steps.start} – ${progressData.steps.end}` : 'N/A'}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <p className={styles.noProgress}>학습 세션이 없습니다. 단계를 선택해주세요.</p>
-        )}
-
-        <div className={styles.actionBtns}>
-          <DefaultButton style={{ flex: 1 }} onClick={() => navigate('/select-level')}>단계 변경</DefaultButton>
-          <DefaultButton style={{ flex: 1 }} onClick={() => navigate('/flash-cards')}>학습 이어하기</DefaultButton>
-        </div>
-      </section>
-
-      {/* 학습 통계 */}
-      <section style={{ marginBottom: '24px' }}>
-        <h2 className="section-title">학습 통계</h2>
-        <UserProgress />
+        <h2 className="section-title">통계</h2>
+        <DefaultButton style={{ width: '100%' }} onClick={() => navigate('/profile/stats')}>
+          통계 보기
+        </DefaultButton>
       </section>
 
       {/* 계정 연동 */}
       <section className="card" style={{ marginBottom: '24px' }}>
         <h2 className="section-title">계정 연동</h2>
         <div className={styles.providerList}>
-          {/* Google */}
           <div className={styles.providerRow}>
             <span className={styles.providerName}>Google</span>
             {linkedProviders.includes('google') ? (
@@ -215,7 +136,6 @@ const UserProfilePage: FC = () => {
               </button>
             )}
           </div>
-          {/* Kakao */}
           <div className={styles.providerRow}>
             <span className={styles.providerName}>Kakao</span>
             {linkedProviders.includes('kakao') ? (

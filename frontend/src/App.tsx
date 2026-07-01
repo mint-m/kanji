@@ -20,6 +20,7 @@ const Bookmark = lazy(() => import('pages/BookmarkPage'));
 const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
 const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
 const Dashboard = lazy(() => import('pages/DashboardPage'));
+const UserStats = lazy(() => import('pages/UserStatsPage'));
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -62,6 +63,12 @@ const AppContent = () => {
           <Route path='/profile' element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path='/profile/stats' element={
+            <ProtectedRoute>
+              <UserStats />
             </ProtectedRoute>
           } />
 
