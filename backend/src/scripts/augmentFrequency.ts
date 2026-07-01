@@ -48,13 +48,17 @@ async function downloadAndParse(): Promise<any> {
   return new Promise((resolve, reject) => {
     const gunzip = createGunzip();
     const chunks: Uint8Array[] = [];
+    response.data.on('error', reject);
     response.data.pipe(gunzip);
     gunzip.on('data', (chunk: Uint8Array) => chunks.push(chunk));
     gunzip.on('end', async () => {
       console.log('XML 파싱 중...');
-      const xml = Buffer.concat(chunks).toString('utf8');
-      const result = await parseStringPromise(xml, { explicitArray: true });
-      resolve(result);
+      try {
+        const xml = Buffer.concat(chunks).toString('utf8');
+        resolve(await parseStringPromise(xml, { explicitArray: true }));
+      } catch (err) {
+        reject(err);
+      }
     });
     gunzip.on('error', reject);
   });

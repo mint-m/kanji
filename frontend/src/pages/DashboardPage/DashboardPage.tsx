@@ -45,6 +45,7 @@ const DashboardPage: FC = () => {
 
   useEffect(() => {
     if (!activeProgressType) { setProgressData(null); return; }
+    setProgressData(null);
     setIsLoadingProgress(true);
     deckService.getCurrentDeck(activeProgressType)
       .then(res => { if (res.success && res.data) setProgressData(res.data); })

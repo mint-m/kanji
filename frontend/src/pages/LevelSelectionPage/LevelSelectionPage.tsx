@@ -124,7 +124,7 @@ const LevelSelectionPage: FC = () => {
   };
 
   const approxWords = levelData
-    ? levelData.stepDistribution
+    ? (levelData.stepDistribution ?? [])
         .filter(s => s._id >= selectedSteps.start && s._id <= selectedSteps.end)
         .reduce((sum, s) => sum + s.wordCount, 0)
     : 0;

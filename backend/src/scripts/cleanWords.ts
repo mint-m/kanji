@@ -65,6 +65,7 @@ async function cleanWords() {
 
   // ── C. 완전 중복 (entry + pron + level 모두 동일) ───────────────────────
   const dupGroups = await Word.aggregate([
+    { $sort: { createdAt: -1 } },
     {
       $group: {
         _id: { entry: '$entry', pron: { $ifNull: ['$pron', ''] }, level: '$level' },

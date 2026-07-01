@@ -48,12 +48,17 @@ async function downloadAndParse(): Promise<any> {
   return new Promise((resolve, reject) => {
     const gunzip = createGunzip();
     const chunks: Uint8Array[] = [];
+    response.data.on('error', reject);
     response.data.pipe(gunzip);
     gunzip.on('data', (chunk: Uint8Array) => chunks.push(chunk));
     gunzip.on('end', async () => {
       console.log('XML 파싱 중...');
-      const xml = Buffer.concat(chunks).toString('utf8');
-      resolve(await parseStringPromise(xml, { explicitArray: true }));
+      try {
+        const xml = Buffer.concat(chunks).toString('utf8');
+        resolve(await parseStringPromise(xml, { explicitArray: true }));
+      } catch (err) {
+        reject(err);
+      }
     });
     gunzip.on('error', reject);
   });
@@ -88,9 +93,10 @@ async function createDailyWords() {
   const entries: any[] = data.JMdict?.entry || [];
   console.log(`\nJMdict 엔트리 수: ${entries.length}`);
 
-  // 기존 DB의 entry+pron 세트 (중복 방지)
-  const existingWords = await Word.find({}, { entry: 1, pron: 1 }).lean();
+  // 기존 DB의 entry+pron 세트 및 origin_entry_id 세트 (중복 방지)
+  const existingWords = await Word.find({}, { entry: 1, pron: 1, origin_entry_id: 1 }).lean();
   const existingSet = new Set(existingWords.map(w => `${w.entry}||${w.pron ?? ''}`));
+  const existingIdSet = new Set(existingWords.map(w => w.origin_entry_id).filter(Boolean));
 
   const newDailyWords: any[] = [];
 
@@ -141,7 +147,7 @@ async function createDailyWords() {
       if (meanings.length === 0) continue;
 
       const entryId = `jmdict_daily_${entry.ent_seq?.[0] ?? entryVal}`;
-      if (existingSet.has(entryId)) continue;
+      if (existingIdSet.has(entryId)) continue;
 
       newDailyWords.push({
         origin_entry_id: entryId,
@@ -155,6 +161,7 @@ async function createDailyWords() {
       });
 
       existingSet.add(key);
+      existingIdSet.add(entryId);
     } catch {
       continue;
     }
