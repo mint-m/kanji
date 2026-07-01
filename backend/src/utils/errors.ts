@@ -52,3 +52,9 @@ export class AppError extends Error {
       super(message, 500);
     }
   }
+
+  export class InvalidStepRangeError extends BadRequestError {
+    constructor(message = "Invalid step range") {
+      super(message);
+    }
+  }

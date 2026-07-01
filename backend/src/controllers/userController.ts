@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
-import { NotFoundError, BadRequestError, InternalServerError } from '../utils/errors';
+import { NotFoundError, BadRequestError, InternalServerError, InvalidStepRangeError } from '../utils/errors';
 import { ProgressType, LearningLevel, LEARNING_LEVELS } from '../types/common';
 
 // 사용자 프로필 조회
@@ -89,8 +89,8 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
             level as LearningLevel,
             steps
           );
-        } catch (err: any) {
-          if (err?.message?.includes('Invalid step range') || err?.message?.includes('No words found')) {
+        } catch (err) {
+          if (err instanceof InvalidStepRangeError) {
             return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
           }
           return next(err);

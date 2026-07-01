@@ -30,7 +30,7 @@ const FlashCardPage: FC = () => {
   const [deckKey, setDeckKey] = useState(0);
   const [windowComplete, setWindowComplete] = useState(false);
 
-  const fetchDeck = useCallback(async () => {
+  const fetchDeck = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -42,18 +42,22 @@ const FlashCardPage: FC = () => {
         setLevel(deckLevel);
         setSteps(deckSteps);
         setCurrentIndex(apiCurrentIndex);
-      } else {
-        setError(response.message || '단어장을 불러오는데 실패했습니다.');
+        return true;
       }
+      setError(response.message || '단어장을 불러오는데 실패했습니다.');
+      return false;
     } catch (error: any) {
       console.error('Failed to fetch deck:', error);
       if (error.response?.status === 404 && error.response?.data?.code === 'NO_PROGRESS') {
         navigate('/level-setup', { replace: true });
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        return false;
+      }
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         setError('요청 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.');
       } else {
         setError(error.response?.data?.message || '단어장을 불러오는데 실패했습니다.');
       }
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +81,11 @@ const FlashCardPage: FC = () => {
       setWindowComplete(true);
       return;
     }
-    await fetchDeck();
+    const ok = await fetchDeck();
+    if (!ok) {
+      setWindowComplete(true);
+      return;
+    }
     setDeckKey(k => k + 1);
   }, [activeProgressType, fetchDeck]);
 
