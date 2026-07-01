@@ -94,10 +94,12 @@ const FlashCardPage: FC = () => {
           subtitle={steps ? (steps.start === steps.end ? `${steps.start}` : `${steps.start} ~ ${steps.end}`) : ''}
           progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
-        {error ? (
+        {error && !windowComplete && (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
-        ) : windowComplete ? (
+        )}
+        {windowComplete ? (
           <div className={styles.windowCompleteCard}>
+            {error && <div className="error-box" style={{ marginBottom: '15px' }}>{error}</div>}
             <h3 className={styles.windowCompleteTitle}>
               {isMain ? '윈도우 완료!' : '스텝 마스터!'}
             </h3>

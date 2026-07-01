@@ -65,7 +65,7 @@ const DashboardPage: FC = () => {
         saveUserLocally(stored);
       }
     } catch {
-      setError('세션 전환에 실패했습니다.');
+      alert('세션 전환에 실패했습니다.');
     } finally {
       setIsUpdatingSession(false);
     }

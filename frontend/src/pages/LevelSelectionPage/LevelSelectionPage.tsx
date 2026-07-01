@@ -109,6 +109,7 @@ const LevelSelectionPage: FC = () => {
   };
 
   const handleSwitchToSub = async () => {
+    const previousType = activeProgressType || 'main';
     setIsLoading(true);
     try {
       await updateActiveProgressType('sub');
@@ -120,6 +121,10 @@ const LevelSelectionPage: FC = () => {
       await progressService.saveCheckpoint('sub', selectedLevel as any, subSteps);
       navigate('/flash-cards');
     } catch {
+      await updateActiveProgressType(previousType).catch(() => {});
+      dispatch(setActiveProgressType(previousType));
+      const stored = getUserLocally();
+      if (stored) { stored.activeProgressType = previousType; saveUserLocally(stored); }
       alert('서브 세션 전환에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
