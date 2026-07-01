@@ -1,9 +1,9 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import bookmarkService from 'services/bookmarkService';
-import { ApiError } from 'services/authService';
+import bookmarkService, { Bookmark } from 'services/bookmarkService';
 import { DeckWord, LearningLevel, ProgressType } from 'services/types';
+import { useToggleBookmark } from 'hooks/useToggleBookmark';
 import FlashCard, { ShowType } from 'components/FlashCard';
 import ControlPanel from 'components/ControlPanel';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
@@ -45,13 +45,13 @@ const BookmarkStudyPage: FC = () => {
       if (!active) return;
       if (res.success && res.data?.bookmarks) {
         const progressMap = new Map<string, ProgressType | undefined>();
-        const words: DeckWord[] = res.data.bookmarks.map((b, idx) => {
+        const words: DeckWord[] = res.data.bookmarks.map((b: Bookmark, idx: number) => {
           progressMap.set(b.word._id, b.progress_type);
           return { ...b.word, index: idx, isCurrent: false, isWindowCompleted: false, isBookmarked: true };
         });
         progressTypeMapRef.current = progressMap;
         setDeck(words);
-        setBookmarkedIds(new Set(res.data.bookmarks.map(b => b.word._id)));
+        setBookmarkedIds(new Set(res.data.bookmarks.map((b: Bookmark) => b.word._id)));
       } else {
         setError('복습 단어를 불러오는데 실패했습니다.');
       }
@@ -76,33 +76,18 @@ const BookmarkStudyPage: FC = () => {
     type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
   }, []);
 
-  const handleBookmark = useCallback(async () => {
-    if (!deck) return;
-    const wordId = deck[wordIndex]?._id;
-    if (!wordId) return;
-    const progressType = progressTypeMapRef.current.get(wordId);
-    const revert = () => setBookmarkedIds(prev => {
-      const next = new Set(prev);
-      next.has(wordId) ? next.delete(wordId) : next.add(wordId);
-      return next;
-    });
-    setBookmarkedIds(prev => {
-      const next = new Set(prev);
-      next.has(wordId) ? next.delete(wordId) : next.add(wordId);
-      return next;
-    });
-    try {
-      const res = await bookmarkService.toggleBookmark(wordId, progressType);
-      if (res.warning) {
-        setBookmarkWarning(`북마크 ${res.warning.remaining}개 남았습니다. 복습 후 정리해보세요.`);
-      }
-    } catch (err) {
-      revert();
-      if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
-        setBookmarkWarning('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');
-      }
-    }
-  }, [deck, wordIndex]);
+  const currentWordId = deck?.[wordIndex]?._id;
+  const currentProgressType = currentWordId
+    ? progressTypeMapRef.current.get(currentWordId)
+    : undefined;
+
+  const handleBookmark = useToggleBookmark({
+    wordId: currentWordId,
+    progressType: currentProgressType,
+    setBookmarkedIds,
+    onWarning: setBookmarkWarning,
+    onLimitError: setBookmarkWarning,
+  });
 
   if (isLoading) return <CenterDiv><div>복습 단어를 불러오는 중...</div></CenterDiv>;
   if (error) return <CenterDiv><div className={styles.centerContent}><p>{error}</p><button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button></div></CenterDiv>;
@@ -119,7 +104,6 @@ const BookmarkStudyPage: FC = () => {
   }
 
   const isComplete = wordIndex >= deck.length;
-  const currentWordId = deck[wordIndex]?._id;
 
   if (isComplete) {
     return (
