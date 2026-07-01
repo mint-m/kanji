@@ -6,7 +6,7 @@ import { RootState } from 'store';
 import { setActiveProgressType } from 'store/modules/user';
 import deckService from 'services/deckService';
 import { updateActiveProgressType } from 'services/userService';
-import { getUserLocally, saveUserLocally } from 'services/authService';
+import { updateLocalUser } from 'services/authService';
 import { CurrentDeck } from 'services/types';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
@@ -70,6 +70,7 @@ const Main: FC = () => {
   const [mainSession, setMainSession] = useState<SessionState>({ data: null, loading: true });
   const [subSession, setSubSession] = useState<SessionState>({ data: null, loading: true });
   const [isSwitching, setIsSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -88,12 +89,13 @@ const Main: FC = () => {
 
     if (type !== activeProgressType) {
       setIsSwitching(true);
+      setSwitchError(null);
       try {
         await updateActiveProgressType(type);
         dispatch(setActiveProgressType(type));
-        const stored = getUserLocally();
-        if (stored) { stored.activeProgressType = type; saveUserLocally(stored); }
+        updateLocalUser({ activeProgressType: type });
       } catch {
+        setSwitchError('세션 전환에 실패했습니다. 다시 시도해주세요.');
         setIsSwitching(false);
         return;
       }
@@ -116,6 +118,9 @@ const Main: FC = () => {
     <CenterDiv>
       <div className={styles.wrapper}>
         <h1 className={styles.heading}>학습 세션</h1>
+        {switchError && (
+          <div className="error-box" style={{ width: '100%' }}>{switchError}</div>
+        )}
         <div className={styles.sessionGrid}>
           <SessionCard
             type="main"

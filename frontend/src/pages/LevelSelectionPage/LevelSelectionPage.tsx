@@ -10,7 +10,7 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { api } from 'services/apiClient';
 import progressService from 'services/progressService';
 import { updateActiveProgressType } from 'services/userService';
-import { getUserLocally, saveUserLocally } from 'services/authService';
+import { updateLocalUser } from 'services/authService';
 import * as styles from './LevelSelectionPage.css';
 
 interface LevelStepData {
@@ -116,8 +116,7 @@ const LevelSelectionPage: FC = () => {
     try {
       await updateActiveProgressType('sub');
       dispatch(setActiveProgressType('sub'));
-      const stored = getUserLocally();
-      if (stored) { stored.activeProgressType = 'sub'; saveUserLocally(stored); }
+      updateLocalUser({ activeProgressType: 'sub' });
       const subSteps = { start: selectedSteps.start, end: selectedSteps.start };
       await progressService.deleteSession('sub').catch(() => {});
       await progressService.saveCheckpoint('sub', selectedLevel as any, subSteps);
@@ -125,8 +124,7 @@ const LevelSelectionPage: FC = () => {
     } catch {
       await updateActiveProgressType(previousType).catch(() => {});
       dispatch(setActiveProgressType(previousType));
-      const stored = getUserLocally();
-      if (stored) { stored.activeProgressType = previousType; saveUserLocally(stored); }
+      updateLocalUser({ activeProgressType: previousType });
       alert('서브 세션 전환에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);

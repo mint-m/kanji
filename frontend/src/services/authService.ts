@@ -45,6 +45,12 @@ export const getUserLocally = (): UserProfile | null => {
 };
 export const removeUserLocally = () => localStorage.removeItem('user');
 
+export const updateLocalUser = (patch: Partial<UserProfile>) => {
+  const stored = getUserLocally();
+  if (!stored) return;
+  saveUserLocally({ ...stored, ...patch });
+};
+
 export const getAuthHeaders = (token = getTokenLocally()): Record<string, string> =>
   token ? { Authorization: `Bearer ${token}` } : {};
 

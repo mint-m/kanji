@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from 'store';
 import { getStats, updateActiveProgressType } from 'services/userService';
 import { setActiveProgressType } from 'store/modules/user';
-import { getUserLocally, saveUserLocally } from 'services/authService';
+import { updateLocalUser } from 'services/authService';
 import deckService from 'services/deckService';
 import { CurrentDeck } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
@@ -33,6 +33,7 @@ const DashboardPage: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
 
@@ -58,16 +59,13 @@ const DashboardPage: FC = () => {
   const handleSessionToggle = async (type: 'main' | 'sub') => {
     if (isUpdatingSession || type === activeProgressType) return;
     setIsUpdatingSession(true);
+    setSwitchError(null);
     try {
       await updateActiveProgressType(type);
       dispatch(setActiveProgressType(type));
-      const stored = getUserLocally();
-      if (stored) {
-        stored.activeProgressType = type;
-        saveUserLocally(stored);
-      }
+      updateLocalUser({ activeProgressType: type });
     } catch {
-      alert('세션 전환에 실패했습니다.');
+      setSwitchError('세션 전환에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsUpdatingSession(false);
     }
@@ -84,6 +82,9 @@ const DashboardPage: FC = () => {
       {/* 학습 세션 */}
       <div className="card" style={{ marginBottom: '32px' }}>
         <h2 className={styles.sectionTitle}>학습 세션</h2>
+        {switchError && (
+          <div className="error-box" style={{ marginBottom: '12px' }}>{switchError}</div>
+        )}
         <div className={styles.sessionBtns}>
           {(['main', 'sub'] as const).map((type) => (
             <button
