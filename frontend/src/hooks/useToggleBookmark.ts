@@ -27,7 +27,6 @@ export function useToggleBookmark({
   return useCallback(async () => {
     if (!wordId) return;
 
-    // Optimistic update
     setBookmarkedIds(prev => toggleSet(prev, wordId));
 
     try {
@@ -36,7 +35,6 @@ export function useToggleBookmark({
         onWarning(`북마크 ${res.warning.remaining}개 남았습니다. 복습 후 정리해보세요.`);
       }
     } catch (err) {
-      // Revert on failure
       setBookmarkedIds(prev => toggleSet(prev, wordId));
       if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
         onLimitError('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');

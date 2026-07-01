@@ -126,7 +126,6 @@ async function createDailyWords() {
       const key = `${entryVal}||${pronVal ?? ''}`;
       if (existingSet.has(key)) continue; // 이미 DB에 있음
 
-      // 품사 추출
       const senseElems: any[] = entry.sense || [];
       const posSet = new Set<string>();
       const meanings: string[] = [];

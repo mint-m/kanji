@@ -64,19 +64,16 @@ async function downloadAndParse(): Promise<any> {
   });
 }
 
-// JMdict 엔트리에서 { kanji[], kana[], frequency } 추출
 function extractEntry(entry: any): { kanji: string[]; kana: string[]; frequency: number } | null {
   try {
     const priTags: string[] = [];
 
-    // k_ele (한자 표기) 우선순위 태그
     const kElems: any[] = entry.k_ele || [];
     for (const ke of kElems) {
       const kePri: string[] = (ke.ke_pri || []).map((p: any) => (typeof p === 'string' ? p : p._));
       priTags.push(...kePri);
     }
 
-    // r_ele (읽기) 우선순위 태그
     const rElems: any[] = entry.r_ele || [];
     for (const re of rElems) {
       const rePri: string[] = (re.re_pri || []).map((p: any) => (typeof p === 'string' ? p : p._));
@@ -113,7 +110,6 @@ async function augmentFrequency() {
   const entries: any[] = data.JMdict?.entry || [];
   console.log(`JMdict 엔트리 수: ${entries.length}`);
 
-  // JMdict 파싱 → { kanji→frequency, kana→frequency } 맵 구성
   const kanjiMap = new Map<string, number>();
   const kanaMap = new Map<string, number>();
 
@@ -134,7 +130,6 @@ async function augmentFrequency() {
 
   console.log(`한자 맵 크기: ${kanjiMap.size}, 히라가나 맵 크기: ${kanaMap.size}`);
 
-  // DB 단어와 매칭 후 bulkWrite
   const words = await Word.find({}, { _id: 1, entry: 1, pron: 1 }).lean();
   console.log(`DB 단어 수: ${words.length}`);
 
