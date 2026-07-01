@@ -477,6 +477,7 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
       progress.shuffled_order = shuffled as mongoose.Types.ObjectId[];
+      progress.markModified('shuffled_order');
       progress.current_index = 0;
       await progress.save();
       isSubLoop = true;

@@ -68,7 +68,7 @@ async function createDailyWords() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) { console.error('MONGO_URI 환경변수 필요'); process.exit(1); }
 
-  await mongoose.connect(mongoUri, { dbName: 'kanji-db' });
+  await mongoose.connect(mongoUri);
   console.log(`MongoDB 연결됨 ${DRY_RUN ? '[DRY RUN]' : ''}`);
 
   // ── A. 기존 감동사 → daily 이동 ────────────────────────────────────────
@@ -176,7 +176,13 @@ async function createDailyWords() {
     const CHUNK = 500;
     let inserted = 0;
     for (let i = 0; i < newDailyWords.length; i += CHUNK) {
-      await Word.insertMany(newDailyWords.slice(i, i + CHUNK), { ordered: false });
+      try {
+        await Word.insertMany(newDailyWords.slice(i, i + CHUNK), { ordered: false });
+      } catch (err: any) {
+        const isDupOnly = err?.code === 11000 ||
+          (err?.writeErrors?.length && err.writeErrors.every((e: any) => e.code === 11000));
+        if (!isDupOnly) throw err;
+      }
       inserted += Math.min(CHUNK, newDailyWords.length - i);
       process.stdout.write(`\r  삽입 중: ${inserted} / ${newDailyWords.length}`);
     }

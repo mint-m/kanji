@@ -106,7 +106,7 @@ async function augmentFrequency() {
     process.exit(1);
   }
 
-  await mongoose.connect(mongoUri, { dbName: 'kanji-db' });
+  await mongoose.connect(mongoUri);
   console.log('MongoDB 연결됨');
 
   const data = await downloadAndParse();
