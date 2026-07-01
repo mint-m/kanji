@@ -2,8 +2,8 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2026-06-29
-**버전**: 4.0
+**최종 업데이트**: 2026-07-01
+**버전**: 4.3
 
 ---
 
@@ -27,7 +27,9 @@ Kan-ji는 일본어 능력시험(JLPT) 단어를 효율적으로 학습하기 �
 ### 핵심 기능
 
 - **슬라이딩 윈도우 덱**: 3단계씩 진행하는 점진적 학습 (1-3 → 2-4 → 3-5)
-- **이중 세션**: Main(체계적 학습), Sub(북마크 복습) 독립 관리
+- **이중 세션**: Main(체계적 슬라이딩 윈도우), Sub(단일 스텝 집중 반복) 독립 관리
+- **서브 세션 집중 루프**: Sub 세션 완료 시 다음 윈도우로 이동하지 않고 같은 스텝을 재셔플해 반복 학습
+- **daily 레벨**: 시험 무관 생활 필수 어휘 카테고리 (N5~N1 외 별도 관리)
 - **자동 체크포인트**: 학습 진행 상황 자동 저장 및 복원
 - **북마크 시스템**: 어려운 단어 우선 복습
 - **진행 상황 추적**: 레벨별, 단계별 학습 완료 상태 관리
@@ -63,21 +65,26 @@ frontend/src/
 │   ├── OriginWord/      # 원형 단어 표시
 │   ├── ControlPanel/    # 학습 컨트롤 패널
 │   ├── SelectLevel/     # 레벨 선택
-│   ├── SelectStep/      # 스텝 선택
-│   ├── StepRangeSlider/ # 스텝 범위 슬라이더
+│   ├── SelectStep/      # 스텝 선택 (StepGrid/슬라이더 분기 포함)
+│   ├── StepGrid/        # 스텝 선택 그리드 (터치 기기용)
+│   ├── StepRangeSlider/ # 스텝 범위 슬라이더 (포인터 기기용)
 │   ├── LoginButton/     # 로그인 버튼 (Google, Kakao, Logout)
 │   ├── Navbar/          # 네비게이션 바
 │   ├── HeaderSection/   # 헤더 섹션
 │   ├── CommonStyled/    # 공통 스타일 컴포넌트
 │   ├── UserProgress.tsx # 사용자 진행 상황 표시
 │   └── ErrorMessage.tsx # 에러 메시지
+├── hooks/               # 커스텀 훅
+│   └── useToggleBookmark.ts # 북마크 토글 (낙관적 업데이트 + 롤백)
 ├── pages/               # 라우트 레벨 페이지
 │   ├── Login/           # 로그인 페이지
-│   ├── Main/            # 메인 대시보드 (진행 상황 개요)
+│   ├── Main/            # 메인 페이지 (메인/서브 세션 카드 선택)
 │   ├── FlashCardPage/   # 플래시카드 학습 페이지
-│   ├── LevelSelectionPage/ # 레벨 선택 페이지
-│   ├── UserProfilePage.tsx # 사용자 프로필 (Main/Sub 전환)
-│   ├── BookmarkPage.tsx # 북마크 관리 페이지 (레벨 필터, 정렬, 페이지네이션)
+│   ├── LevelSelectionPage/ # 레벨·범위 선택 (3단계 스크롤 UI)
+│   ├── DashboardPage/   # 진도 대시보드 (현재 위치, 세션 전환, 레벨별 통계)
+│   ├── UserProfilePage.tsx # 사용자 프로필 (계정 연동)
+│   ├── UserStatsPage/   # 학습 통계 상세 페이지 (/profile/stats)
+│   ├── BookmarkPage/    # 북마크 관리 페이지 (레벨 필터, 정렬, 페이지네이션)
 │   ├── BookmarkStudyPage/ # 북마크 복습 플래시카드 페이지
 │   └── NotFound/        # 404 페이지
 ├── store/               # Redux 스토어
@@ -126,6 +133,11 @@ backend/src/
 │   ├── bookmarkRoutes.ts
 │   ├── userRoutes.ts
 │   └── wordRoutes.ts
+├── scripts/             # 데이터 관리 스크립트 (일회성 실행용)
+│   ├── augmentFrequency.ts   # frequency 필드 외부 데이터로 보강
+│   ├── cleanWords.ts         # 중복·불량 단어 정리
+│   ├── createDailyWords.ts   # daily 레벨 단어 생성
+│   └── reorderByFrequency.ts # 빈도 기준 step 재정렬
 ├── services/            # 비즈니스 로직
 │   └── slidingWindowService.ts
 └── middleware/          # 커스텀 미들웨어
@@ -217,8 +229,9 @@ backend/src/
   origin_entry_id: string,    // 원본 ID (unique)
   entry: string,              // 히라가나 읽기
   pron?: string,              // 한자 표기
-  level: string,              // N5, N4, N3, N2, N1
+  level: string,              // N5, N4, N3, N2, N1, daily
   step: number,               // 레벨 내 단계
+  frequency: number,          // 사용 빈도 순위 (낮을수록 고빈도, 기본: 9999)
   means: string[],            // 한국어 뜻
   parts: string[],            // 품사
   createdAt: Date
@@ -229,6 +242,9 @@ backend/src/
 
 - `origin_entry_id: 1` (unique)
 - `{ level: 1, step: 1 }` (복합)
+- `{ level: 1 }`, `{ step: 1 }`
+
+> `daily` 레벨은 JLPT 시험 무관 생활 필수 어휘. `frequency` 기반으로 step이 재정렬되므로 낮은 step일수록 고빈도 단어.
 
 ---
 
@@ -306,13 +322,6 @@ backend/src/
   // 북마크 상세 정보
   bookmark_reason?: string,   // 북마크 이유 (최대 200자)
   bookmark_tags: string[],    // 북마크 태그 배열
-
-  // 학습 히스토리
-  study_history: [{           // 학습 기록 배열 (최대 50개)
-    isCorrect: boolean,
-    timeSpent?: number,       // 소요 시간 (초)
-    studiedAt: Date
-  }],
 
   created_at: Date
   // updated_at 미사용 (last_studied_at 사용)
@@ -567,18 +576,37 @@ POST /api/users/me/progress/:progressType/complete-word
 POST /api/users/me/progress/:progressType/complete-deck
 ```
 
-**응답 예시**:
+**응답 예시 (메인 세션 — 다음 윈도우로 이동)**:
 
 ```json
 {
   "success": true,
   "data": {
     "completedWindow": { "level": "N5", "steps": { "start": 1, "end": 3 } },
-    "nextWindow": { "level": "N5", "steps": { "start": 2, "end": 4 }, "isCircular": false },
+    "nextWindow": { "level": "N5", "steps": { "start": 2, "end": 4 }, "deckSize": 50 },
+    "canGenerateNext": true,
+    "isSubLoop": false,
     "stats": { "wordsCompleted": 50, "windowsCompleted": 1 }
   }
 }
 ```
+
+**응답 예시 (서브 세션 — 같은 스텝 재셔플 루프)**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "completedWindow": { "level": "N5", "steps": { "start": 2, "end": 2 } },
+    "nextWindow": { "level": "N5", "steps": { "start": 2, "end": 2 }, "deckSize": 16 },
+    "canGenerateNext": false,
+    "isSubLoop": true,
+    "stats": { "wordsCompleted": 16, "windowsCompleted": 1 }
+  }
+}
+```
+
+> **서브 세션 루프**: Sub 세션은 `canMoveToNext = false`일 때 다음 윈도우로 이동하지 않고 동일 스텝의 `is_window_completed`를 초기화한 뒤 재셔플한다. `isSubLoop: true` 수신 시 프론트엔드는 "다시 학습하기" UI를 표시한다.
 
 ---
 
@@ -710,7 +738,7 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 
 ## 프론트엔드 마이그레이션
 
-### 현재 상태 (2026-06-29 기준)
+### 현재 상태 (2026-07-01 기준)
 
 #### ✅ 완료된 작업
 
@@ -721,10 +749,15 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 5. **북마크 시스템 고도화**: 제한(150개) + warning 알림 + progress_type 보존 + race condition 방어
 6. **북마크 복습 페이지**: `BookmarkStudyPage` — 레벨/정렬 필터 기반 플래시카드 복습
 7. **테스트**: 백엔드 컨트롤러 단위 테스트, Playwright E2E 테스트
+8. **서브 세션 집중 루프**: Sub 세션 완료 시 재셔플 반복 학습
+9. **daily 레벨**: 생활 필수 어휘 카테고리 + 데이터 관리 스크립트
+10. **메인/레벨선택/대시보드 UI 개편**: 세션 카드 선택, 3단계 스크롤 레벨 선택, 진도 표시 통합
+11. **StepGrid**: 터치 기기용 스텝 선택 그리드 (포인터 기기는 슬라이더 유지)
+12. **통계 페이지 분리**: `/profile/stats` 라우트에 UserStatsPage 독립
 
 #### 🔄 진행 중
 
-- 학습 통계 대시보드 고도화
+- 학습 통계 대시보드(UserStatsPage) 상세 구현
 - 연속 학습일 추적 UI
 - FlashCardContainer 북마크 초기화: 덱 범위 기반 API로 개선 (현재 limit: 200 한계)
 
@@ -893,6 +926,20 @@ yarn start
 ---
 
 ## 변경 이력
+
+### v4.3 (2026-07-01)
+
+- ✅ `daily` 레벨 추가 — LearningLevel 타입, Word 스키마 enum, LevelSetupPage 항목
+- ✅ `Word` 모델에 `frequency` 필드 추가 (빈도 순위, 낮을수록 고빈도, 기본: 9999)
+- ✅ 서브 세션 집중 루프: Sub 세션 윈도우 완료 시 다음 윈도우 대신 같은 스텝 재셔플 (`isSubLoop` 응답 추가)
+- ✅ 데이터 관리 스크립트 4종 추가 (augmentFrequency, cleanWords, createDailyWords, reorderByFrequency)
+- ✅ `useToggleBookmark` 훅 추출: FlashCardContainer·BookmarkStudyPage 중복 로직 통합
+- ✅ 메인 페이지 세션 카드 UI 개편 (메인/서브 현재 진도 즉시 확인, 세션 전환 후 진입)
+- ✅ 레벨 선택 페이지 3단계 스크롤 UI 개편 + StepGrid 컴포넌트 추가
+- ✅ 대시보드에 세션 전환 + 현재 학습 위치 표시 이동 (UserProfilePage에서 분리)
+- ✅ 통계 페이지 `/profile/stats`로 분리 (UserStatsPage)
+- ✅ 백엔드 모델·인터페이스 미사용 코드 대규모 정리 (Word, WordProgress, middleware)
+- ✅ bugfix: StepGrid hover 셀-선택 범위 불일치, handleSelectLevel stale closure, handleSwitchToSub localStorage 직접 접근, completeDeck 실패 시 fetchDeck 차단
 
 ### v4.2 (2026-06-29)
 
