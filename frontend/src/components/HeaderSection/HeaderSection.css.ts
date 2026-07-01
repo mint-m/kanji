@@ -15,8 +15,8 @@ export const titleGroup = style({
 });
 
 export const title = style({
-  fontSize: vars.fontSize.xl,
-  fontWeight: 'bold',
+  fontSize: vars.fontSize.xxl,
+  fontWeight: 300,
 });
 
 export const subtitle = style({

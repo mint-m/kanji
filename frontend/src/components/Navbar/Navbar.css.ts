@@ -8,6 +8,7 @@ export const navbar = style({
   justifyContent: 'flex-end',
   top: '1vh',
   right: '1.5vh',
+  zIndex: 50,
 });
 
 export const navBtn = style({
