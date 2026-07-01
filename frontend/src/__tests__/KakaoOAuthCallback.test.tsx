@@ -14,7 +14,7 @@ jest.mock('react-redux', () => ({
 jest.mock('../services/authService', () => ({
   loginWithKakaoCode: jest.fn(),
   linkKakaoAccount: jest.fn(),
-  toUserState: jest.fn((user: any) => ({ ...user, isLoggin: true })),
+  toUserState: jest.fn((user: any) => ({ ...user, isLoggedIn: true })),
   getUserLocally: jest.fn(),
   saveUserLocally: jest.fn(),
 }));

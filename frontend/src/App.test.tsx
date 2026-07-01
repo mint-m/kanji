@@ -10,12 +10,11 @@ jest.mock('@react-oauth/google', () => ({
   useGoogleOneTapLogin: jest.fn(),
 }));
 
-test('앱이 오류 없이 렌더링된다', () => {
-  expect(() =>
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>
-    )
-  ).not.toThrow();
+test('앱이 오류 없이 렌더링된다', async () => {
+  const { unmount } = render(
+    <Provider store={store}>
+      <App />
+    </Provider>
+  );
+  unmount();
 });
