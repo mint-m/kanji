@@ -67,7 +67,23 @@ const FlashCardPage: FC = () => {
     setWindowComplete(true);
   }, []);
 
+  const handleAdvance = useCallback(async () => {
+    setWindowComplete(false);
+    try {
+      await deckService.completeDeck(activeProgressType || 'main');
+    } catch (e) {
+      console.error('Failed to complete deck:', e);
+      setError('완료 처리에 실패했습니다. 다시 시도해주세요.');
+      setWindowComplete(true);
+      return;
+    }
+    await fetchDeck();
+    setDeckKey(k => k + 1);
+  }, [activeProgressType, fetchDeck]);
+
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
+
+  const isMain = (activeProgressType || 'main') === 'main';
 
   return (
     <div className={styles.page}>
@@ -75,26 +91,29 @@ const FlashCardPage: FC = () => {
       <div className={styles.flashCardArea}>
         <HeaderSection
           title={level}
-          subtitle={steps ? `${steps.start} ~ ${steps.end}` : ''}
+          subtitle={steps ? (steps.start === steps.end ? `${steps.start}` : `${steps.start} ~ ${steps.end}`) : ''}
           progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
         {error ? (
           <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
         ) : windowComplete ? (
           <div className={styles.windowCompleteCard}>
-            <h3 className={styles.windowCompleteTitle}>윈도우 완료!</h3>
-            <p className={styles.windowCompleteDesc}>이 윈도우의 모든 단어를 완전히 습득했습니다.</p>
-            <DefaultButton onClick={async () => {
-              setWindowComplete(false);
-              try {
-                await deckService.completeDeck(activeProgressType || 'main');
-              } catch (e) {
-                console.error('Failed to complete deck:', e);
-              }
-              await fetchDeck();
-            }}>
-              다음 윈도우로 진행
-            </DefaultButton>
+            <h3 className={styles.windowCompleteTitle}>
+              {isMain ? '윈도우 완료!' : '스텝 마스터!'}
+            </h3>
+            <p className={styles.windowCompleteDesc}>
+              {isMain
+                ? '이 윈도우의 모든 단어를 완전히 습득했습니다.'
+                : '이 스텝의 모든 단어를 습득했습니다.'}
+            </p>
+            {!isMain ? (
+              <div className={styles.subCompleteActions}>
+                <DefaultButton onClick={handleAdvance}>다시 학습하기</DefaultButton>
+                <DefaultButton onClick={() => navigate('/')}>홈으로 돌아가기</DefaultButton>
+              </div>
+            ) : (
+              <DefaultButton onClick={handleAdvance}>다음 윈도우로 진행</DefaultButton>
+            )}
           </div>
         ) : (
           <>

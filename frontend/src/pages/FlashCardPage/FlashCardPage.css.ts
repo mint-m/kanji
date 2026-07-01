@@ -95,3 +95,10 @@ export const windowCompleteDesc = style({
   color: vars.color.textMuted,
   margin: 0,
 });
+
+export const subCompleteActions = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.sm,
+  width: '100%',
+});
