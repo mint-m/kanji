@@ -9,6 +9,8 @@ interface SelectLevelProps {
   onSelectLevel: (level: string) => void;
 }
 
+const LEVEL_LABELS: Record<string, string> = { daily: '일상' };
+
 const SelectLevel: FC<SelectLevelProps> = ({ levels, onSelectLevel, progressLevel }) => (
   <div>
     <HeaderSection title="JLPT" subtitle="LEVELS" />
@@ -19,7 +21,7 @@ const SelectLevel: FC<SelectLevelProps> = ({ levels, onSelectLevel, progressLeve
           pressed={progressLevel === level}
           onClick={() => onSelectLevel(level)}
         >
-          {level}
+          {LEVEL_LABELS[level] ?? level}
         </DefaultButton>
       ))}
     </div>
