@@ -93,7 +93,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
           if (err?.message?.includes('Invalid step range') || err?.message?.includes('No words found')) {
             return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
           }
-          throw err;
+          return next(err);
         }
       } else {
         // Update existing UserCheckpoint

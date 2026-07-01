@@ -13,7 +13,9 @@ const app = express();
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4200'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:4200'];
 app.use(cors({ credentials: true, origin: allowedOrigins }));
 
 // 세션 설정
