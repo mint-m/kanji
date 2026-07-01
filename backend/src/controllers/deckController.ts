@@ -450,6 +450,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     const canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
 
     let nextWindow = null;
+    let isSubLoop = false;
+
     if (canMoveToNext) {
       try {
         await progress.generateNextSlidingWindow(userId, progressType);
@@ -463,6 +465,26 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       } catch (error) {
         console.error('Failed to generate next window:', error);
       }
+    } else if (progressType === 'sub') {
+      // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
+      await WordProgress.updateMany(
+        { user_id: userId, word_id: { $in: progress.shuffled_order }, progress_type: 'sub' },
+        { $set: { is_window_completed: false } }
+      );
+      const shuffled = [...progress.shuffled_order];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      progress.shuffled_order = shuffled as mongoose.Types.ObjectId[];
+      progress.current_index = 0;
+      await progress.save();
+      isSubLoop = true;
+      nextWindow = {
+        level: progress.current_level,
+        steps: progress.steps,
+        deckSize: progress.shuffled_order.length,
+      };
     }
 
     const user = await User.findById(userId);
@@ -490,6 +512,7 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         },
         nextWindow,
         canGenerateNext: canMoveToNext,
+        isSubLoop,
         levelCompleted: user?.statistics.levelsCompleted.includes(progress.current_level),
       },
     });

@@ -69,7 +69,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       // Validate level
       if (!(LEARNING_LEVELS as readonly string[]).includes(level)) {
-        return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
+        return next(new BadRequestError(`유효하지 않은 레벨입니다: ${level}`));
       }
 
       // Find or create UserCheckpoint
@@ -82,12 +82,19 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       if (!existingProgress) {
         // Create new UserCheckpoint session
-        userProgress = await UserCheckpoint.createNewSession(
-          userId,
-          progressType as ProgressType,
-          level as LearningLevel,
-          steps
-        );
+        try {
+          userProgress = await UserCheckpoint.createNewSession(
+            userId,
+            progressType as ProgressType,
+            level as LearningLevel,
+            steps
+          );
+        } catch (err: any) {
+          if (err?.message?.includes('Invalid step range') || err?.message?.includes('No words found')) {
+            return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
+          }
+          throw err;
+        }
       } else {
         // Update existing UserCheckpoint
         existingProgress.current_level = level as LearningLevel;
