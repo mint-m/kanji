@@ -25,7 +25,7 @@ const UserStats = lazy(() => import('pages/UserStatsPage'));
 const AppContent = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
 
   useEffect(() => {
     const storedUser = getUserLocally();

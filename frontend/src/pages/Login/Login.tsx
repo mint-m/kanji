@@ -8,7 +8,7 @@ import type { RootState } from 'store';
 import * as styles from './Login.css';
 
 const Login = () => {
-  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
   const location = useLocation();
   const errorMessage = (location.state as any)?.error;
 

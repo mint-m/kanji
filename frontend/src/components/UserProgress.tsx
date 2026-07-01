@@ -47,7 +47,7 @@ const UserProgress: FC = () => {
       .catch(() => { if (!controller.signal.aborted) setError('학습 진행 상황을 불러오는데 실패했습니다'); })
       .finally(() => { if (!controller.signal.aborted) setIsLoading(false); });
     return () => controller.abort();
-  }, [user.isLoggin]);
+  }, [user.isLoggedIn]);
 
   if (isLoading) return <div className="loading-text">학습 진행 상황을 불러오는 중...</div>;
   if (error) return <div className="error-box" style={{ margin: '16px 0' }}>{error}</div>;

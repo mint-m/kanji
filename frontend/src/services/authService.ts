@@ -20,7 +20,7 @@ export interface LoginResult {
 
 // Redux user state shape에 맞게 변환
 export const toUserState = (user: UserProfile) => ({
-  isLoggin: true as const,
+  isLoggedIn: true as const,
   loginStatusType: user.type,
   email: user.email,
   name: user.name,

@@ -64,7 +64,7 @@ const SessionCard: FC<{
 const Main: FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
   const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
 
   const [mainSession, setMainSession] = useState<SessionState>({ data: null, loading: true });
