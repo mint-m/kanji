@@ -1,10 +1,12 @@
-import { toUserState, getUserLocally, saveUserLocally, getTokenLocally, saveTokenLocally, removeTokenLocally, removeUserLocally } from '../services/authService';
-import type { UserProfile } from '../services/authService';
-
+// apiClient를 먼저 mock (axios.create interceptors 문제 회피)
+jest.mock('../services/apiClient', () => ({
+  api: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn(), patch: jest.fn() },
+}));
 jest.mock('axios', () => ({
   __esModule: true,
-  default: { get: jest.fn(), post: jest.fn(), create: jest.fn() },
+  default: { get: jest.fn(), post: jest.fn() },
   AxiosError: class AxiosError extends Error { constructor(msg?: string) { super(msg); } },
+  isAxiosError: jest.fn(),
 }));
 jest.mock('../store', () => ({
   dispatch: jest.fn(),
@@ -14,6 +16,9 @@ jest.mock('../store/modules/user', () => ({
   clearUser: jest.fn(() => ({ type: 'user/clearUser' })),
   setUser: jest.fn((p: any) => ({ type: 'user/setUser', payload: p })),
 }));
+
+import { toUserState, getUserLocally, saveUserLocally, getTokenLocally, saveTokenLocally, removeTokenLocally, removeUserLocally } from '../services/authService';
+import type { UserProfile } from '../services/authService';
 
 const mockUser: UserProfile = {
   _id: 'abc123',
@@ -29,7 +34,7 @@ describe('toUserState', () => {
   it('UserProfile → Redux user state 변환', () => {
     const state = toUserState(mockUser);
     expect(state).toEqual({
-      isLoggin: true,
+      isLoggedIn: true,
       loginStatusType: 'google',
       email: 'test@example.com',
       name: '테스트유저',

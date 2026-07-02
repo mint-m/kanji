@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import Navbar from 'components/Navbar';
+import Brand from 'components/Brand/Brand';
 import ProtectedRoute from './ProtectedRoute';
 import { setUser } from 'store/modules/user';
 import { AuthBannerProvider } from 'contexts/AuthBannerContext';
@@ -20,11 +21,12 @@ const Bookmark = lazy(() => import('pages/BookmarkPage'));
 const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
 const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
 const Dashboard = lazy(() => import('pages/DashboardPage'));
+const UserStats = lazy(() => import('pages/UserStatsPage'));
 
 const AppContent = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggin);
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
 
   useEffect(() => {
     const storedUser = getUserLocally();
@@ -51,6 +53,7 @@ const AppContent = () => {
 
   return (
     <AuthBannerProvider>
+      <Brand />
       <Navbar />
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
@@ -62,6 +65,12 @@ const AppContent = () => {
           <Route path='/profile' element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path='/profile/stats' element={
+            <ProtectedRoute>
+              <UserStats />
             </ProtectedRoute>
           } />
 

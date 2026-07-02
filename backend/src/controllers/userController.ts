@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
-import { NotFoundError, BadRequestError, InternalServerError } from '../utils/errors';
+import { NotFoundError, BadRequestError, InternalServerError, InvalidStepRangeError } from '../utils/errors';
 import { ProgressType, LearningLevel, LEARNING_LEVELS } from '../types/common';
 
 // 사용자 프로필 조회
@@ -19,6 +19,33 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     res.json(user);
   } catch (error) {
     next(new InternalServerError('Failed to fetch user profile'));
+  }
+};
+
+// 닉네임(이름) 업데이트
+export const updateUserName = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+
+    if (!name) {
+      return next(new BadRequestError('닉네임을 입력해주세요'));
+    }
+    if (name.length > 20) {
+      return next(new BadRequestError('닉네임은 20자 이내로 입력해주세요'));
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { name }, { new: true });
+
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({ success: true, data: { name: user.name } });
+  } catch (error) {
+    console.error('Update user name error:', error);
+    next(new InternalServerError('Failed to update user name'));
   }
 };
 
@@ -69,7 +96,7 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       // Validate level
       if (!(LEARNING_LEVELS as readonly string[]).includes(level)) {
-        return next(new BadRequestError('Invalid level. Must be N5, N4, N3, N2, or N1'));
+        return next(new BadRequestError(`유효하지 않은 레벨입니다: ${level}`));
       }
 
       // Find or create UserCheckpoint
@@ -82,12 +109,19 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
 
       if (!existingProgress) {
         // Create new UserCheckpoint session
-        userProgress = await UserCheckpoint.createNewSession(
-          userId,
-          progressType as ProgressType,
-          level as LearningLevel,
-          steps
-        );
+        try {
+          userProgress = await UserCheckpoint.createNewSession(
+            userId,
+            progressType as ProgressType,
+            level as LearningLevel,
+            steps
+          );
+        } catch (err) {
+          if (err instanceof InvalidStepRangeError) {
+            return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
+          }
+          return next(err);
+        }
       } else {
         // Update existing UserCheckpoint
         existingProgress.current_level = level as LearningLevel;

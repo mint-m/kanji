@@ -14,6 +14,9 @@ const router = Router();
 // 내 프로필 조회
 router.get('/me', authenticateUser, userController.getUserProfile);
 
+// 내 닉네임 변경
+router.patch('/me', authenticateUser, userController.updateUserName);
+
 // 내 활성 세션 타입 업데이트
 router.patch('/me/active-progress-type', authenticateUser, userController.updateActiveProgressType);
 

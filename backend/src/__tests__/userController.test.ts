@@ -66,6 +66,44 @@ describe('getUserProfile', () => {
   });
 });
 
+describe('updateUserName', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('빈 닉네임 → BadRequestError', async () => {
+    const next = makeNext();
+    await userController.updateUserName(makeReq({ body: { name: '   ' } }), makeRes(), next);
+    expect(next).toHaveBeenCalled();
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('20자 초과 → BadRequestError', async () => {
+    const next = makeNext();
+    await userController.updateUserName(makeReq({ body: { name: 'a'.repeat(21) } }), makeRes(), next);
+    expect(next).toHaveBeenCalled();
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('사용자 없음 → NotFoundError', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue(null);
+    const next = makeNext();
+    await userController.updateUserName(makeReq({ body: { name: '새이름' } }), makeRes(), next);
+    expect(next).toHaveBeenCalled();
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(404);
+  });
+
+  it('성공 → 트림된 닉네임 반환', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ ...makeUser(), name: '새이름' });
+    const res = makeRes();
+    await userController.updateUserName(makeReq({ body: { name: '  새이름  ' } }), res, makeNext());
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { name: '새이름' }, { new: true });
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true, data: { name: '새이름' } }),
+    );
+  });
+});
+
 describe('updateActiveProgressType', () => {
   beforeEach(() => jest.clearAllMocks());
 

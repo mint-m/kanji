@@ -5,6 +5,7 @@ import {
   UserCheckpointModel,
 } from '../interfaces/userCheckpoint';
 import SlidingWindowService from '../services/slidingWindowService';
+import { InvalidStepRangeError } from '../utils/errors';
 
 // UserCheckpoint - Simplified learning session state
 // Combines session tracking and checkpoint functionality
@@ -219,7 +220,7 @@ userCheckpointSchema.statics.createNewSession = async function (
   // Validate step range using SlidingWindowService
   const isValidRange = await SlidingWindowService.validateStepRange(level, steps);
   if (!isValidRange) {
-    throw new Error(`Invalid step range ${steps.start}-${steps.end} for level ${level}`);
+    throw new InvalidStepRangeError(`Invalid step range ${steps.start}-${steps.end} for level ${level}`);
   }
 
   // Generate deck using SlidingWindowService

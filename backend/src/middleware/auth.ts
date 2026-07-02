@@ -289,48 +289,10 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-/**
- * IP whitelist middleware (for admin routes)
- */
-export const ipWhitelist = (allowedIPs: string[] = []) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    if (allowedIPs.length === 0) {
-      return next(); // No restrictions if no IPs specified
-    }
-
-    const clientIP = req.ip || req.socket.remoteAddress || '';
-    const isAllowed = allowedIPs.some((ip) => {
-      if (ip.includes('/')) {
-        // CIDR notation support (basic)
-        const [network, prefixLength] = ip.split('/');
-        return clientIP.startsWith(
-          network
-            .split('.')
-            .slice(0, parseInt(prefixLength) / 8)
-            .join('.')
-        );
-      }
-      return clientIP === ip;
-    });
-
-    if (!isAllowed) {
-      res.status(403).json({
-        success: false,
-        message: 'Access denied from this IP address.',
-        code: 'IP_BLOCKED',
-      });
-      return;
-    }
-
-    next();
-  };
-};
-
 export default {
   authenticateUser,
   requireRole,
   authRateLimit,
   refreshTokenIfNeeded,
   securityHeaders,
-  ipWhitelist,
 };

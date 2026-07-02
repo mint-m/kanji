@@ -6,8 +6,7 @@ import ControlPanel from 'components/ControlPanel';
 import { DeckWord } from 'services/types';
 import * as kanjiActions from 'store/modules/kanji';
 import progressService from 'services/progressService';
-import bookmarkService from 'services/bookmarkService';
-import { ApiError } from 'services/authService';
+import { useToggleBookmark } from 'hooks/useToggleBookmark';
 import * as styles from './FlashCardContainer.css';
 
 interface FlashCardContainerProps {
@@ -33,9 +32,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       () => new Set(deck.filter(w => w.isBookmarked).map(w => w._id))
     );
     const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
-    const requestQueueRef = useRef<Array<() => Promise<void>>>([]);
-    const isDrainingRef = useRef(false);
-    const lastEnqueuedWordIdRef = useRef<string | null>(null);
+    const lastSubmittedWordIdRef = useRef<string | null>(null);
+    const requestQueueRef = useRef<Promise<any>>(Promise.resolve());
     const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
@@ -62,88 +60,40 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       setShowHiragana(false);
     }, [dispatch]);
 
-    const moveToNextCard = useCallback(() => {
-      setWordIndex(prev => prev + 1);
-      resetUIState();
-    }, [resetUIState]);
-
-    const updateStats = useCallback((know: boolean) => {
-      know ? setMasteredCount(prev => prev + 1) : setLearningCount(prev => prev + 1);
-    }, []);
-
-    const drainQueue = useCallback(async () => {
-      if (isDrainingRef.current) return;
-      isDrainingRef.current = true;
-      while (requestQueueRef.current.length > 0) {
-        const task = requestQueueRef.current.shift()!;
-        try {
-          await task();
-        } catch (err) {
-          console.warn('⚠️ Progress sync failed', err);
-        }
-      }
-      isDrainingRef.current = false;
-    }, []);
-
     const handleKnowClick = useCallback((know: boolean) => {
-      if (!currentWordId || lastEnqueuedWordIdRef.current === currentWordId) return;
-      lastEnqueuedWordIdRef.current = currentWordId;
+      if (!currentWordId || lastSubmittedWordIdRef.current === currentWordId) return;
+      lastSubmittedWordIdRef.current = currentWordId;
 
       const wordId = currentWordId;
       const timeSpent = Math.floor((Date.now() - cardStudyTime) / 1000);
 
-      updateStats(know);
-      moveToNextCard();
+      know ? setMasteredCount(prev => prev + 1) : setLearningCount(prev => prev + 1);
+      setWordIndex(prev => prev + 1);
+      resetUIState();
 
-      requestQueueRef.current.push(async () => {
-        const res = await progressService.completeWord(progressType, {
-          wordId,
-          isCorrect: know,
-          timeSpent,
-        });
-        if (res.data?.passComplete) {
-          setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
-          if (res.data.windowComplete) {
-            onWindowComplete?.();
-          } else {
-            onPassComplete?.();
+      requestQueueRef.current = requestQueueRef.current
+        .then(() => progressService.completeWord(progressType, { wordId, isCorrect: know, timeSpent }))
+        .then(res => {
+          if (res.data?.passComplete) {
+            setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
+            if (res.data.windowComplete) onWindowComplete?.();
+            else onPassComplete?.();
           }
-        }
-      });
-
-      drainQueue();
-    }, [updateStats, moveToNextCard, currentWordId, cardStudyTime, progressType, onPassComplete, onWindowComplete, drainQueue]);
+        })
+        .catch(err => console.warn('⚠️ Progress sync failed', err));
+    }, [currentWordId, cardStudyTime, progressType, resetUIState, onPassComplete, onWindowComplete]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {
       type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
     }, []);
 
-    const handleBookmark = useCallback(async () => {
-      if (!currentWordId) return;
-      const id = currentWordId;
-      const revert = () => setBookmarkedIds(prev => {
-        const next = new Set(prev);
-        next.has(id) ? next.delete(id) : next.add(id);
-        return next;
-      });
-      setBookmarkedIds(prev => {
-        const next = new Set(prev);
-        next.has(id) ? next.delete(id) : next.add(id);
-        return next;
-      });
-      try {
-        const res = await bookmarkService.toggleBookmark(id, progressType);
-        if (res.warning) {
-          setBookmarkWarning(`북마크 ${res.warning.remaining}개 남았습니다. 복습 후 정리해보세요.`);
-        }
-      } catch (err) {
-        revert();
-        if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
-          setError('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');
-        }
-      }
-    }, [currentWordId, progressType]);
-
+    const handleBookmark = useToggleBookmark({
+      wordId: currentWordId,
+      progressType,
+      setBookmarkedIds,
+      onWarning: setBookmarkWarning,
+      onLimitError: setError,
+    });
 
     if (deck.length === 0) return null;
 
