@@ -34,7 +34,6 @@ const makeMockProgress = (overrides: any = {}) => ({
   current_level: 'N5',
   steps: { start: 1, end: 3 },
   progress_type: 'main',
-  populate: jest.fn().mockResolvedValue(undefined),
   getSessionStats: jest.fn().mockReturnValue({ totalWords: 0, completedWords: 0, remainingWords: 0, progressPercentage: 0 }),
   getCurrentWord: jest.fn().mockReturnValue(null),
   getRemainingWords: jest.fn().mockReturnValue([]),

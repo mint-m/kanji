@@ -152,10 +152,9 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
     progress_type: progressType,
     is_window_completed: true,
   }).distinct('word_id');
+  const knownSet = new Set(knownIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
-  const unknownIds = this.shuffled_order.filter(
-    (id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => id.equals(knownId))
-  );
+  const unknownIds = this.shuffled_order.filter((id) => !knownSet.has(id.toString()));
 
   const UserCheckpointModel = this.constructor as UserCheckpointModel;
   this.shuffled_order = UserCheckpointModel.shuffleArray(unknownIds);
@@ -291,29 +290,27 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
   if (excludeCompleted) {
     const completedWordIds = await WordProgress.find({
       user_id: userId,
+      word_id: { $in: filteredWordIds },
       progress_type: progressType,
       is_window_completed: true,
     }).distinct('word_id');
+    const completedSet = new Set(completedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
-    filteredWordIds = filteredWordIds.filter(
-      (wordId) => !completedWordIds.some((completedId) => wordId.equals(completedId))
-    );
+    filteredWordIds = filteredWordIds.filter((wordId) => !completedSet.has(wordId.toString()));
   }
 
   // Enhanced bookmark prioritization with intelligent placement
   if (prioritizeBookmarked) {
     const bookmarkedWordIds = await WordProgress.find({
       user_id: userId,
+      word_id: { $in: filteredWordIds },
       is_bookmarked: true, // Bookmarks are cross-session
     }).distinct('word_id');
+    const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
     // Separate bookmarked and non-bookmarked words
-    const bookmarkedWords = filteredWordIds.filter((wordId) =>
-      bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
-    );
-    const nonBookmarkedWords = filteredWordIds.filter(
-      (wordId) => !bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
-    );
+    const bookmarkedWords = filteredWordIds.filter((wordId) => bookmarkedSet.has(wordId.toString()));
+    const nonBookmarkedWords = filteredWordIds.filter((wordId) => !bookmarkedSet.has(wordId.toString()));
 
     // Shuffle both arrays independently for variety
     const shuffledBookmarks = (this as UserCheckpointModel).shuffleArray(bookmarkedWords);

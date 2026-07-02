@@ -38,21 +38,23 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Get current deck words with progress information
-    const words = await Word.find({
-      _id: { $in: progress.shuffled_order },
-    }).lean();
+    // Get current deck words and their progress in two batch queries
+    const [words, wordProgressList] = await Promise.all([
+      Word.find({ _id: { $in: progress.shuffled_order } }).lean(),
+      WordProgress.find({
+        user_id: userId,
+        word_id: { $in: progress.shuffled_order },
+        progress_type: progressType,
+      }),
+    ]);
 
-    // Get word progress for each word
-    const wordProgressPromises = progress.shuffled_order.map((wordId) =>
-      WordProgress.findByUserWordAndType(userId, wordId, progressType)
-    );
-    const wordProgressList = await Promise.all(wordProgressPromises);
+    const wordById = new Map(words.map((w) => [w._id.toString(), w]));
+    const progressByWordId = new Map(wordProgressList.map((wp) => [wp.word_id.toString(), wp]));
 
     // Combine word data with progress
     const deckWords = progress.shuffled_order.map((wordId, index) => {
-      const word = words.find((w) => w._id.equals(wordId));
-      const wordProgress = wordProgressList[index];
+      const word = wordById.get(wordId.toString());
+      const wordProgress = progressByWordId.get(wordId.toString());
 
       return {
         ...word,
@@ -474,7 +476,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         deckSize: progress.shuffled_order.length,
       };
     } else {
-      canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
+      // allKnown은 위에서 이미 확인됨 — 다음 윈도우 존재 여부만 확인
+      canMoveToNext = await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
       if (canMoveToNext) {
         try {
           await progress.generateNextSlidingWindow(userId, progressType);

@@ -29,8 +29,6 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    await progress.populate('shuffled_order');
-
     res.status(200).json({
       success: true,
       data: {

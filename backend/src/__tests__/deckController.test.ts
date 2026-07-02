@@ -111,6 +111,7 @@ describe('getCurrentDeck', () => {
   it('성공 → deckId, level, words 반환', async () => {
     (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(makeMockProgress());
     (Word.find as jest.Mock).mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+    (WordProgress.find as jest.Mock).mockResolvedValue([]);
 
     const res = makeRes();
     await deckController.getCurrentDeck(makeReq({ params: { progressType: 'main' } }), res);
