@@ -10,6 +10,9 @@ const { SESSION_SECRET } = config;
 
 const app = express();
 
+// 프록시(Render/Vercel 등) 뒤에서 secure 쿠키가 동작하도록 신뢰
+app.set("trust proxy", 1);
+
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
