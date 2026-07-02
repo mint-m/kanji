@@ -80,12 +80,18 @@ const LevelSelectionPage: FC = () => {
 
   useEffect(() => {
     if (!selectedLevel) return;
+    setLevelData(null);
     let active = true;
     api.get<LevelStepData>(`/api/words/level/${selectedLevel}/steps`)
       .then(res => { if (active) setLevelData(res); })
       .catch(() => { if (active) setLevelData(null); });
     return () => { active = false; };
   }, [selectedLevel]);
+
+  // Redux의 activeProgressType이 마운트 이후 변경되어도 초기값이 갱신되도록 반응형 리셋
+  useEffect(() => {
+    setSelectedSteps(isMainSession ? { start: 1, end: 3 } : { start: 1, end: 1 });
+  }, [isMainSession]);
 
   const handleSelectLevel = useCallback((level: string) => {
     setSelectedLevel(level);
@@ -138,7 +144,7 @@ const LevelSelectionPage: FC = () => {
     : 0;
 
   return (
-    <ReactPageScroller pageOnChange={setCurrentPage} customPageNumber={currentPage}>
+    <ReactPageScroller pageOnChange={setCurrentPage} customPageNumber={currentPage} renderAllPagesOnFirstRender>
 
       {/* ── Page 1: 레벨 선택 ── */}
       <div className={styles.page}>
@@ -191,7 +197,7 @@ const LevelSelectionPage: FC = () => {
           )}
           <div className={styles.navRow}>
             <DefaultButton onClick={() => setCurrentPage(0)}>← 레벨 변경</DefaultButton>
-            <DefaultButton onClick={() => setCurrentPage(2)} disabled={hasNoWords || hasNoSets}>다음 →</DefaultButton>
+            <DefaultButton onClick={() => setCurrentPage(2)} disabled={levelData === null || hasNoWords || hasNoSets}>다음 →</DefaultButton>
           </div>
         </div>
       </div>

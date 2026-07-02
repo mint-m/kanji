@@ -103,7 +103,8 @@ const Main: FC = () => {
     }
 
     const hasSession = type === 'main' ? mainSession.data : subSession.data;
-    navigate(hasSession ? '/flash-cards' : '/level-setup');
+    // Sub 세션은 단일 스텝 집중 루프여야 하므로 /level-setup(3스텝 고정) 대신 /select-level 사용
+    navigate(hasSession ? '/flash-cards' : (type === 'sub' ? '/select-level' : '/level-setup'));
   };
 
   if (!isLoggedIn) {
@@ -128,7 +129,7 @@ const Main: FC = () => {
             isActive={activeProgressType === 'main'}
             session={mainSession}
             onEnter={handleEnter}
-            disabled={isSwitching}
+            disabled={isSwitching || mainSession.loading || subSession.loading}
           />
           <SessionCard
             type="sub"
@@ -136,7 +137,7 @@ const Main: FC = () => {
             isActive={activeProgressType === 'sub'}
             session={subSession}
             onEnter={handleEnter}
-            disabled={isSwitching}
+            disabled={isSwitching || mainSession.loading || subSession.loading}
           />
         </div>
       </div>

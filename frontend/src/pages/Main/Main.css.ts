@@ -94,8 +94,9 @@ export const sessionInfo = style({
 
 export const infoRow = style({
   display: 'flex',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
   alignItems: 'baseline',
+  gap: vars.space.sm,
 });
 
 export const infoKey = style({
