@@ -9,6 +9,7 @@ export const wrapper = style({
   flexDirection: 'column',
   alignItems: 'center',
   gap: vars.space.xl,
+  marginBottom: '16vh',
 });
 
 export const heading = style({

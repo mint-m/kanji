@@ -1,15 +1,16 @@
-import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useCallback, useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { logout, getUserLocally } from 'services/authService';
 import { clsx } from 'clsx';
 import * as styles from './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const userProfile = getUserLocally();
+  const isHome = pathname === '/';
 
   const handleOnClick = useCallback((path: string) => {
     navigate(`/${path}`);
@@ -37,26 +38,36 @@ const Navbar = () => {
 
   return (
     <div className={styles.navbar}>
-      <DefaultButton className={styles.navBtn} onClick={() => handleOnClick('')}>홈</DefaultButton>
+      {!isHome && <button className={styles.navBtn} onClick={() => handleOnClick('')}>홈</button>}
       {userProfile ? (
         <div ref={menuRef} className={styles.dropdown}>
-          <DefaultButton
+          <button
             className={clsx(styles.navBtn, showUserMenu && styles.navBtnActive)}
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
             {userProfile.name}
-          </DefaultButton>
+            <svg
+              className={clsx(styles.chevron, showUserMenu && styles.chevronOpen)}
+              width="13" height="13" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="2.4"
+              strokeLinecap="round" strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
           {showUserMenu && (
             <div className={styles.dropdownMenu}>
               <div className={styles.dropdownItem} onClick={() => handleOnClick('profile')}>프로필</div>
               <div className={styles.dropdownItem} onClick={() => handleOnClick('dashboard')}>진도</div>
               <div className={styles.dropdownItem} onClick={() => handleOnClick('bookmark')}>북마크</div>
-              <div className={styles.dropdownItem} onClick={handleLogout}>로그아웃</div>
+              <div className={styles.divider} />
+              <div className={clsx(styles.dropdownItem, styles.dropdownLogout)} onClick={handleLogout}>로그아웃</div>
             </div>
           )}
         </div>
       ) : (
-        <DefaultButton className={styles.navBtn} onClick={() => handleOnClick('login')}>로그인</DefaultButton>
+        <button className={styles.navBtn} onClick={() => handleOnClick('login')}>로그인</button>
       )}
     </div>
   );

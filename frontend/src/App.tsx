@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import Navbar from 'components/Navbar';
+import Brand from 'components/Brand/Brand';
 import ProtectedRoute from './ProtectedRoute';
 import { setUser } from 'store/modules/user';
 import { AuthBannerProvider } from 'contexts/AuthBannerContext';
@@ -52,6 +53,7 @@ const AppContent = () => {
 
   return (
     <AuthBannerProvider>
+      <Brand />
       <Navbar />
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>

@@ -37,6 +37,12 @@ export const vars = createGlobalTheme(':root', {
     card: '0 4px 6px rgba(0,0,0,0.07)',
     dropdown: '0 2px 10px rgba(0,0,0,0.1)',
     hover: '0 10px 20px rgba(0,0,0,0.1)',
+    // 정돈된 뉴모피즘 — 카드/타일의 은은한 단일 그림자
+    soft: '0 2px 8px rgba(163,177,198,0.35)',
+    // 포커스/선택 지점의 눌림 효과
+    pressed: 'inset 3px 3px 6px rgba(163,177,198,0.5), inset -3px -3px 6px rgba(255,255,255,0.85)',
+    // 진행률·세그먼트 트랙의 얕은 홈
+    track: 'inset 2px 2px 4px rgba(163,177,198,0.4), inset -2px -2px 4px rgba(255,255,255,0.7)',
   },
   font: {
     jp: "'Noto Sans JP', sans-serif",
