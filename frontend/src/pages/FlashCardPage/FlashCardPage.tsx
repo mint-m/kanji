@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useCallback } from 'react';
+import { FC, useEffect, useState, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import deckService from 'services/deckService';
@@ -29,6 +29,8 @@ const FlashCardPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [deckKey, setDeckKey] = useState(0);
   const [windowComplete, setWindowComplete] = useState(false);
+  // completeDeck 성공 후 fetchDeck만 실패한 경우, 재시도 시 서버 완료를 중복 호출하지 않도록 추적
+  const deckCompletedRef = useRef(false);
 
   const fetchDeck = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
@@ -73,19 +75,24 @@ const FlashCardPage: FC = () => {
 
   const handleAdvance = useCallback(async () => {
     setWindowComplete(false);
-    try {
-      await deckService.completeDeck(activeProgressType || 'main');
-    } catch (e) {
-      console.error('Failed to complete deck:', e);
-      setError('완료 처리에 실패했습니다. 다시 시도해주세요.');
-      setWindowComplete(true);
-      return;
+    // 이미 서버 완료 처리가 끝났다면 재시도 시 completeDeck을 건너뛴다 (중복 호출 시 400 발생)
+    if (!deckCompletedRef.current) {
+      try {
+        await deckService.completeDeck(activeProgressType || 'main');
+        deckCompletedRef.current = true;
+      } catch (e) {
+        console.error('Failed to complete deck:', e);
+        setError('완료 처리에 실패했습니다. 다시 시도해주세요.');
+        setWindowComplete(true);
+        return;
+      }
     }
     const ok = await fetchDeck();
     if (!ok) {
       setWindowComplete(true);
       return;
     }
+    deckCompletedRef.current = false;
     setDeckKey(k => k + 1);
   }, [activeProgressType, fetchDeck]);
 
