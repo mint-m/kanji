@@ -1,7 +1,9 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { logout, getUserLocally } from 'services/authService';
+import { useSelector } from 'react-redux';
+import { logout } from 'services/authService';
 import { clsx } from 'clsx';
+import type { RootState } from 'store';
 import * as styles from './Navbar.css';
 
 const Navbar = () => {
@@ -9,7 +11,8 @@ const Navbar = () => {
   const { pathname } = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const userProfile = getUserLocally();
+  const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
+  const name = useSelector((state: RootState) => state.user.name);
   const isHome = pathname === '/';
 
   const handleOnClick = useCallback((path: string) => {
@@ -33,19 +36,19 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (!userProfile) setShowUserMenu(false);
-  }, [userProfile]);
+    if (!isLoggedIn) setShowUserMenu(false);
+  }, [isLoggedIn]);
 
   return (
     <div className={styles.navbar}>
       {!isHome && <button className={styles.navBtn} onClick={() => handleOnClick('')}>홈</button>}
-      {userProfile ? (
+      {isLoggedIn ? (
         <div ref={menuRef} className={styles.dropdown}>
           <button
             className={clsx(styles.navBtn, showUserMenu && styles.navBtnActive)}
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
-            {userProfile.name}
+            {name}
             <svg
               className={clsx(styles.chevron, showUserMenu && styles.chevronOpen)}
               width="13" height="13" viewBox="0 0 24 24"

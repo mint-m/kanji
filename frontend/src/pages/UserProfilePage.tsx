@@ -1,4 +1,6 @@
 import { FC, useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setUser } from 'store/modules/user';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -14,6 +16,7 @@ const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const location = useLocation();
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +87,7 @@ const UserProfilePage: FC = () => {
       const { name } = await updateName(trimmed);
       setUserData({ ...userData, name });
       updateLocalUser({ name });
+      dispatch(setUser({ name }));
       setIsEditingName(false);
     } catch {
       setNameError('닉네임 변경에 실패했습니다.');
