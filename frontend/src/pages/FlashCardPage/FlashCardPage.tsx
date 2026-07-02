@@ -106,7 +106,7 @@ const FlashCardPage: FC = () => {
       <div className={styles.flashCardArea}>
         <HeaderSection
           title={level}
-          subtitle={steps ? (steps.start === steps.end ? `${steps.start}` : `${steps.start} ~ ${steps.end}`) : ''}
+          subtitle={steps ? (steps.start === steps.end ? `${steps.start}` : `${steps.start}~${steps.end}`) : ''}
           progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
         {error && !windowComplete && (
