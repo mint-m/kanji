@@ -1,4 +1,4 @@
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from 'store';
 import { getStats } from 'services/userService';
@@ -20,10 +20,6 @@ const ProgressBar: FC<{ width: number }> = ({ width }) => (
   <div className={styles.progressBarTrack}>
     <div className={styles.progressBarFill} style={{ width: `${Math.min(width, 100)}%` }} />
   </div>
-);
-
-const SectionHeading: FC<{ children: ReactNode }> = ({ children }) => (
-  <h3 className={styles.sectionHeading}>{children}</h3>
 );
 
 const emptyState = (
@@ -53,50 +49,50 @@ const UserProgress: FC = () => {
   if (error) return <div className="error-box" style={{ margin: '16px 0' }}>{error}</div>;
 
   return (
-    <div className={`card ${styles.container}`}>
-      <h2 className={styles.pageTitle}>학습 진행 상황</h2>
+    <div className={styles.wrapper}>
+      {/* 전체 학습 진행률 */}
+      <div className={styles.card}>
+        <h2 className={styles.sectionTitle}>전체 학습 진행률</h2>
+        <ProgressBar width={stats?.overall.progressPercentage ?? 0} />
+        <div className={styles.progressMeta}>
+          {stats
+            ? `${stats.overall.completedWords.toLocaleString()} / ${stats.overall.totalWords.toLocaleString()} 단어 · ${stats.overall.progressPercentage}%`
+            : '0%'}
+        </div>
+      </div>
 
-      {!stats ? emptyState : (
-        <>
-          <div className={styles.overallSection}>
-            <SectionHeading>전체 학습 진행률</SectionHeading>
-            <ProgressBar width={stats.overall.progressPercentage} />
-            <div className="progress-text">{stats.overall.progressPercentage}% 완료</div>
-          </div>
-
-          {stats.sessions.length > 0 ? (
-            <div>
-              <SectionHeading>진행 중인 학습 세션</SectionHeading>
-              <div className={styles.sessionsGrid}>
-                {stats.sessions.map((session) => (
-                  <div key={session.type} className={styles.sessionCard}>
-                    <div className={styles.sessionHeader}>
-                      <div className={styles.sessionLabel}>
-                        {session.type === 'main' ? '메인 학습' : '북마크 학습'}
-                      </div>
-                      <div className={styles.levelBadge}>{session.currentLevel}</div>
-                    </div>
-                    <div className={styles.statsGrid}>
-                      <div className={styles.statCell}>
-                        <div className={styles.statCellLabel}>스탭 범위</div>
-                        <div className={styles.statCellValue}>Step {session.steps.start} - {session.steps.end}</div>
-                      </div>
-                      <div className={styles.statCell}>
-                        <div className={styles.statCellLabel}>현재 사이클 진행</div>
-                        <div className={styles.statCellValue}>
-                          {session.cycleProgress.current} / {session.cycleProgress.total} 단어
-                        </div>
-                      </div>
-                    </div>
-                    <ProgressBar width={session.cycleProgress.percentage} />
-                    <div className="progress-text">{session.cycleProgress.percentage}% 완료</div>
+      {/* 진행 중인 학습 세션 */}
+      <div className={styles.card}>
+        <h2 className={styles.sectionTitle}>진행 중인 학습 세션</h2>
+        {stats && stats.sessions.length > 0 ? (
+          <div className={styles.sessionsGrid}>
+            {stats.sessions.map((session) => (
+              <div key={session.type} className={styles.sessionCard}>
+                <div className={styles.sessionHeader}>
+                  <div className={styles.sessionLabel}>
+                    {session.type === 'main' ? '메인 학습' : '북마크 학습'}
                   </div>
-                ))}
+                  <div className={styles.levelBadge}>{session.currentLevel}</div>
+                </div>
+                <div className={styles.statsGrid}>
+                  <div className={styles.statCell}>
+                    <div className={styles.statCellLabel}>스텝 범위</div>
+                    <div className={styles.statCellValue}>Step {session.steps.start} – {session.steps.end}</div>
+                  </div>
+                  <div className={styles.statCell}>
+                    <div className={styles.statCellLabel}>현재 사이클 진행</div>
+                    <div className={styles.statCellValue}>
+                      {session.cycleProgress.current} / {session.cycleProgress.total} 단어
+                    </div>
+                  </div>
+                </div>
+                <ProgressBar width={session.cycleProgress.percentage} />
+                <div className={styles.progressMeta}>{session.cycleProgress.percentage}% 완료</div>
               </div>
-            </div>
-          ) : emptyState}
-        </>
-      )}
+            ))}
+          </div>
+        ) : emptyState}
+      </div>
     </div>
   );
 };

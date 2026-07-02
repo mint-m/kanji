@@ -47,11 +47,11 @@ const DashboardPage: FC = () => {
   useEffect(() => {
     if (!activeProgressType) { setProgressData(null); return; }
     let active = true;
-    setProgressData(null);
+    // 이전 데이터를 유지한 채 새로 불러와 세션 전환 시 깜빡임 방지
     setIsLoadingProgress(true);
     deckService.getCurrentDeck(activeProgressType)
-      .then(res => { if (active && res.success && res.data) setProgressData(res.data); })
-      .catch(() => {})
+      .then(res => { if (active) setProgressData(res.success && res.data ? res.data : null); })
+      .catch(() => { if (active) setProgressData(null); })
       .finally(() => { if (active) setIsLoadingProgress(false); });
     return () => { active = false; };
   }, [activeProgressType]);
@@ -80,7 +80,7 @@ const DashboardPage: FC = () => {
       <h1 className={styles.pageTitle}>진도</h1>
 
       {/* 학습 세션 */}
-      <div className="card" style={{ marginBottom: '32px' }}>
+      <div className={styles.card}>
         <h2 className={styles.sectionTitle}>학습 세션</h2>
         {switchError && (
           <div className="error-box" style={{ marginBottom: '12px' }}>{switchError}</div>
@@ -99,10 +99,8 @@ const DashboardPage: FC = () => {
         </div>
 
         <p className={styles.subTitle}>현재 학습 위치</p>
-        {isLoadingProgress ? (
-          <div className="loading-text" style={{ padding: '8px 0', fontSize: '0.9rem' }}>불러오는 중...</div>
-        ) : progressData ? (
-          <div className={styles.progressRow}>
+        {progressData ? (
+          <div className={clsx(styles.progressRow, isLoadingProgress && styles.progressRowLoading)}>
             <div className={styles.progressCell}>
               <span className={styles.progressCellLabel}>레벨</span>
               <span className={styles.progressCellValue}>{progressData.level ?? 'N/A'}</span>
@@ -112,6 +110,17 @@ const DashboardPage: FC = () => {
               <span className={styles.progressCellValue}>
                 {progressData.steps ? `${progressData.steps.start} – ${progressData.steps.end}` : 'N/A'}
               </span>
+            </div>
+          </div>
+        ) : isLoadingProgress ? (
+          <div className={styles.progressRow} aria-busy="true">
+            <div className={styles.progressCell}>
+              <span className={styles.progressCellLabel}>레벨</span>
+              <span className={styles.skeletonBar} />
+            </div>
+            <div className={styles.progressCell}>
+              <span className={styles.progressCellLabel}>스텝</span>
+              <span className={styles.skeletonBar} />
             </div>
           </div>
         ) : (
@@ -126,33 +135,33 @@ const DashboardPage: FC = () => {
 
       {/* 통계 카드 */}
       <div className={styles.statsGrid}>
-        <div className={clsx('card', styles.statCard)}>
-          <div className={styles.streakValue}>{stats.streak.current}일</div>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{stats.streak.current}일</div>
           <div className={styles.statLabel}>현재 연속 학습</div>
         </div>
-        <div className={clsx('card', styles.statCard)}>
-          <div className={styles.streakValue}>{stats.streak.longest}일</div>
+        <div className={styles.statCard}>
+          <div className={styles.statValue}>{stats.streak.longest}일</div>
           <div className={styles.statLabel}>최장 연속 학습</div>
         </div>
-        <div className={clsx('card', styles.statCard)}>
+        <div className={styles.statCard}>
           <div className={styles.statValue}>{stats.streak.studyDays}</div>
           <div className={styles.statLabel}>총 학습일</div>
         </div>
-        <div className={clsx('card', styles.statCard)}>
+        <div className={styles.statCard}>
           <div className={styles.statValue}>{stats.totalWordsStudied}</div>
           <div className={styles.statLabel}>학습한 단어</div>
         </div>
-        <div className={clsx('card', styles.statCard)}>
+        <div className={styles.statCard}>
           <div className={styles.statValue}>{stats.overall.progressPercentage}%</div>
           <div className={styles.statLabel}>전체 완료율</div>
         </div>
       </div>
 
       {/* 레벨별 진행률 */}
-      <div className="card">
+      <div className={styles.card}>
         <h2 className={styles.sectionTitle}>레벨별 진행률</h2>
         <div className={styles.levelList}>
-          {stats.levelBreakdown.map(({ level, completed, total, percentage }) => (
+          {stats.levelBreakdown.filter(({ total }) => total > 0).map(({ level, completed, total, percentage }) => (
             <div key={level} className={styles.levelRow}>
               <span className={styles.levelLabel}>{level}</span>
               <div className={styles.progressTrack}>
