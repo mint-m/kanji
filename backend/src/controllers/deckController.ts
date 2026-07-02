@@ -447,25 +447,12 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     const finalStats = progress.getSessionStats();
-    const canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
 
     let nextWindow = null;
     let isSubLoop = false;
+    let canMoveToNext = false;
 
-    if (canMoveToNext) {
-      try {
-        await progress.generateNextSlidingWindow(userId, progressType);
-        await progress.save();
-
-        nextWindow = {
-          level: progress.current_level,
-          steps: progress.steps,
-          deckSize: progress.shuffled_order.length,
-        };
-      } catch (error) {
-        console.error('Failed to generate next window:', error);
-      }
-    } else if (progressType === 'sub') {
+    if (progressType === 'sub') {
       // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
       await WordProgress.updateMany(
         { user_id: userId, word_id: { $in: progress.shuffled_order }, progress_type: 'sub' },
@@ -486,6 +473,22 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         steps: progress.steps,
         deckSize: progress.shuffled_order.length,
       };
+    } else {
+      canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
+      if (canMoveToNext) {
+        try {
+          await progress.generateNextSlidingWindow(userId, progressType);
+          await progress.save();
+
+          nextWindow = {
+            level: progress.current_level,
+            steps: progress.steps,
+            deckSize: progress.shuffled_order.length,
+          };
+        } catch (error) {
+          console.error('Failed to generate next window:', error);
+        }
+      }
     }
 
     const user = await User.findById(userId);
