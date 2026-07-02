@@ -22,6 +22,33 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+// 닉네임(이름) 업데이트
+export const updateUserName = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // authenticateJwt 미들웨어에서 이미 검증됨
+    const userId = req.user!._id;
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+
+    if (!name) {
+      return next(new BadRequestError('닉네임을 입력해주세요'));
+    }
+    if (name.length > 20) {
+      return next(new BadRequestError('닉네임은 20자 이내로 입력해주세요'));
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { name }, { new: true });
+
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({ success: true, data: { name: user.name } });
+  } catch (error) {
+    console.error('Update user name error:', error);
+    next(new InternalServerError('Failed to update user name'));
+  }
+};
+
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {

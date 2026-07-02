@@ -15,6 +15,14 @@ export const getStats = async (): Promise<any> => {
 };
 
 /**
+ * 닉네임(이름) 변경
+ */
+export const updateName = async (name: string): Promise<{ name: string }> => {
+  const res = await api.patch<{ success: boolean; data: { name: string } }>('/api/users/me', { name });
+  return res.data;
+};
+
+/**
  * 활성 진행 타입 업데이트
  */
 export const updateActiveProgressType = async (

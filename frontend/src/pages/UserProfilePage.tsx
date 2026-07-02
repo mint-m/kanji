@@ -2,10 +2,11 @@ import { FC, useEffect, useState } from 'react';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getProfile } from 'services/userService';
-import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally } from 'services/authService';
+import { getProfile, getStats, updateName } from 'services/userService';
+import deckService from 'services/deckService';
+import { CurrentDeck } from 'services/types';
+import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally, updateLocalUser } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
-import { clsx } from 'clsx';
 import * as styles from './UserProfilePage.css';
 
 const KAKAO_REST_API_KEY = process.env['REACT_APP_KAKAO_REST_API_KEY'];
@@ -19,6 +20,16 @@ const UserProfilePage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>((location.state as any)?.linkError ?? null);
   const [linkLoading, setLinkLoading] = useState<string | null>(null);
+
+  // 닉네임 편집
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  // 간단한 통계
+  const [progress, setProgress] = useState<number | null>(null);
+  const [currentDeck, setCurrentDeck] = useState<CurrentDeck | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -40,6 +51,46 @@ const UserProfilePage: FC = () => {
     };
     fetchUserData();
   }, []);
+
+  // 최근 학습 위치 + 진도
+  useEffect(() => {
+    if (!userData) return;
+    let active = true;
+    getStats()
+      .then((s) => { if (active) setProgress(s.overall.progressPercentage); })
+      .catch(() => {});
+    const type = userData.activeProgressType;
+    if (type) {
+      deckService.getCurrentDeck(type)
+        .then((res) => { if (active && res.success && res.data) setCurrentDeck(res.data); })
+        .catch(() => {});
+    }
+    return () => { active = false; };
+  }, [userData]);
+
+  const startEditName = () => {
+    setNameInput(userData.name || '');
+    setNameError(null);
+    setIsEditingName(true);
+  };
+
+  const saveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed) { setNameError('닉네임을 입력해주세요'); return; }
+    if (trimmed === userData.name) { setIsEditingName(false); return; }
+    setNameSaving(true);
+    setNameError(null);
+    try {
+      const { name } = await updateName(trimmed);
+      setUserData({ ...userData, name });
+      updateLocalUser({ name });
+      setIsEditingName(false);
+    } catch {
+      setNameError('닉네임 변경에 실패했습니다.');
+    } finally {
+      setNameSaving(false);
+    }
+  };
 
   const googleLinkLogin = useGoogleLogin({
     flow: 'auth-code',
@@ -96,31 +147,69 @@ const UserProfilePage: FC = () => {
     );
   }
 
+  const levelText = currentDeck?.level ?? '—';
+  const stepText = currentDeck?.steps ? `${currentDeck.steps.start}–${currentDeck.steps.end}` : '—';
+  const progressText = progress !== null ? `${progress}%` : '—';
+
   return (
     <div className={styles.page}>
+      <h1 className={styles.pageTitle}>프로필</h1>
 
       {/* 프로필 헤더 */}
-      <div className={clsx('card', styles.profileHeader)}>
-        <div className={styles.avatar}>
-          {(userData.name?.charAt(0) || userData.email.charAt(0)).toUpperCase()}
+      <div className={`${styles.card} ${styles.profileHeader}`}>
+        <div className={styles.headerTop}>
+          <div className={styles.profileInfo}>
+            {isEditingName ? (
+              <>
+                <div className={styles.nameEdit}>
+                  <input
+                    className={styles.nameInput}
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setIsEditingName(false); }}
+                    maxLength={20}
+                    autoFocus
+                  />
+                  <button className={styles.nameSaveBtn} onClick={saveName} disabled={nameSaving}>
+                    {nameSaving ? '저장 중...' : '저장'}
+                  </button>
+                  <button className={styles.nameCancelBtn} onClick={() => setIsEditingName(false)}>취소</button>
+                </div>
+                {nameError && <p className={styles.fieldError}>{nameError}</p>}
+              </>
+            ) : (
+              <div className={styles.nameRow}>
+                <p className={styles.profileName}>{userData.name || '사용자'}</p>
+                <button className={styles.editBtn} onClick={startEditName}>수정</button>
+              </div>
+            )}
+            <p className={styles.profileMeta}>{userData.email}</p>
+          </div>
+          <button className={styles.logoutBtn} onClick={() => { logout(true); navigate('/'); }}>로그아웃</button>
         </div>
-        <div className={styles.profileInfo}>
-          <p className={styles.profileName}>{userData.name || '사용자'}</p>
-          <p className={styles.profileMeta}>{userData.email}</p>
+
+        <div className={styles.statsGroup}>
+          <div className={styles.miniStats}>
+            <span className={styles.miniStatItem}>
+              <span className={styles.miniLabel}>레벨</span>
+              <span className={styles.miniValue}>{levelText}</span>
+            </span>
+            <span className={styles.miniStatItem}>
+              <span className={styles.miniLabel}>스텝</span>
+              <span className={styles.miniValue}>{stepText}</span>
+            </span>
+            <span className={styles.miniStatItem}>
+              <span className={styles.miniLabel}>진도</span>
+              <span className={styles.miniValue}>{progressText}</span>
+            </span>
+          </div>
+          <button className={styles.statsBtn} onClick={() => navigate('/profile/stats')}>학습 통계</button>
         </div>
       </div>
 
-      {/* 통계 */}
-      <section className="card" style={{ marginBottom: '24px' }}>
-        <h2 className="section-title">통계</h2>
-        <DefaultButton style={{ width: '100%' }} onClick={() => navigate('/profile/stats')}>
-          통계 보기
-        </DefaultButton>
-      </section>
-
       {/* 계정 연동 */}
-      <section className="card" style={{ marginBottom: '24px' }}>
-        <h2 className="section-title">계정 연동</h2>
+      <section className={styles.card}>
+        <h2 className={styles.sectionTitle}>계정 연동</h2>
         <div className={styles.providerList}>
           <div className={styles.providerRow}>
             <span className={styles.providerName}>Google</span>
@@ -152,16 +241,6 @@ const UserProfilePage: FC = () => {
           </div>
         </div>
         {linkError && <p className={styles.linkErrorMsg}>{linkError}</p>}
-      </section>
-
-      {/* 로그아웃 */}
-      <section className="card" style={{ marginBottom: '24px' }}>
-        <DefaultButton
-          style={{ backgroundColor: '#f8f9fa', color: '#d32f2f', width: '100%' }}
-          onClick={() => { logout(true); navigate('/'); }}
-        >
-          로그아웃
-        </DefaultButton>
       </section>
     </div>
   );
