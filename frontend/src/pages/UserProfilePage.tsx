@@ -5,8 +5,7 @@ import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getProfile, getStats, updateName } from 'services/userService';
-import deckService from 'services/deckService';
-import { CurrentDeck } from 'services/types';
+import progressService, { SessionSummary } from 'services/progressService';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally, updateLocalUser } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
 import * as styles from './UserProfilePage.css';
@@ -32,7 +31,7 @@ const UserProfilePage: FC = () => {
 
   // 간단한 통계
   const [progress, setProgress] = useState<number | null>(null);
-  const [currentDeck, setCurrentDeck] = useState<CurrentDeck | null>(null);
+  const [currentSession, setCurrentSession] = useState<SessionSummary | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -64,8 +63,11 @@ const UserProfilePage: FC = () => {
       .catch(() => {});
     const type = userData.activeProgressType;
     if (type) {
-      deckService.getCurrentDeck(type)
-        .then((res) => { if (active && res.success && res.data) setCurrentDeck(res.data); })
+      progressService.getAllSessions()
+        .then((res) => {
+          if (!active || !res.success || !res.data) return;
+          setCurrentSession(res.data.sessions.find((s) => s.type === type) ?? null);
+        })
         .catch(() => {});
     }
     return () => { active = false; };
@@ -151,8 +153,8 @@ const UserProfilePage: FC = () => {
     );
   }
 
-  const levelText = currentDeck?.level ?? '—';
-  const stepText = currentDeck?.steps ? `${currentDeck.steps.start}–${currentDeck.steps.end}` : '—';
+  const levelText = currentSession?.level ?? '—';
+  const stepText = currentSession?.steps ? `${currentSession.steps.start}–${currentSession.steps.end}` : '—';
   const progressText = progress !== null ? `${progress}%` : '—';
 
   return (

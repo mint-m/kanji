@@ -4,16 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { RootState } from 'store';
 import { setActiveProgressType } from 'store/modules/user';
-import deckService from 'services/deckService';
+import progressService, { SessionSummary } from 'services/progressService';
 import { updateActiveProgressType } from 'services/userService';
 import { updateLocalUser } from 'services/authService';
-import { CurrentDeck } from 'services/types';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import * as styles from './Main.css';
 
 interface SessionState {
-  data: CurrentDeck | null;
+  data: SessionSummary | null;
   loading: boolean;
 }
 
@@ -75,13 +74,17 @@ const Main: FC = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    deckService.getCurrentDeck('main')
-      .then(res => setMainSession({ data: res.success && res.data ? res.data : null, loading: false }))
-      .catch(() => setMainSession({ data: null, loading: false }));
-
-    deckService.getCurrentDeck('sub')
-      .then(res => setSubSession({ data: res.success && res.data ? res.data : null, loading: false }))
-      .catch(() => setSubSession({ data: null, loading: false }));
+    // 덱 전체가 아닌 세션 요약만 조회 (한 번의 호출로 메인·서브 모두)
+    progressService.getAllSessions()
+      .then(res => {
+        const sessions = res.success && res.data ? res.data.sessions : [];
+        setMainSession({ data: sessions.find(s => s.type === 'main') ?? null, loading: false });
+        setSubSession({ data: sessions.find(s => s.type === 'sub') ?? null, loading: false });
+      })
+      .catch(() => {
+        setMainSession({ data: null, loading: false });
+        setSubSession({ data: null, loading: false });
+      });
   }, [isLoggedIn]);
 
   const handleEnter = async (type: 'main' | 'sub') => {
