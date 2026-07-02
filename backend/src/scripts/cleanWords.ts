@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import Word from '../models/word';
+import UserCheckpoint from '../models/userCheckpoint';
+import WordProgress from '../models/wordProgress';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -27,8 +29,22 @@ async function cleanWords() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) { console.error('MONGO_URI 환경변수 필요'); process.exit(1); }
 
-  await mongoose.connect(mongoUri, { dbName: 'kanji-db' });
+  await mongoose.connect(mongoUri);
   console.log(`MongoDB 연결됨 ${DRY_RUN ? '[DRY RUN]' : ''}`);
+
+  // 삭제 대상 word_id가 활성 세션/진도에 참조돼 있으면 stale 슬롯 발생 가능. 경고만 출력.
+  const reportReferences = async (label: string, ids: mongoose.Types.ObjectId[]) => {
+    if (ids.length === 0) return;
+    const [checkpointRefs, progressRefs] = await Promise.all([
+      UserCheckpoint.countDocuments({ shuffled_order: { $in: ids } }),
+      WordProgress.countDocuments({ word_id: { $in: ids } }),
+    ]);
+    if (checkpointRefs > 0 || progressRefs > 0) {
+      console.log(
+        `  ⚠️  [${label}] 참조 발견 — UserCheckpoint: ${checkpointRefs}개 세션, WordProgress: ${progressRefs}개 기록. 실행 전 사용자에게 알리세요.`,
+      );
+    }
+  };
 
   // ── A. 리다이렉트 단어 ──────────────────────────────────────────────────
   const redirects = await Word.find({
@@ -41,6 +57,8 @@ async function cleanWords() {
     console.log(`  ${w.entry} → ${w.means[0]}`),
   );
   if (redirects.length > 10) console.log(`  ... 외 ${redirects.length - 10}개`);
+
+  await reportReferences('A', redirects.map(w => w._id));
 
   if (!DRY_RUN && redirects.length > 0) {
     await Word.deleteMany({ _id: { $in: redirects.map(w => w._id) } });
@@ -57,6 +75,8 @@ async function cleanWords() {
   junkWords.forEach(w =>
     console.log(`  ${w.entry} (${w.pron || '-'}) — ${w.means[0]} [${w.level}]`),
   );
+
+  await reportReferences('B', junkWords.map(w => w._id));
 
   if (!DRY_RUN && junkWords.length > 0) {
     await Word.deleteMany({ _id: { $in: junkWords.map(w => w._id) } });
@@ -95,6 +115,8 @@ async function cleanWords() {
   dupGroups.slice(0, 5).forEach((g: any) =>
     console.log(`  ${g._id.entry} (${g._id.pron || '-'}) [${g._id.level}] × ${g.count}`),
   );
+
+  await reportReferences('C', dupRemoveIds);
 
   if (!DRY_RUN && dupRemoveIds.length > 0) {
     await Word.deleteMany({ _id: { $in: dupRemoveIds } });

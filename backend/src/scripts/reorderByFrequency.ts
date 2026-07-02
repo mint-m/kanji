@@ -82,7 +82,7 @@ async function reorderByFrequency() {
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) { console.error('MONGO_URI 환경변수 필요'); process.exit(1); }
 
-  await mongoose.connect(mongoUri, { dbName: 'kanji-db' });
+  await mongoose.connect(mongoUri);
   console.log(`MongoDB 연결됨 ${DRY_RUN ? '[DRY RUN]' : ''}`);
   console.log(`스텝당 단어 수: ${WORDS_PER_STEP}`);
 

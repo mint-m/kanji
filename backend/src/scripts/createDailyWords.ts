@@ -107,10 +107,16 @@ async function createDailyWords() {
       const rElems: any[] = entry.r_ele || [];
 
       for (const ke of kElems) {
-        (ke.ke_pri || []).forEach((p: any) => priTags.push(typeof p === 'string' ? p : p._));
+        (ke.ke_pri || []).forEach((p: any) => {
+          const tag = typeof p === 'string' ? p : p?._;
+          if (tag) priTags.push(tag);
+        });
       }
       for (const re of rElems) {
-        (re.re_pri || []).forEach((p: any) => priTags.push(typeof p === 'string' ? p : p._));
+        (re.re_pri || []).forEach((p: any) => {
+          const tag = typeof p === 'string' ? p : p?._;
+          if (tag) priTags.push(tag);
+        });
       }
 
       const frequency = calcFrequency(priTags);

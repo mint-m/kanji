@@ -70,13 +70,17 @@ function extractEntry(entry: any): { kanji: string[]; kana: string[]; frequency:
 
     const kElems: any[] = entry.k_ele || [];
     for (const ke of kElems) {
-      const kePri: string[] = (ke.ke_pri || []).map((p: any) => (typeof p === 'string' ? p : p._));
+      const kePri: string[] = (ke.ke_pri || [])
+        .map((p: any) => (typeof p === 'string' ? p : p?._))
+        .filter(Boolean);
       priTags.push(...kePri);
     }
 
     const rElems: any[] = entry.r_ele || [];
     for (const re of rElems) {
-      const rePri: string[] = (re.re_pri || []).map((p: any) => (typeof p === 'string' ? p : p._));
+      const rePri: string[] = (re.re_pri || [])
+        .map((p: any) => (typeof p === 'string' ? p : p?._))
+        .filter(Boolean);
       priTags.push(...rePri);
     }
 
@@ -158,6 +162,13 @@ async function augmentFrequency() {
       });
       matched++;
     } else {
+      // 매칭 실패해도 명시적으로 9999를 저장해야 reorderByFrequency 정렬에서 null로 취급되어 앞에 오는 버그 방지
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: word._id },
+          update: { $set: { frequency: 9999 } },
+        },
+      });
       unmatched++;
     }
   }
