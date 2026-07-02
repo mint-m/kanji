@@ -13,9 +13,12 @@
 yarn start                  # frontend + backend
 cd frontend && yarn start   # frontend only (http://localhost:4200)
 cd backend && yarn dev      # backend only (http://localhost:8000)
+cd backend && yarn build    # production build (tsc → dist/)
 yarn test                   # tests (run in frontend/ or backend/)
 yarn test:e2e               # playwright e2e
 ```
+
+Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
 ## Architecture Rules
 
@@ -51,18 +54,26 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 ## Environment Variables
 
+Full lists with comments: `backend/.env.example`, `frontend/.env.example`
+
 **backend/.env**
 ```
 MONGO_URI=mongodb://localhost:27017/kanji
 PORT=8000
+ALLOWED_ORIGINS=http://localhost:4200
 SESSION_SECRET=
+JWT_SECRET=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
 KAKAO_REST_API_KEY=
 ```
 
 **frontend/.env**
 ```
 REACT_APP_API_URL=http://localhost:8000
-REACT_APP_GOOGLE_CLIENT_ID=
+REACT_APP_GOOGLE_OAUTH_CLIENT_ID=
+REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
+REACT_APP_KAKAO_REST_API_KEY=
+REACT_APP_KAKAO_REDIRECT_URI=http://localhost:4200/auth/kakao/callback
 ```
