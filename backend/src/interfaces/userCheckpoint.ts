@@ -19,10 +19,8 @@ export interface UserCheckpointDocument extends Document {
   getCurrentWord(): mongoose.Types.ObjectId | null;
   getRemainingWords(): mongoose.Types.ObjectId[];
   moveToNext(): boolean;
-  moveToPrevious(): boolean;
   resetProgress(): void;
   getSessionStats(): SessionStats;
-  updateCheckpoint(): Promise<boolean>;
   canMoveToNextWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
   reshuffleUnknownWords(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<number>;
   generateNextSlidingWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
@@ -38,23 +36,12 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
     level: LearningLevel,
     steps: StepRange
   ): Promise<UserCheckpointDocument>;
-  generateSlidingWindowDeck(
-    level: LearningLevel,
-    steps: StepRange,
-    userId: mongoose.Types.ObjectId,
-    progressType: ProgressType,
-    options?: DeckGenerationOptions
-  ): Promise<mongoose.Types.ObjectId[]>;
   filterDeckByUserProgress(
     wordIds: mongoose.Types.ObjectId[],
     userId: mongoose.Types.ObjectId,
     progressType: ProgressType,
     options?: DeckGenerationOptions
   ): Promise<mongoose.Types.ObjectId[]>;
-  getNextSlidingWindow(currentSteps: StepRange, level: LearningLevel): Promise<StepRange | null>;
-  getUserLearningStats(userId: mongoose.Types.ObjectId): Promise<any>;
-
-  // Enhanced sliding window methods
 
   // Utility methods
   shuffleArray<T>(array: T[]): T[];

@@ -3,14 +3,8 @@ jest.mock('../models/userCheckpoint', () => ({
   default: {
     findByUserAndType: jest.fn(),
     getActiveProgressForUser: jest.fn(),
-    getUserLearningStats: jest.fn(),
     deleteOne: jest.fn(),
   },
-}));
-
-jest.mock('../models/wordProgress', () => ({
-  __esModule: true,
-  default: { getStudyStats: jest.fn() },
 }));
 
 import { Response } from 'express';
@@ -68,23 +62,20 @@ describe('getUserProgress', () => {
     expect((res.json as jest.Mock).mock.calls[0][0].data).toHaveProperty('sessionStats');
   });
 });
-describe('resetSession', () => {
+describe('deleteSession', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('세션 없음 → 404', async () => {
-    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(null);
+    (UserCheckpoint.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 0 });
     const res = makeRes();
-    await progressController.resetSession(makeReq({ params: { type: 'main' } }), res);
+    await progressController.deleteSession(makeReq({ params: { type: 'main' } }), res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
-  it('성공 → resetProgress·save 호출 후 200', async () => {
-    const mockProgress = makeMockProgress();
-    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(mockProgress);
+  it('성공 → 200', async () => {
+    (UserCheckpoint.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 1 });
     const res = makeRes();
-    await progressController.resetSession(makeReq({ params: { type: 'main' } }), res);
-    expect(mockProgress.resetProgress).toHaveBeenCalled();
-    expect(mockProgress.save).toHaveBeenCalled();
+    await progressController.deleteSession(makeReq({ params: { type: 'main' } }), res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 });

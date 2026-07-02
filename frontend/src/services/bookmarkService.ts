@@ -60,10 +60,6 @@ const bookmarkService = {
     return api.get(url);
   },
 
-  async getBookmarkStats(): Promise<ApiResponse<any>> {
-    return api.get('/api/users/me/bookmarks/stats');
-  },
-
   async updateBookmarkNotes(wordId: string, notes: string): Promise<ApiResponse<Bookmark>> {
     return api.put(`/api/users/me/bookmarks/${wordId}`, { reason: notes });
   },

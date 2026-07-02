@@ -3,9 +3,6 @@ import { UserAuthType, LEARNING_LEVELS } from '../types/common';
 import {
   UserDocument,
   UserModel,
-  UserPreferences,
-  UserProfile,
-  UserStats,
   AuthProvider,
 } from '../interfaces/user';
 import { ConflictError } from '../utils/errors';
@@ -130,10 +127,6 @@ UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | '
   return 'beginner';
 };
 
-UserSchema.methods.getPreferredStudyTime = function (this: UserDocument): string | null {
-  return this.statistics.favoriteStudyTime || this.preferences.reminderTime || null;
-};
-
 UserSchema.methods.canReceiveReminders = function (this: UserDocument): boolean {
   return this.preferences.studyReminders && this.emailVerified && this.isActive;
 };
@@ -228,69 +221,6 @@ UserSchema.statics.findOrCreateFromOAuth = async function (authData: {
   }
 
   return user;
-};
-
-UserSchema.statics.deactivateUser = async function (userId: mongoose.Types.ObjectId): Promise<boolean> {
-  const result = await this.updateOne({ _id: userId }, { isActive: false });
-  return result.modifiedCount > 0;
-};
-
-UserSchema.statics.reactivateUser = async function (userId: mongoose.Types.ObjectId): Promise<boolean> {
-  const result = await this.updateOne(
-    { _id: userId },
-    {
-      isActive: true,
-      'profile.lastActiveAt': new Date(),
-    },
-  );
-  return result.modifiedCount > 0;
-};
-
-UserSchema.statics.updatePreferences = function (
-  userId: mongoose.Types.ObjectId,
-  preferences: Partial<UserPreferences>,
-): Promise<UserDocument | null> {
-  return this.findByIdAndUpdate(
-    userId,
-    {
-      $set: Object.keys(preferences).reduce((acc, key) => {
-        acc[`preferences.${key}`] = preferences[key as keyof UserPreferences];
-        return acc;
-      }, {} as any),
-    },
-    { new: true },
-  );
-};
-
-UserSchema.statics.updateProfile = function (
-  userId: mongoose.Types.ObjectId,
-  profile: Partial<UserProfile>,
-): Promise<UserDocument | null> {
-  return this.findByIdAndUpdate(
-    userId,
-    {
-      $set: Object.keys(profile).reduce((acc, key) => {
-        acc[`profile.${key}`] = profile[key as keyof UserProfile];
-        return acc;
-      }, {} as any),
-    },
-    { new: true },
-  );
-};
-
-UserSchema.statics.getActiveUsers = function (days: number = 30): Promise<UserDocument[]> {
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-
-  return this.find({
-    isActive: true,
-    'profile.lastActiveAt': { $gte: cutoffDate },
-  });
-};
-
-UserSchema.statics.getUserStats = async function (userId: mongoose.Types.ObjectId): Promise<UserStats | null> {
-  const user = await this.findById(userId);
-  return user ? user.statistics : null;
 };
 
 const User = mongoose.model<UserDocument, UserModel>('User', UserSchema, 'user');

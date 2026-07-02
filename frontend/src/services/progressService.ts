@@ -18,43 +18,6 @@ export interface GetProgressResponse {
   canMoveToNextWindow: boolean;
 }
 
-export interface UpdateIndexRequest {
-  action: 'next' | 'previous' | 'jump';
-  index?: number;
-}
-
-export interface LearningStatsResponse {
-  sessionStats: Array<{
-    _id: ProgressType;
-    sessions: number;
-    totalWords: number;
-    completedWords: number;
-    levels: LearningLevel[];
-    avgProgress: number;
-  }>;
-  wordStats: {
-    main: WordStatsSummary | null;
-    sub: WordStatsSummary | null;
-  };
-  overall: {
-    totalSessions: number;
-    totalWordsInDecks: number;
-    averageProgress: number;
-  };
-}
-
-export interface WordStatsSummary {
-  _id: null;
-  total_words: number;
-  completed_words: number;
-  bookmarked_words: number;
-  total_tries: number;
-  total_correct: number;
-  avg_tries: number;
-  avg_success_rate: number;
-  total_time_spent: number;
-}
-
 export interface CheckpointUpdateData {
   progress_type: ProgressType;
   current_level: LearningLevel;
@@ -72,20 +35,8 @@ const progressService = {
     return api.get(`/api/users/me/progress/${type}`);
   },
 
-  async updateWordIndex(type: ProgressType, data: UpdateIndexRequest): Promise<ApiResponse<any>> {
-    return api.put(`/api/users/me/progress/${type}/index`, data);
-  },
-
-  async resetSession(type: ProgressType): Promise<ApiResponse<any>> {
-    return api.put(`/api/users/me/progress/${type}/reset`);
-  },
-
   async deleteSession(type: ProgressType): Promise<ApiResponse<any>> {
     return api.delete(`/api/users/me/progress/${type}`);
-  },
-
-  async getLearningStats(): Promise<ApiResponse<LearningStatsResponse>> {
-    return api.get('/api/users/me/progress/stats');
   },
 
   async completeWord(

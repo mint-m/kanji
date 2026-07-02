@@ -81,14 +81,6 @@ userCheckpointSchema.methods.moveToNext = function (this: UserCheckpointDocument
   return false;
 };
 
-userCheckpointSchema.methods.moveToPrevious = function (this: UserCheckpointDocument): boolean {
-  if (this.current_index > 0) {
-    this.current_index--;
-    return true;
-  }
-  return false;
-};
-
 userCheckpointSchema.methods.resetProgress = function (this: UserCheckpointDocument): void {
   this.current_index = 0;
 };
@@ -111,17 +103,6 @@ userCheckpointSchema.methods.getSessionStats = function (this: UserCheckpointDoc
     currentStep: Math.min(currentStep, this.steps.end),
     totalSteps,
   };
-};
-
-// Simplified checkpoint update - just saves the document
-userCheckpointSchema.methods.updateCheckpoint = async function (this: UserCheckpointDocument): Promise<boolean> {
-  try {
-    await this.save();
-    return true;
-  } catch (error) {
-    console.error('Failed to update checkpoint:', error);
-    return false;
-  }
 };
 
 userCheckpointSchema.methods.isWindowCompleted = async function (
@@ -256,23 +237,6 @@ userCheckpointSchema.statics.createNewSession = async function (
   return await session.save();
 };
 
-userCheckpointSchema.statics.generateSlidingWindowDeck = async function (
-  level: LearningLevel,
-  steps: StepRange,
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType,
-  options: DeckGenerationOptions = {}
-): Promise<mongoose.Types.ObjectId[]> {
-  const deckWindow = await SlidingWindowService.generateDeck(level, steps, options.shuffleOrder !== false);
-
-  return await (this as UserCheckpointModel).filterDeckByUserProgress(
-    deckWindow.wordIds,
-    userId,
-    progressType,
-    options
-  );
-};
-
 userCheckpointSchema.statics.filterDeckByUserProgress = async function (
   wordIds: mongoose.Types.ObjectId[],
   userId: mongoose.Types.ObjectId,
@@ -379,48 +343,6 @@ userCheckpointSchema.statics.shuffleArray = function <T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
-};
-
-userCheckpointSchema.statics.getNextSlidingWindow = async function (
-  currentSteps: StepRange,
-  level: LearningLevel
-): Promise<StepRange | null> {
-  // Use SlidingWindowService for getting next window
-  return await SlidingWindowService.getNextWindow(currentSteps, level);
-};
-
-userCheckpointSchema.statics.getUserLearningStats = async function (userId: mongoose.Types.ObjectId): Promise<any> {
-  const stats = await this.aggregate([
-    { $match: { user_id: userId } },
-    {
-      $lookup: {
-        from: 'word_progress',
-        localField: 'user_id',
-        foreignField: 'user_id',
-        as: 'wordProgress',
-      },
-    },
-    {
-      $group: {
-        _id: '$progress_type',
-        sessions: { $sum: 1 },
-        totalWords: { $sum: { $size: '$shuffled_order' } },
-        completedWords: { $sum: '$current_index' },
-        levels: { $addToSet: '$current_level' },
-        avgProgress: {
-          $avg: {
-            $cond: [
-              { $gt: [{ $size: '$shuffled_order' }, 0] },
-              { $divide: ['$current_index', { $size: '$shuffled_order' }] },
-              0,
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  return stats;
 };
 
 // Create and export model
