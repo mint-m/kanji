@@ -6,6 +6,11 @@ import {
 } from '../interfaces/userCheckpoint';
 import SlidingWindowService from '../services/slidingWindowService';
 import { InvalidStepRangeError } from '../utils/errors';
+import { shuffleArray } from '../utils/shuffle';
+import { WordProgressModel } from '../interfaces/wordProgress';
+
+// 순환 의존을 피하기 위해 mongoose 레지스트리에서 동적으로 조회
+const wordProgressModel = () => mongoose.model('WordProgress') as WordProgressModel;
 
 // UserCheckpoint - Simplified learning session state
 // Combines session tracking and checkpoint functionality
@@ -111,8 +116,7 @@ userCheckpointSchema.methods.isWindowCompleted = async function (
   progressType: ProgressType
 ): Promise<boolean> {
   if (this.shuffled_order.length === 0) return false;
-  const WordProgress = mongoose.model('WordProgress');
-  const knownCount = await WordProgress.countDocuments({
+  const knownCount = await wordProgressModel().countDocuments({
     user_id: userId,
     word_id: { $in: this.shuffled_order },
     progress_type: progressType,
@@ -126,8 +130,7 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   userId: mongoose.Types.ObjectId,
   progressType: ProgressType
 ): Promise<number> {
-  const WordProgress = mongoose.model('WordProgress');
-  const knownIds = await WordProgress.find({
+  const knownIds = await wordProgressModel().find({
     user_id: userId,
     word_id: { $in: this.shuffled_order },
     progress_type: progressType,
@@ -137,8 +140,7 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
 
   const unknownIds = this.shuffled_order.filter((id) => !knownSet.has(id.toString()));
 
-  const UserCheckpointModel = this.constructor as UserCheckpointModel;
-  this.shuffled_order = UserCheckpointModel.shuffleArray(unknownIds);
+  this.shuffled_order = shuffleArray(unknownIds);
   this.current_index = 0;
   return this.shuffled_order.length;
 };
@@ -166,11 +168,7 @@ userCheckpointSchema.methods.generateNextSlidingWindow = async function (
   const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
 
   // Reset only after deck generation succeeds to avoid data loss on failure
-  const WordProgress = mongoose.model('WordProgress');
-  await WordProgress.updateMany(
-    { user_id: userId, word_id: { $in: this.shuffled_order }, progress_type: progressType },
-    { $set: { is_window_completed: false } }
-  );
+  await wordProgressModel().resetWindowCompletionForWords(userId, this.shuffled_order, progressType);
 
   this.steps = nextWindow;
   this.shuffled_order = nextDeck.wordIds;
@@ -218,11 +216,7 @@ userCheckpointSchema.statics.createNewSession = async function (
   );
 
   // Reset window completion state for all words in this new session
-  const WordProgress = mongoose.model('WordProgress');
-  await WordProgress.updateMany(
-    { user_id: userId, word_id: { $in: filteredWordIds }, progress_type: type },
-    { $set: { is_window_completed: false } }
-  );
+  await wordProgressModel().resetWindowCompletionForWords(userId, filteredWordIds, type);
 
   // Create new session
   const session = new this({
@@ -245,14 +239,11 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 ): Promise<mongoose.Types.ObjectId[]> {
   const { excludeCompleted = true, prioritizeBookmarked = false, maxWords } = options;
 
-  // Import models dynamically to avoid circular dependency
-  const WordProgress = mongoose.model('WordProgress');
-
   let filteredWordIds = [...wordIds];
 
   // Filter out window-completed words if requested
   if (excludeCompleted) {
-    const completedWordIds = await WordProgress.find({
+    const completedWordIds = await wordProgressModel().find({
       user_id: userId,
       word_id: { $in: filteredWordIds },
       progress_type: progressType,
@@ -265,7 +256,7 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 
   // Enhanced bookmark prioritization with intelligent placement
   if (prioritizeBookmarked) {
-    const bookmarkedWordIds = await WordProgress.find({
+    const bookmarkedWordIds = await wordProgressModel().find({
       user_id: userId,
       word_id: { $in: filteredWordIds },
       is_bookmarked: true, // Bookmarks are cross-session
@@ -277,8 +268,8 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
     const nonBookmarkedWords = filteredWordIds.filter((wordId) => !bookmarkedSet.has(wordId.toString()));
 
     // Shuffle both arrays independently for variety
-    const shuffledBookmarks = (this as UserCheckpointModel).shuffleArray(bookmarkedWords);
-    const shuffledNonBookmarks = (this as UserCheckpointModel).shuffleArray(nonBookmarkedWords);
+    const shuffledBookmarks = shuffleArray(bookmarkedWords);
+    const shuffledNonBookmarks = shuffleArray(nonBookmarkedWords);
 
     // Strategy: Distribute bookmarks in the first 40% of the deck
     // This ensures focused review while maintaining deck flow
@@ -322,7 +313,7 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
     const remainingZone = [...remainingBookmarks, ...shuffledNonBookmarks.slice(nonBookmarkIndex)];
 
     // Final deck: priority zone + remaining zone
-    filteredWordIds = [...priorityZone, ...(this as UserCheckpointModel).shuffleArray(remainingZone)];
+    filteredWordIds = [...priorityZone, ...shuffleArray(remainingZone)];
   }
 
   // Limit words if maxWords is specified
@@ -331,18 +322,6 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
   }
 
   return filteredWordIds;
-};
-
-/**
- * Utility: Fisher-Yates shuffle for array randomization
- */
-userCheckpointSchema.statics.shuffleArray = function <T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 };
 
 // Create and export model

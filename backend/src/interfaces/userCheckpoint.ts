@@ -42,9 +42,6 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
     progressType: ProgressType,
     options?: DeckGenerationOptions
   ): Promise<mongoose.Types.ObjectId[]>;
-
-  // Utility methods
-  shuffleArray<T>(array: T[]): T[];
 }
 
 export default UserCheckpointModel;

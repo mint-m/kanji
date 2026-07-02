@@ -5,6 +5,7 @@ import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
+import { shuffleArray } from '../utils/shuffle';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
   ProgressType,
@@ -253,16 +254,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 
     if (progressType === 'sub') {
       // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
-      await WordProgress.updateMany(
-        { user_id: userId, word_id: { $in: progress.shuffled_order }, progress_type: 'sub' },
-        { $set: { is_window_completed: false } }
-      );
-      const shuffled = [...progress.shuffled_order];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      progress.shuffled_order = shuffled as mongoose.Types.ObjectId[];
+      await WordProgress.resetWindowCompletionForWords(userId, progress.shuffled_order, 'sub');
+      progress.shuffled_order = shuffleArray(progress.shuffled_order);
       progress.markModified('shuffled_order');
       progress.current_index = 0;
       await progress.save();
