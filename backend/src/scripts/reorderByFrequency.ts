@@ -27,10 +27,14 @@ const levelArg = process.argv.find(a => a.startsWith('--level='));
 const TARGET_LEVEL = levelArg ? levelArg.split('=')[1] : null;
 
 async function reorderLevel(level: string): Promise<void> {
-  // frequency 오름차순 정렬 (동점 시 entry 알파벳순으로 안정화)
-  const words = await Word.find({ level }, { _id: 1, entry: 1, frequency: 1 })
-    .sort({ frequency: 1, entry: 1 })
-    .lean();
+  // frequency 누락/null 문서가 DB 정렬에서 최상위로 오면 고빈도로 오인되므로 JS에서 기본값 9999로 정렬
+  const words = await Word.find({ level }, { _id: 1, entry: 1, frequency: 1 }).lean();
+  words.sort((a, b) => {
+    const freqA = a.frequency ?? 9999;
+    const freqB = b.frequency ?? 9999;
+    if (freqA !== freqB) return freqA - freqB;
+    return a.entry.localeCompare(b.entry);
+  });
 
   if (words.length === 0) {
     console.log(`  [${level}] 단어 없음 — 건너뜀`);

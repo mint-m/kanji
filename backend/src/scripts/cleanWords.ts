@@ -90,7 +90,6 @@ async function cleanWords() {
         _id: { entry: '$entry', pron: { $ifNull: ['$pron', ''] }, level: '$level' },
         count: { $sum: 1 },
         ids: { $push: '$_id' },
-        createdAts: { $push: '$createdAt' },
       },
     },
     { $match: { count: { $gt: 1 } } },
@@ -100,10 +99,10 @@ async function cleanWords() {
   const dupRemoveIds: mongoose.Types.ObjectId[] = [];
 
   for (const group of dupGroups) {
-    // createdAt 기준 내림차순 정렬 후 최신 1개 제외하고 나머지 제거
-    const mapped = (group.ids as mongoose.Types.ObjectId[]).map((id, i) => ({
+    // ObjectId 자체가 생성 시간을 담고 있어 createdAt 필드 누락에도 안전. 최신 1개만 남기고 제거
+    const mapped = (group.ids as mongoose.Types.ObjectId[]).map(id => ({
       id,
-      createdAt: new Date(group.createdAts[i]),
+      createdAt: id.getTimestamp(),
     }));
     mapped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     const [, ...toRemove] = mapped.map(item => item.id);
