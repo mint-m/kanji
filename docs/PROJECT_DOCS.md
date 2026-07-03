@@ -2,8 +2,8 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2026-07-01
-**버전**: 4.3
+**최종 업데이트**: 2026-07-02
+**버전**: 4.4
 
 ---
 
@@ -851,14 +851,22 @@ MONGO_URI=mongodb://localhost:27017/kanji
 PORT=8000
 NODE_ENV=development
 
+# CORS (콤마 구분, 프론트 도메인 등록)
+ALLOWED_ORIGINS=http://localhost:4200
+
 # Authentication
 SESSION_SECRET=your-secret-key
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRY=1d
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
 
 # Kakao OAuth
 KAKAO_REST_API_KEY=your-kakao-rest-api-key
 ```
+
+전체 목록과 설명은 `backend/.env.example` 참고.
 
 ### Frontend 환경 변수
 
@@ -868,9 +876,16 @@ KAKAO_REST_API_KEY=your-kakao-rest-api-key
 # API
 REACT_APP_API_URL=http://localhost:8000
 
-# OAuth
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
+# Google OAuth
+REACT_APP_GOOGLE_OAUTH_CLIENT_ID=your-google-client-id
+REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
+
+# Kakao OAuth
+REACT_APP_KAKAO_REST_API_KEY=your-kakao-rest-api-key
+REACT_APP_KAKAO_REDIRECT_URI=http://localhost:4200/auth/kakao/callback
 ```
+
+전체 목록과 설명은 `frontend/.env.example` 참고.
 
 ### 개발 서버 실행
 
@@ -894,6 +909,24 @@ yarn dev
 cd frontend
 yarn start
 ```
+
+### 프로덕션 빌드
+
+```bash
+# Backend: tsc → dist/ (테스트·스크립트 제외, tsconfig.build.json)
+cd backend
+yarn build          # tsc -p tsconfig.build.json
+yarn start          # node dist/server.js
+
+# Frontend: CRA 정적 빌드
+cd frontend
+yarn build          # → frontend/build/
+```
+
+### 배포
+
+프론트 = Vercel(`frontend/vercel.json`) · 백엔드 = Render(`render.yaml`) · DB = MongoDB Atlas.
+단계별 절차와 OAuth 콜백 등록은 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
 
 ---
 
@@ -926,6 +959,13 @@ yarn start
 ---
 
 ## 변경 이력
+
+### v4.4 (2026-07-02)
+
+- ✅ 배포 설정 추가: Vercel(프론트, SPA rewrite) + Render(백엔드 블루프린트) + MongoDB Atlas 구성
+- ✅ 백엔드 프로덕션 빌드 도입: `tsconfig.build.json` + `yarn build`(tsc → dist) / `yarn start`(node dist)
+- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤 secure 세션 쿠키 동작 보장
+- ✅ `.env.example` 실제 코드 기준 재정비 (backend/frontend), 배포 가이드 `docs/DEPLOYMENT.md` 신규 작성
 
 ### v4.3 (2026-07-01)
 

@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "noEmit": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/__mocks__/**", "src/__tests__/**", "src/scripts/**"]
+}
