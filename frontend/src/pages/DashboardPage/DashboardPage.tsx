@@ -109,7 +109,7 @@ const DashboardPage: FC = () => {
               <span className={styles.progressCellLabel}>스텝</span>
               <span className={styles.progressCellValue}>
                 {progressData.steps
-                  ? progressData.steps.start === progressData.steps.end
+                  ? progressData.progressType === 'sub'
                     ? progressData.steps.start
                     : `${progressData.steps.start} – ${progressData.steps.end}`
                   : 'N/A'}

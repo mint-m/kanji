@@ -78,7 +78,7 @@ const UserProgress: FC = () => {
                   <div className={styles.statCell}>
                     <div className={styles.statCellLabel}>스텝 범위</div>
                     <div className={styles.statCellValue}>
-                      Step {session.steps.start === session.steps.end
+                      Step {session.type === 'sub'
                         ? session.steps.start
                         : `${session.steps.start} – ${session.steps.end}`}
                     </div>

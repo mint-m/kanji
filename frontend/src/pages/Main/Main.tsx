@@ -46,7 +46,7 @@ const SessionCard: FC<{
           <div className={styles.infoRow}>
             <span className={styles.infoKey}>스텝</span>
             <span className={styles.infoValue}>
-              {session.data.steps.start === session.data.steps.end
+              {type === 'sub'
                 ? session.data.steps.start
                 : `${session.data.steps.start} – ${session.data.steps.end}`}
             </span>
