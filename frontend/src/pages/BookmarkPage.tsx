@@ -60,7 +60,8 @@ const BookmarkPage: FC = () => {
 
   useEffect(() => {
     fetchBookmarks(1);
-    return () => { fetchGenRef.current++; };
+    const genRef = fetchGenRef; // ref 객체 복사 (react-hooks/exhaustive-deps: cleanup에서 .current 직접 참조 회피)
+    return () => { genRef.current++; };
   }, [fetchBookmarks]);
 
   const handleRemoveBookmark = async (wordId: string, progressType?: string) => {
