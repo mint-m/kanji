@@ -38,21 +38,22 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Get current deck words with progress information
-    const words = await Word.find({
-      _id: { $in: progress.shuffled_order },
-    }).lean();
-
-    // Get word progress for each word
-    const wordProgressPromises = progress.shuffled_order.map((wordId) =>
-      WordProgress.findByUserWordAndType(userId, wordId, progressType)
-    );
-    const wordProgressList = await Promise.all(wordProgressPromises);
+    // Get current deck words with progress information (단어·진행 상태 각 1회 조회)
+    const [words, wordProgressList] = await Promise.all([
+      Word.find({ _id: { $in: progress.shuffled_order } }).lean(),
+      WordProgress.find({
+        user_id: userId,
+        word_id: { $in: progress.shuffled_order },
+        progress_type: progressType,
+      }),
+    ]);
+    const wordMap = new Map(words.map((w) => [String(w._id), w]));
+    const wordProgressMap = new Map(wordProgressList.map((wp) => [String(wp.word_id), wp]));
 
     // Combine word data with progress
     const deckWords = progress.shuffled_order.map((wordId, index) => {
-      const word = words.find((w) => w._id.equals(wordId));
-      const wordProgress = wordProgressList[index];
+      const word = wordMap.get(String(wordId));
+      const wordProgress = wordProgressMap.get(String(wordId));
 
       return {
         ...word,

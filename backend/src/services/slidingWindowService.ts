@@ -33,18 +33,18 @@ export class SlidingWindowService {
     return windows;
   }
 
-  static async getNextWindow(
-    currentSteps: StepRange,
-    level: LearningLevel,
-    config?: Partial<WindowConfig>
-  ): Promise<StepRange | null> {
+  // 레벨의 실제 데이터 기준 config — 순환 윈도우(9-1 등) 계산은 실제 maxStep에 의존한다
+  private static async resolveConfig(level: LearningLevel): Promise<WindowConfig> {
     const maxStepResult = await Word.aggregate([
       { $match: { level: level } },
       { $group: { _id: null, maxStep: { $max: '$step' } } },
     ]);
-    const maxStep = maxStepResult.length > 0 ? maxStepResult[0].maxStep : 10;
+    const maxStep = maxStepResult.length > 0 ? maxStepResult[0].maxStep : this.DEFAULT_CONFIG.maxStep;
+    return { ...this.DEFAULT_CONFIG, maxStep };
+  }
 
-    const finalConfig = { ...this.DEFAULT_CONFIG, ...config, maxStep };
+  static async getNextWindow(currentSteps: StepRange, level: LearningLevel): Promise<StepRange | null> {
+    const finalConfig = await this.resolveConfig(level);
     const allWindows = this.generateAllWindows(level, finalConfig);
 
     const currentIndex = allWindows.findIndex(
@@ -58,7 +58,7 @@ export class SlidingWindowService {
     return allWindows[currentIndex + 1];
   }
 
-  static isCircularWindow(steps: StepRange, _config: WindowConfig = this.DEFAULT_CONFIG): boolean {
+  static isCircularWindow(steps: StepRange): boolean {
     return steps.start > steps.end;
   }
 
@@ -80,9 +80,9 @@ export class SlidingWindowService {
   static async generateDeck(
     level: LearningLevel,
     steps: StepRange,
-    shuffled: boolean = true,
-    config: WindowConfig = this.DEFAULT_CONFIG
+    shuffled: boolean = true
   ): Promise<DeckWindow> {
+    const config = await this.resolveConfig(level);
     const windowSteps = this.getWindowSteps(steps, config);
     const allWindows = this.generateAllWindows(level, config);
     const windowIndex = allWindows.findIndex((window) => window.start === steps.start && window.end === steps.end);
@@ -105,17 +105,13 @@ export class SlidingWindowService {
       steps,
       wordIds,
       windowIndex,
-      isCircular: this.isCircularWindow(steps, config),
+      isCircular: this.isCircularWindow(steps),
       totalWindows: allWindows.length,
     };
   }
 
-  static async validateStepRange(
-    level: LearningLevel,
-    steps: StepRange,
-    config: WindowConfig = this.DEFAULT_CONFIG
-  ): Promise<boolean> {
-    const windowSteps = this.getWindowSteps(steps, config);
+  static async validateStepRange(level: LearningLevel, steps: StepRange): Promise<boolean> {
+    const windowSteps = this.getWindowSteps(steps, await this.resolveConfig(level));
 
     // Check if any words exist for these steps
     const wordCount = await Word.countDocuments({
@@ -126,29 +122,8 @@ export class SlidingWindowService {
     return wordCount > 0;
   }
 
-  static async getAvailableWindows(
-    level: LearningLevel,
-    config: WindowConfig = this.DEFAULT_CONFIG
-  ): Promise<StepRange[]> {
-    const existingStepsArray = await Word.distinct('step', { level }) as number[];
-    if (existingStepsArray.length === 0) return [];
-
-    const existingSteps = new Set<number>(existingStepsArray);
-    const maxStep = Math.max(...existingStepsArray);
-    const finalConfig = { ...config, maxStep };
-
-    const allWindows = this.generateAllWindows(level, finalConfig);
-    return allWindows.filter((window) =>
-      this.getWindowSteps(window, finalConfig).some((step) => existingSteps.has(step))
-    );
-  }
-
-  static async canMoveToNextWindow(
-    currentSteps: StepRange,
-    level: LearningLevel,
-    config: WindowConfig = this.DEFAULT_CONFIG
-  ): Promise<boolean> {
-    const nextWindow = await this.getNextWindow(currentSteps, level, config);
+  static async canMoveToNextWindow(currentSteps: StepRange, level: LearningLevel): Promise<boolean> {
+    const nextWindow = await this.getNextWindow(currentSteps, level);
     return nextWindow !== null;
   }
 

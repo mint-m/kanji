@@ -144,13 +144,41 @@ export const linkKakaoAccount = async (code: string, redirectUri: string): Promi
   return response.authProviders;
 };
 
-export const isTokenExpired = (token: string | null): boolean => {
-  if (!token) return true;
+const getTokenExpiryMs = (token: string): number | null => {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(atob(base64));
-    return payload.exp * 1000 <= Date.now();
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
   } catch {
-    return true;
+    return null;
+  }
+};
+
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  const expiryMs = getTokenExpiryMs(token);
+  return !expiryMs || expiryMs <= Date.now();
+};
+
+// 만료 6시간 전부터 백그라운드로 토큰을 연장해 매일 강제 로그아웃되는 것을 줄인다
+const REFRESH_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+let refreshInFlight = false;
+
+export const refreshTokenIfNeeded = async (): Promise<void> => {
+  const token = getTokenLocally();
+  if (!token || refreshInFlight) return;
+
+  const expiryMs = getTokenExpiryMs(token);
+  const remaining = expiryMs ? expiryMs - Date.now() : 0;
+  if (remaining <= 0 || remaining > REFRESH_THRESHOLD_MS) return;
+
+  refreshInFlight = true;
+  try {
+    const response = await api.post<{ success: boolean; token: string }>('/api/auth/refresh');
+    if (response.token) saveTokenLocally(response.token);
+  } catch {
+    // 갱신 실패 시 기존 토큰으로 계속 사용 (만료되면 ProtectedRoute가 로그아웃 처리)
+  } finally {
+    refreshInFlight = false;
   }
 };

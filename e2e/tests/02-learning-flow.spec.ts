@@ -197,6 +197,18 @@ test.describe('윈도우 완료 흐름', () => {
       completeCount++;
       route.fulfill({ json: makeCompleteWordResponse(completeCount >= 2, completeCount >= 2) });
     });
+    await page.route('**/api/users/me/progress/main/complete-deck', (route) => {
+      route.fulfill({
+        json: {
+          success: true,
+          data: {
+            nextWindow: { level: 'N5', steps: { start: 2, end: 4 }, deckSize: 2 },
+            canGenerateNext: true,
+            isSubLoop: false,
+          },
+        },
+      });
+    });
 
     await page.goto('/flash-cards');
     await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });

@@ -1,16 +1,12 @@
 // src/app.ts
 import express from "express";
 import cors from "cors";
-import session from "express-session";
-import config from "./config";
 import routes from "./routes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 
-const { SESSION_SECRET } = config;
-
 const app = express();
 
-// 프록시(Render/Vercel 등) 뒤에서 secure 쿠키가 동작하도록 신뢰
+// 프록시(Render 등) 뒤에서 클라이언트 IP(req.ip)가 올바르게 잡히도록 신뢰 — authRateLimit이 의존
 app.set("trust proxy", 1);
 
 // 미들웨어 설정
@@ -21,25 +17,11 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : ['http://localhost:4200'];
 app.use(cors({ credentials: true, origin: allowedOrigins }));
 
-// 세션 설정
-app.use(
-  session({
-    secret: SESSION_SECRET as string,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      sameSite: "none",
-      secure: true,
-    },
-  })
-);
-
 // 라우터 설정
 app.use("/", routes);
 
 // 루트 경로
 app.get("/", (req, res) => {
-  if (!req.session) return res.redirect("/login");
   res.send("API is running...");
 });
 

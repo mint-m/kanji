@@ -70,7 +70,7 @@
    | `GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` | validateEnv 필수값. 실제 구글 교환은 팝업(postmessage) 방식이라 이 값이 구글 콘솔과 일치할 필요는 없음 |
    | `KAKAO_REST_API_KEY` | Kakao Developers 값 | 4단계 참고 |
 
-   - `SESSION_SECRET`, `JWT_SECRET`은 `generateValue: true`로 **자동 생성됨** — 직접 입력 불필요
+   - `JWT_SECRET`은 `generateValue: true`로 **자동 생성됨** — 직접 입력 불필요
    - `NODE_ENV=production`, `JWT_EXPIRY=1d`도 블루프린트에 포함되어 있음
 4. **배포 확인**:
    - 첫 배포 로그에서 `MongoDB connecting Success!!!` 와 `Server listening on port` 확인

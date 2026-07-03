@@ -39,13 +39,8 @@ export interface AuthenticatedRequest extends Request {
 
 const extractToken = (req: Request): string | null => {
   const authHeader = req.header('Authorization');
-  if (authHeader) {
-    if (authHeader.startsWith('Bearer ')) return authHeader.slice(7).replace(/"/g, '');
-    if (authHeader.startsWith('Token ')) return authHeader.slice(6).replace(/"/g, '');
-  }
-  const rawToken = req.query.token;
-  const queryToken = typeof rawToken === 'string' ? rawToken : Array.isArray(rawToken) ? rawToken[0] : null;
-  return req.cookies?.token || queryToken || null;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7).replace(/"/g, '');
+  return null;
 };
 
 export const authenticateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -137,38 +132,12 @@ export const authenticateUser = async (req: AuthenticatedRequest, res: Response,
 };
 
 /**
- * Role-based authorization middleware
- * Checks if user has required permissions
- */
-export const requireRole = (roles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(401).json({
-        success: false,
-        message: 'Authentication required.',
-      });
-      return;
-    }
-
-    if (!roles.includes(req.user.type)) {
-      res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions.',
-      });
-      return;
-    }
-
-    next();
-  };
-};
-
-/**
  * Enhanced Rate limiting middleware for authentication endpoints
  */
 export const authRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000) => {
   const attempts = new Map<string, { count: number; resetTime: number; lastAttempt: number }>();
 
-  // Clean up old entries periodically
+  // Clean up old entries periodically (unref: 이 타이머가 프로세스 종료를 막지 않도록)
   setInterval(() => {
     const now = Date.now();
     for (const [key, data] of Array.from(attempts.entries())) {
@@ -176,7 +145,7 @@ export const authRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 6
         attempts.delete(key);
       }
     }
-  }, windowMs);
+  }, windowMs).unref();
 
   return (req: Request, res: Response, next: NextFunction): void => {
     // Use multiple identifiers for more robust rate limiting
@@ -221,50 +190,6 @@ export const authRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 6
 };
 
 /**
- * Token refresh middleware
- * Checks if token is close to expiry and issues new one
- */
-export const refreshTokenIfNeeded = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    if (!req.user) {
-      return next();
-    }
-
-    const token = extractToken(req);
-
-    if (token && config.JWT_SECRET) {
-      const decoded = jwt.decode(token) as TokenPayload;
-
-      if (decoded?.exp) {
-        const now = Math.floor(Date.now() / 1000);
-        const timeUntilExpiry = decoded.exp - now;
-
-        // If token expires in less than 1 hour, issue a new one
-        if (timeUntilExpiry < 3600) {
-          const user = await User.findById(req.user._id);
-          if (user) {
-            const { generateToken } = await import('../services/auth');
-            const newToken = generateToken(user);
-
-            res.set('X-New-Token', newToken);
-            res.set('X-Token-Refresh', 'true');
-          }
-        }
-      }
-    }
-
-    next();
-  } catch (error) {
-    console.error('Token refresh error:', error);
-    next(); // Continue even if refresh fails
-  }
-};
-
-/**
  * Security headers middleware
  */
 export const securityHeaders = (req: Request, res: Response, next: NextFunction): void => {
@@ -291,8 +216,6 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
 
 export default {
   authenticateUser,
-  requireRole,
   authRateLimit,
-  refreshTokenIfNeeded,
   securityHeaders,
 };

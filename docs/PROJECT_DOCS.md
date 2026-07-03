@@ -855,7 +855,6 @@ NODE_ENV=development
 ALLOWED_ORIGINS=http://localhost:4200
 
 # Authentication
-SESSION_SECRET=your-secret-key
 JWT_SECRET=your-jwt-secret
 JWT_EXPIRY=1d
 GOOGLE_CLIENT_ID=your-google-client-id

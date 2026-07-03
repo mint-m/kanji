@@ -78,8 +78,13 @@ const FlashCardPage: FC = () => {
     // 이미 서버 완료 처리가 끝났다면 재시도 시 completeDeck을 건너뛴다 (중복 호출 시 400 발생)
     if (!deckCompletedRef.current) {
       try {
-        await deckService.completeDeck(activeProgressType || 'main');
+        const response = await deckService.completeDeck(activeProgressType || 'main');
         deckCompletedRef.current = true;
+        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 레벨 선택으로 이동
+        if (response.data && !response.data.isSubLoop && !response.data.canGenerateNext) {
+          navigate('/level-setup', { replace: true });
+          return;
+        }
       } catch (e) {
         console.error('Failed to complete deck:', e);
         setError('완료 처리에 실패했습니다. 다시 시도해주세요.');
@@ -94,7 +99,7 @@ const FlashCardPage: FC = () => {
     }
     deckCompletedRef.current = false;
     setDeckKey(k => k + 1);
-  }, [activeProgressType, fetchDeck]);
+  }, [activeProgressType, fetchDeck, navigate]);
 
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
 

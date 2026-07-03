@@ -4,7 +4,6 @@ dotenv.config();
 // 필수 환경변수 목록
 const REQUIRED_ENV_VARS = [
   'MONGO_URI',
-  'SESSION_SECRET',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
   'GOOGLE_REDIRECT_URI',
@@ -26,7 +25,6 @@ export const validateEnv = (): void => {
 export default {
   MONGO_URI: process.env.MONGO_URI as string,
   PORT: process.env.PORT || '8000',
-  SESSION_SECRET: process.env.SESSION_SECRET as string,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI as string,
