@@ -22,6 +22,8 @@ const KanjiCharacter: FC<KanjiCharacterProps> = ({ kanji }) => {
   useEffect(() => {
     const controller = new AbortController();
     setLookupDone(false);
+    // 글자가 바뀌면 이전 조회 결과를 즉시 비운다 — 새 fetch 완료 전 클릭 시 이전 한자가 추가되는 것 방지
+    setKanjiData(null);
 
     kanjiDataFilter(kanji, controller.signal)
       .then((data) => {

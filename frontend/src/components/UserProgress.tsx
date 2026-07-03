@@ -77,7 +77,11 @@ const UserProgress: FC = () => {
                 <div className={styles.statsGrid}>
                   <div className={styles.statCell}>
                     <div className={styles.statCellLabel}>스텝 범위</div>
-                    <div className={styles.statCellValue}>Step {session.steps.start} – {session.steps.end}</div>
+                    <div className={styles.statCellValue}>
+                      Step {session.steps.start === session.steps.end
+                        ? session.steps.start
+                        : `${session.steps.start} – ${session.steps.end}`}
+                    </div>
                   </div>
                   <div className={styles.statCell}>
                     <div className={styles.statCellLabel}>현재 사이클 진행</div>
