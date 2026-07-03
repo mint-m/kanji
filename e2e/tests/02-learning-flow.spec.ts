@@ -105,7 +105,7 @@ test.describe('패스 완료 흐름', () => {
 
     // 패스 완료 화면 (API 응답 후 표시)
     await expect(page.getByText('패스 완료')).toBeVisible({ timeout: 8_000 });
-    await expect(page.getByText(/모르는 단어 1개/)).toBeVisible();
+    await expect(page.getByText(/아직 익히지 못한 1개 단어/)).toBeVisible();
   });
 
   test('패스 완료 후 덱 재fetch → 새 패스 시작', async ({ page }) => {
@@ -117,8 +117,9 @@ test.describe('패스 완료 흐름', () => {
     await page.getByRole('button', { name: '외웠습니다' }).click();
     await page.getByRole('button', { name: '공부하겠습니다' }).click();
 
-    // 패스 완료 화면
+    // 패스 완료 화면 (자동 전환하지 않고 "이어가기" 버튼 대기)
     await expect(page.getByText('패스 완료')).toBeVisible({ timeout: 8_000 });
+    await page.getByRole('button', { name: '이어가기' }).click();
 
     // 덱 재fetch + 리마운트 후 새 패스 컨트롤 버튼 다시 표시
     await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });
@@ -145,6 +146,15 @@ test.describe('패스 완료 흐름', () => {
     // passComplete=false이므로 "처리 중..." 완료 화면이 유지됨 → 통계 레이블 확인 가능
     await expect(page.getByText('알았음')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('몰랐음')).toBeVisible();
+
+    // 숫자(통계) 클릭 시 해당 단어 목록 펼침
+    await page.getByRole('button', { name: /알았음/ }).click();
+    await expect(page.getByText('テスト0')).toBeVisible();
+    await expect(page.getByText('テスト2')).toBeVisible();
+
+    // 몰랐음 클릭 시 목록 전환
+    await page.getByRole('button', { name: /몰랐음/ }).click();
+    await expect(page.getByText('テスト1')).toBeVisible();
   });
 });
 
@@ -162,10 +172,10 @@ test.describe('윈도우 완료 흐름', () => {
     await page.getByRole('button', { name: '외웠습니다' }).click();
     await page.getByRole('button', { name: '외웠습니다' }).click();
 
-    // FlashCardPage 윈도우 완료 화면
-    await expect(page.getByText('윈도우 완료!')).toBeVisible({ timeout: 8_000 });
-    await expect(page.getByText(/모든 단어를 완전히 습득/)).toBeVisible();
-    await expect(page.getByRole('button', { name: '다음 윈도우로 진행' })).toBeVisible();
+    // 윈도우 완료 화면 (완료 카드에 통계 + 안내 + 버튼)
+    await expect(page.getByText(/윈도우 완료/)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(/다음 스텝 범위로 넘어갑니다/)).toBeVisible();
+    await expect(page.getByRole('button', { name: '다음 윈도우로' })).toBeVisible();
   });
 
   test('"다음 윈도우로 진행" 버튼 클릭 시 덱 재fetch → 새 단어 표시', async ({ page }) => {
@@ -217,10 +227,10 @@ test.describe('윈도우 완료 흐름', () => {
     await page.getByRole('button', { name: '외웠습니다' }).click();
     await page.getByRole('button', { name: '외웠습니다' }).click();
 
-    await expect(page.getByText('윈도우 완료!')).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(/윈도우 완료/)).toBeVisible({ timeout: 8_000 });
 
     // 다음 윈도우로 진행
-    await page.getByRole('button', { name: '다음 윈도우로 진행' }).click();
+    await page.getByRole('button', { name: '다음 윈도우로' }).click();
 
     // 새 덱 로드 → 컨트롤 버튼 표시
     await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 8_000 });
