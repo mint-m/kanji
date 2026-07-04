@@ -51,6 +51,7 @@ export const completedCard = style({
   borderRadius: vars.radius.lg,
   textAlign: 'center',
   boxShadow: vars.shadow.inner,
+  overflowY: 'auto',
 
   '@media': {
     'screen and (min-width: 768px)': {
@@ -82,10 +83,97 @@ export const statItem = style({
   gap: vars.space.sm,
 });
 
+// 숫자를 눌러 단어 목록을 펼치는 탭 가능한 통계 항목
+export const statItemButton = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: vars.space.sm,
+  padding: `${vars.space.sm} ${vars.space.md}`,
+  border: 'none',
+  borderRadius: vars.radius.md,
+  backgroundColor: 'transparent',
+  cursor: 'pointer',
+  transition: 'box-shadow 0.15s ease',
+  ':hover': {
+    boxShadow: vars.shadow.track,
+  },
+});
+
+export const statItemActive = style({
+  boxShadow: vars.shadow.pressed,
+});
+
 export const statLabel = style({
   fontSize: vars.fontSize.sm,
   color: vars.color.textMuted,
   fontWeight: 500,
+});
+
+export const statHint = style({
+  fontSize: vars.fontSize.xs,
+  color: vars.color.textFaint,
+  margin: `0 0 ${vars.space.md}`,
+});
+
+export const wordList = style({
+  width: '100%',
+  maxHeight: '9rem',
+  overflowY: 'auto',
+  margin: `0 0 ${vars.space.md}`,
+  padding: vars.space.sm,
+  borderRadius: vars.radius.md,
+  boxShadow: vars.shadow.track,
+  textAlign: 'left',
+});
+
+export const wordListEmpty = style({
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+  textAlign: 'center',
+  padding: vars.space.md,
+});
+
+export const wordItem = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'baseline',
+  gap: vars.space.md,
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  fontSize: vars.fontSize.sm,
+  selectors: {
+    '&:not(:last-child)': {
+      borderBottom: `1px solid ${vars.color.borderLight}`,
+    },
+  },
+});
+
+export const wordItemEntry = style({
+  fontWeight: 600,
+  color: vars.color.textDark,
+  whiteSpace: 'nowrap',
+});
+
+export const wordItemMean = style({
+  color: vars.color.textMuted,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
+export const completeDesc = style({
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+  lineHeight: 1.5,
+  margin: `0 0 ${vars.space.md}`,
+});
+
+export const completeActions = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.sm,
+  width: '100%',
+  alignItems: 'center',
 });
 
 export const statValueGreen = style({

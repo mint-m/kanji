@@ -79,7 +79,7 @@ cp .env.example .env
 # - MONGO_URI
 # - GOOGLE_CLIENT_ID
 # - GOOGLE_CLIENT_SECRET
-# - SESSION_SECRET
+# - JWT_SECRET
 ```
 
 **Frontend (.env)**:

@@ -60,8 +60,10 @@ export const getGoogleAccessToken = async (req: Request, res: Response, next: Ne
 
     res.json({ success: true, accessToken: tokens.access_token, idToken: tokens.id_token });
   } catch (error) {
+    if (error instanceof AppError) return next(error);
+    // 만료·재사용된 인증 코드 등 교환 실패는 클라이언트 인증 문제 (500 아님)
     console.error('Google OAuth error:', error);
-    next(new InternalServerError('Failed to get Google access token'));
+    next(new UnauthorizedError('Failed to exchange Google authorization code'));
   }
 };
 
@@ -283,15 +285,15 @@ export const linkGoogle = async (req: AuthenticatedRequest, res: Response, next:
       return next(new ConflictError('Google account is already linked to this user'));
     }
 
+    // 위에서 본인 연동 여부를 걸렀으므로, 여기서 발견되면 다른 사용자의 계정이다
     const providerId = userInfo.id!;
     const existing = await User.findOne({ 'authProviders.provider': 'google', 'authProviders.providerId': providerId });
-    if (existing && String(existing._id) !== String(req.user._id)) {
+    if (existing) {
       return next(new ConflictError('This Google account is already linked to another user'));
     }
-    if (!existing) {
-      user.authProviders.push({ provider: 'google', providerId });
-      await user.save();
-    }
+
+    user.authProviders.push({ provider: 'google', providerId });
+    await user.save();
 
     res.json({ success: true, authProviders: user.authProviders.map((p) => p.provider) });
   } catch (error) {
@@ -317,14 +319,14 @@ export const linkKakao = async (req: AuthenticatedRequest, res: Response, next: 
       return next(new ConflictError('Kakao account is already linked to this user'));
     }
 
+    // 위에서 본인 연동 여부를 걸렀으므로, 여기서 발견되면 다른 사용자의 계정이다
     const existing = await User.findOne({ 'authProviders.provider': 'kakao', 'authProviders.providerId': kakaoId });
-    if (existing && String(existing._id) !== String(req.user._id)) {
+    if (existing) {
       return next(new ConflictError('This Kakao account is already linked to another user'));
     }
-    if (!existing) {
-      user.authProviders.push({ provider: 'kakao', providerId: kakaoId });
-      await user.save();
-    }
+
+    user.authProviders.push({ provider: 'kakao', providerId: kakaoId });
+    await user.save();
 
     res.json({ success: true, authProviders: user.authProviders.map((p) => p.provider) });
   } catch (error) {

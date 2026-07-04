@@ -2,8 +2,8 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2026-07-03
-**버전**: 4.4
+**최종 업데이트**: 2026-07-04
+**버전**: 4.5
 
 ---
 
@@ -762,14 +762,6 @@ GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 
 GET /api/users/me/progress/:type/current   → 40-120 단어 (3-step window), 서버 셔플 완료
 ```
 
-**세션 메타데이터 조회 (레벨·스텝·진행률만 필요할 때)**:
-
-```
-GET /api/users/me/progress   → 메인·서브 세션 요약 (덱 단어 목록 제외)
-```
-
-> Main·Dashboard·Profile 페이지는 세션 요약 API를 사용한다. 전체 덱 조회는 학습 페이지에서만 사용.
-
 ### 학습 플로우
 
 **학습 플로우**:
@@ -844,14 +836,21 @@ MONGO_URI=mongodb://localhost:27017/kanji
 PORT=8000
 NODE_ENV=development
 
+# CORS (콤마 구분, 프론트 도메인 등록)
+ALLOWED_ORIGINS=http://localhost:4200
+
 # Authentication
-SESSION_SECRET=your-secret-key
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRY=1d
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
 
 # Kakao OAuth
 KAKAO_REST_API_KEY=your-kakao-rest-api-key
 ```
+
+전체 목록과 설명은 `backend/.env.example` 참고.
 
 ### Frontend 환경 변수
 
@@ -861,9 +860,16 @@ KAKAO_REST_API_KEY=your-kakao-rest-api-key
 # API
 REACT_APP_API_URL=http://localhost:8000
 
-# OAuth
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
+# Google OAuth
+REACT_APP_GOOGLE_OAUTH_CLIENT_ID=your-google-client-id
+REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
+
+# Kakao OAuth
+REACT_APP_KAKAO_REST_API_KEY=your-kakao-rest-api-key
+REACT_APP_KAKAO_REDIRECT_URI=http://localhost:4200/auth/kakao/callback
 ```
+
+전체 목록과 설명은 `frontend/.env.example` 참고.
 
 ### 개발 서버 실행
 
@@ -887,6 +893,24 @@ yarn dev
 cd frontend
 yarn start
 ```
+
+### 프로덕션 빌드
+
+```bash
+# Backend: tsc → dist/ (테스트·스크립트 제외, tsconfig.build.json)
+cd backend
+yarn build          # tsc -p tsconfig.build.json
+yarn start          # node dist/server.js
+
+# Frontend: CRA 정적 빌드
+cd frontend
+yarn build          # → frontend/build/
+```
+
+### 배포
+
+프론트 = Vercel(`frontend/vercel.json`) · 백엔드 = Render(`render.yaml`) · DB = MongoDB Atlas.
+단계별 절차와 OAuth 콜백 등록은 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
 
 ---
 
@@ -919,16 +943,23 @@ yarn start
 
 ## 변경 이력
 
-### v4.4 (2026-07-03)
+### v4.5 (2026-07-04)
 
 - ✅ perf: `getCurrentDeck` 단어별 N+1 쿼리 제거 (덱당 40~120회 → 배치 2회 + Map 매칭)
 - ✅ perf: `getUserProgress`의 `shuffled_order` populate 제거 (응답 페이로드 경량화)
 - ✅ perf: 덱 필터링 O(n×m) `equals` 탐색 → Set 기반 O(n), 조회 범위를 덱 단어로 스코프 제한
-- ✅ perf: Main·Dashboard·Profile 페이지를 전체 덱 조회 → 세션 요약(`GET /progress`) 기반으로 전환
 - ✅ refactor: 미사용 API 제거 — progress(index/reset/stats), deck(bulk-complete/deck-stats), bookmarks(bulk/search/stats), words(all/step 조회/search/random/statistics)
 - ✅ refactor: 미참조 모델 메서드·검증자 대규모 정리 (약 1,700줄 삭제)
 - ✅ refactor: Fisher-Yates 셔플 3중 복제 → `utils/shuffle.ts` 통합
 - ✅ refactor: `is_window_completed` 리셋 updateMany 3곳 → `resetWindowCompletionForWords` 스태틱 통합
+- ✅ refactor(PR): `find().distinct()` → `distinct(field, query)` 표준화 (Gemini 리뷰 반영)
+
+### v4.4 (2026-07-02)
+
+- ✅ 배포 설정 추가: Vercel(프론트, SPA rewrite) + Render(백엔드 블루프린트) + MongoDB Atlas 구성
+- ✅ 백엔드 프로덕션 빌드 도입: `tsconfig.build.json` + `yarn build`(tsc → dist) / `yarn start`(node dist)
+- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤 secure 세션 쿠키 동작 보장
+- ✅ `.env.example` 실제 코드 기준 재정비 (backend/frontend), 배포 가이드 `docs/DEPLOYMENT.md` 신규 작성
 
 ### v4.3 (2026-07-01)
 

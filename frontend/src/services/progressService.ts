@@ -18,17 +18,6 @@ export interface GetProgressResponse {
   canMoveToNextWindow: boolean;
 }
 
-// 세션 메타데이터 요약 (덱 단어 목록 없이 레벨·스텝·진행률만)
-export interface SessionSummary {
-  type: ProgressType;
-  level: LearningLevel;
-  steps: StepRange;
-  sessionStats: SessionStats;
-  isPassCompleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface CheckpointUpdateData {
   progress_type: ProgressType;
   current_level: LearningLevel;
@@ -38,7 +27,7 @@ export interface CheckpointUpdateData {
 }
 
 const progressService = {
-  async getAllSessions(): Promise<ApiResponse<{ sessions: SessionSummary[]; totalSessions: number }>> {
+  async getAllSessions(): Promise<ApiResponse<{ sessions: any[]; totalSessions: number }>> {
     return api.get('/api/users/me/progress');
   },
 

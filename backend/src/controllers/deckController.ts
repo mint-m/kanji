@@ -39,7 +39,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Get current deck words and their progress in two batch queries
+    // Get current deck words with progress information (단어·진행 상태 각 1회 조회)
     const [words, wordProgressList] = await Promise.all([
       Word.find({ _id: { $in: progress.shuffled_order } }).lean(),
       WordProgress.find({
@@ -48,14 +48,13 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         progress_type: progressType,
       }),
     ]);
-
-    const wordById = new Map(words.map((w) => [w._id.toString(), w]));
-    const progressByWordId = new Map(wordProgressList.map((wp) => [wp.word_id.toString(), wp]));
+    const wordMap = new Map(words.map((w) => [String(w._id), w]));
+    const wordProgressMap = new Map(wordProgressList.map((wp) => [String(wp.word_id), wp]));
 
     // Combine word data with progress
     const deckWords = progress.shuffled_order.map((wordId, index) => {
-      const word = wordById.get(wordId.toString());
-      const wordProgress = progressByWordId.get(wordId.toString());
+      const word = wordMap.get(String(wordId));
+      const wordProgress = wordProgressMap.get(String(wordId));
 
       return {
         ...word,

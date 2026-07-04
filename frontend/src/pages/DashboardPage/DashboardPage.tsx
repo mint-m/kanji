@@ -4,7 +4,8 @@ import { RootState } from 'store';
 import { getStats, updateActiveProgressType } from 'services/userService';
 import { setActiveProgressType } from 'store/modules/user';
 import { updateLocalUser } from 'services/authService';
-import progressService, { SessionSummary } from 'services/progressService';
+import deckService from 'services/deckService';
+import { CurrentDeck } from 'services/types';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
@@ -33,7 +34,7 @@ const DashboardPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
+  const [progressData, setProgressData] = useState<CurrentDeck | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
 
   useEffect(() => {
@@ -44,19 +45,16 @@ const DashboardPage: FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!activeProgressType) { setProgressData(null); return; }
     let active = true;
-    // 세션 요약을 한 번에 조회 — 세션 전환 시 재요청 없이 즉시 표시
+    // 이전 데이터를 유지한 채 새로 불러와 세션 전환 시 깜빡임 방지
     setIsLoadingProgress(true);
-    progressService.getAllSessions()
-      .then(res => { if (active) setSessions(res.success && res.data ? res.data.sessions : null); })
-      .catch(() => { if (active) setSessions(null); })
+    deckService.getCurrentDeck(activeProgressType)
+      .then(res => { if (active) setProgressData(res.success && res.data ? res.data : null); })
+      .catch(() => { if (active) setProgressData(null); })
       .finally(() => { if (active) setIsLoadingProgress(false); });
     return () => { active = false; };
-  }, []);
-
-  const progressData = activeProgressType
-    ? sessions?.find(s => s.type === activeProgressType) ?? null
-    : null;
+  }, [activeProgressType]);
 
   const handleSessionToggle = async (type: 'main' | 'sub') => {
     if (isUpdatingSession || type === activeProgressType) return;
@@ -110,7 +108,11 @@ const DashboardPage: FC = () => {
             <div className={styles.progressCell}>
               <span className={styles.progressCellLabel}>스텝</span>
               <span className={styles.progressCellValue}>
-                {progressData.steps ? `${progressData.steps.start} – ${progressData.steps.end}` : 'N/A'}
+                {progressData.steps
+                  ? progressData.progressType === 'sub'
+                    ? progressData.steps.start
+                    : `${progressData.steps.start} – ${progressData.steps.end}`
+                  : 'N/A'}
               </span>
             </div>
           </div>

@@ -3,6 +3,9 @@ import store from 'store';
 import { clearUser } from 'store/modules/user';
 import { api } from './apiClient';
 
+// 인증 전 호출이라 apiClient(인터셉터) 대신 직접 axios 사용 — 배포 환경에선 절대 경로 필요
+const API_URL = process.env.REACT_APP_API_URL || '';
+
 
 export interface UserProfile {
   _id: string;
@@ -85,7 +88,7 @@ export const exchangeCodeForToken = async (
   code: string
 ): Promise<{ accessToken: string; idToken?: string }> => {
   try {
-    const response = await axios.post('/api/auth/google/access-token', { code });
+    const response = await axios.post(`${API_URL}/api/auth/google/access-token`, { code });
     return { accessToken: response.data.accessToken, idToken: response.data.idToken };
   } catch (error) {
     return handleApiError(error);
@@ -94,7 +97,7 @@ export const exchangeCodeForToken = async (
 
 export const loginWithGoogleToken = async (accessToken: string): Promise<LoginResult> => {
   try {
-    const response = await axios.post('/api/auth/google/login', { accessToken });
+    const response = await axios.post(`${API_URL}/api/auth/google/login`, { accessToken });
     return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
@@ -103,7 +106,7 @@ export const loginWithGoogleToken = async (accessToken: string): Promise<LoginRe
 
 export const loginWithGoogleIdToken = async (credential: string): Promise<LoginResult> => {
   try {
-    const response = await axios.post('/api/auth/google/one-tap', { credential });
+    const response = await axios.post(`${API_URL}/api/auth/google/one-tap`, { credential });
     return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
@@ -112,7 +115,7 @@ export const loginWithGoogleIdToken = async (credential: string): Promise<LoginR
 
 export const loginWithKakaoCode = async (code: string, redirectUri: string): Promise<LoginResult> => {
   try {
-    const response = await axios.post('/api/auth/kakao/callback', { code, redirectUri });
+    const response = await axios.post(`${API_URL}/api/auth/kakao/callback`, { code, redirectUri });
     return processLoginResponse(response.data);
   } catch (error) {
     return handleApiError(error);
@@ -141,13 +144,41 @@ export const linkKakaoAccount = async (code: string, redirectUri: string): Promi
   return response.authProviders;
 };
 
-export const isTokenExpired = (token: string | null): boolean => {
-  if (!token) return true;
+const getTokenExpiryMs = (token: string): number | null => {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(atob(base64));
-    return payload.exp * 1000 <= Date.now();
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
   } catch {
-    return true;
+    return null;
+  }
+};
+
+export const isTokenExpired = (token: string | null): boolean => {
+  if (!token) return true;
+  const expiryMs = getTokenExpiryMs(token);
+  return !expiryMs || expiryMs <= Date.now();
+};
+
+// 만료 6시간 전부터 백그라운드로 토큰을 연장해 매일 강제 로그아웃되는 것을 줄인다
+const REFRESH_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+let refreshInFlight = false;
+
+export const refreshTokenIfNeeded = async (): Promise<void> => {
+  const token = getTokenLocally();
+  if (!token || refreshInFlight) return;
+
+  const expiryMs = getTokenExpiryMs(token);
+  const remaining = expiryMs ? expiryMs - Date.now() : 0;
+  if (remaining <= 0 || remaining > REFRESH_THRESHOLD_MS) return;
+
+  refreshInFlight = true;
+  try {
+    const response = await api.post<{ success: boolean; token: string }>('/api/auth/refresh');
+    if (response.token) saveTokenLocally(response.token);
+  } catch {
+    // 갱신 실패 시 기존 토큰으로 계속 사용 (만료되면 ProtectedRoute가 로그아웃 처리)
+  } finally {
+    refreshInFlight = false;
   }
 };

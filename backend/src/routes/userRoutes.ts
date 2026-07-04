@@ -32,11 +32,4 @@ router.use('/me/progress', authenticateUser, progressRoutes);
 // 내 북마크 관리 - /api/users/me/bookmarks/*
 router.use('/me/bookmarks', authenticateUser, bookmarkRoutes);
 
-// ========================================
-// /api/users/:userId/* - 관리자용 (미래 확장)
-// ========================================
-
-// TODO: 관리자 권한 체크 미들웨어 추가 필요
-// router.get('/:userId', authenticateUser, requireRole(['admin']), userController.getUserProfile);
-
 export default router;

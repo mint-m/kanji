@@ -6,7 +6,6 @@ import { DeckWord } from 'services/types';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
-import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { RootState } from 'store';
 import * as styles from './FlashCardPage.css';
 
@@ -28,7 +27,6 @@ const FlashCardPage: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deckKey, setDeckKey] = useState(0);
-  const [windowComplete, setWindowComplete] = useState(false);
   // completeDeck 성공 후 fetchDeck만 실패한 경우, 재시도 시 서버 완료를 중복 호출하지 않도록 추적
   const deckCompletedRef = useRef(false);
 
@@ -65,40 +63,41 @@ const FlashCardPage: FC = () => {
     }
   }, [activeProgressType, navigate]);
 
-  const handlePassComplete = useCallback(() => {
-    fetchDeck().then(() => setDeckKey(k => k + 1));
+  // 패스 완료: 몰랐던 단어로 재구성된 덱을 다시 불러온다 (서버가 이미 재셔플 완료)
+  const handleContinue = useCallback(async (): Promise<boolean> => {
+    const ok = await fetchDeck();
+    if (ok) setDeckKey(k => k + 1);
+    return ok;
   }, [fetchDeck]);
 
-  const handleWindowComplete = useCallback(() => {
-    setWindowComplete(true);
-  }, []);
-
-  const handleAdvance = useCallback(async () => {
-    setWindowComplete(false);
+  // 윈도우 완료: complete-deck으로 다음 윈도우/서브 루프를 만든 뒤 새 덱을 불러온다
+  const handleAdvance = useCallback(async (): Promise<boolean> => {
     // 이미 서버 완료 처리가 끝났다면 재시도 시 completeDeck을 건너뛴다 (중복 호출 시 400 발생)
     if (!deckCompletedRef.current) {
       try {
-        await deckService.completeDeck(activeProgressType || 'main');
+        const response = await deckService.completeDeck(activeProgressType || 'main');
         deckCompletedRef.current = true;
+        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 레벨 선택으로 이동
+        if (response.data && !response.data.isSubLoop && !response.data.canGenerateNext) {
+          navigate('/level-setup', { replace: true });
+          return true;
+        }
       } catch (e) {
         console.error('Failed to complete deck:', e);
         setError('완료 처리에 실패했습니다. 다시 시도해주세요.');
-        setWindowComplete(true);
-        return;
+        return false;
       }
     }
     const ok = await fetchDeck();
-    if (!ok) {
-      setWindowComplete(true);
-      return;
-    }
+    if (!ok) return false;
     deckCompletedRef.current = false;
     setDeckKey(k => k + 1);
-  }, [activeProgressType, fetchDeck]);
+    return true;
+  }, [activeProgressType, fetchDeck, navigate]);
+
+  const handleGoHome = useCallback(() => navigate('/'), [navigate]);
 
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
-
-  const isMain = (activeProgressType || 'main') === 'main';
 
   return (
     <div className={styles.page}>
@@ -106,48 +105,23 @@ const FlashCardPage: FC = () => {
       <div className={styles.flashCardArea}>
         <HeaderSection
           title={level}
-          subtitle={steps ? (steps.start === steps.end ? `${steps.start}` : `${steps.start}~${steps.end}`) : ''}
+          subtitle={steps ? (activeProgressType === 'sub' ? `${steps.start}` : `${steps.start}~${steps.end}`) : ''}
           progress={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         />
-        {error && !windowComplete && (
-          <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>
+        {error && <div className="error-box" style={{ margin: '20px 0' }}>{error}</div>}
+        {deck && (
+          <FlashCardContainer
+            key={deckKey}
+            deck={deck}
+            progressType={activeProgressType || 'main'}
+            initialIndex={currentIndex}
+            onContinue={handleContinue}
+            onAdvance={handleAdvance}
+            onGoHome={handleGoHome}
+            onIndexChange={setLiveIndex}
+          />
         )}
-        {windowComplete ? (
-          <div className={styles.windowCompleteCard}>
-            {error && <div className="error-box" style={{ marginBottom: '15px' }}>{error}</div>}
-            <h3 className={styles.windowCompleteTitle}>
-              {isMain ? '윈도우 완료!' : '스텝 마스터!'}
-            </h3>
-            <p className={styles.windowCompleteDesc}>
-              {isMain
-                ? '이 윈도우의 모든 단어를 완전히 습득했습니다.'
-                : '이 스텝의 모든 단어를 습득했습니다.'}
-            </p>
-            {!isMain ? (
-              <div className={styles.subCompleteActions}>
-                <DefaultButton onClick={handleAdvance}>다시 학습하기</DefaultButton>
-                <DefaultButton onClick={() => navigate('/')}>홈으로 돌아가기</DefaultButton>
-              </div>
-            ) : (
-              <DefaultButton onClick={handleAdvance}>다음 윈도우로 진행</DefaultButton>
-            )}
-          </div>
-        ) : (
-          <>
-            {deck && (
-              <FlashCardContainer
-                key={deckKey}
-                deck={deck}
-                progressType={activeProgressType || 'main'}
-                initialIndex={currentIndex}
-                onPassComplete={handlePassComplete}
-                onWindowComplete={handleWindowComplete}
-                onIndexChange={setLiveIndex}
-              />
-            )}
-            {isLoading && <SkeletonFlashCard />}
-          </>
-        )}
+        {isLoading && !deck && <SkeletonFlashCard />}
       </div>
     </div>
   );

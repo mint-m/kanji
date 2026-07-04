@@ -130,12 +130,12 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   userId: mongoose.Types.ObjectId,
   progressType: ProgressType
 ): Promise<number> {
-  const knownIds = await wordProgressModel().find({
+  const knownIds = await wordProgressModel().distinct('word_id', {
     user_id: userId,
     word_id: { $in: this.shuffled_order },
     progress_type: progressType,
     is_window_completed: true,
-  }).distinct('word_id');
+  });
   const knownSet = new Set(knownIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
   const unknownIds = this.shuffled_order.filter((id) => !knownSet.has(id.toString()));
@@ -243,12 +243,12 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 
   // Filter out window-completed words if requested
   if (excludeCompleted) {
-    const completedWordIds = await wordProgressModel().find({
+    const completedWordIds = await wordProgressModel().distinct('word_id', {
       user_id: userId,
       word_id: { $in: filteredWordIds },
       progress_type: progressType,
       is_window_completed: true,
-    }).distinct('word_id');
+    });
     const completedSet = new Set(completedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
     filteredWordIds = filteredWordIds.filter((wordId) => !completedSet.has(wordId.toString()));
@@ -256,11 +256,11 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 
   // Enhanced bookmark prioritization with intelligent placement
   if (prioritizeBookmarked) {
-    const bookmarkedWordIds = await wordProgressModel().find({
+    const bookmarkedWordIds = await wordProgressModel().distinct('word_id', {
       user_id: userId,
       word_id: { $in: filteredWordIds },
       is_bookmarked: true, // Bookmarks are cross-session
-    }).distinct('word_id');
+    });
     const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
     // Separate bookmarked and non-bookmarked words

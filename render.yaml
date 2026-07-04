@@ -1,0 +1,32 @@
+# Render Blueprint — 백엔드(Express/TS) 웹 서비스
+# 대시보드 > Blueprints 에서 이 저장소를 연결하면 자동 인식된다.
+# 시크릿(sync:false)은 커밋하지 않고 대시보드에서 직접 입력한다.
+services:
+  - type: web
+    name: kan-ji-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    startCommand: yarn start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRY
+        value: 1d
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: KAKAO_REST_API_KEY
+        sync: false
