@@ -4,6 +4,11 @@
   "buildCommand": "yarn build",
   "outputDirectory": "build",
   "installCommand": "yarn install --frozen-lockfile",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
