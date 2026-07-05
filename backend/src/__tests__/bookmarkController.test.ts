@@ -2,7 +2,8 @@
 let mockWPInstance: any;
 const MockWordProgress = jest.fn() as any;
 MockWordProgress.findOne = jest.fn();
-MockWordProgress.countDocuments = jest.fn().mockResolvedValue(0);
+MockWordProgress.exists = jest.fn().mockResolvedValue(null);
+MockWordProgress.distinct = jest.fn().mockResolvedValue([]);
 MockWordProgress.aggregate = jest.fn();
 MockWordProgress.updateMany = jest.fn();
 MockWordProgress.getBookmarkAnalytics = jest.fn();
@@ -39,7 +40,9 @@ describe('toggleBookmark', () => {
     MockWordProgress.mockImplementation(() => mockWPInstance);
   });
 
-  it('진행 데이터 없을 때 → 새 WordProgress 생성 후 북마크', async () => {
+  it('어느 세션에도 북마크 없음 → 새 WordProgress 생성 후 북마크', async () => {
+    (WordProgress.exists as jest.Mock).mockResolvedValue(null);
+    (WordProgress.distinct as jest.Mock).mockResolvedValue([]);
     (WordProgress.findOne as jest.Mock).mockResolvedValue(null);
     (Word.findById as jest.Mock).mockResolvedValue({ entry: 'てすと', pron: 'テスト', means: ['테스트'] });
 
@@ -54,15 +57,9 @@ describe('toggleBookmark', () => {
     expect((res.json as jest.Mock).mock.calls[0][0].data.isBookmarked).toBe(true);
   });
 
-  it('기존 북마크 토글 → 북마크 해제', async () => {
-    const existingWP = {
-      is_bookmarked: true,
-      toggleBookmark: jest.fn().mockReturnValue(false),
-      save: jest.fn().mockResolvedValue(undefined),
-      getBookmarkInfo: jest.fn().mockReturnValue({ isBookmarked: false, tags: [] }),
-    };
-    (WordProgress.findOne as jest.Mock).mockResolvedValue(existingWP);
-    (Word.findById as jest.Mock).mockResolvedValue(null);
+  it('현재 세션에 북마크 있음 → 북마크 해제', async () => {
+    (WordProgress.exists as jest.Mock).mockResolvedValue({ _id: 'wp1' });
+    (WordProgress.updateMany as jest.Mock).mockResolvedValue({ modifiedCount: 1 });
 
     const res = makeRes();
     await bookmarkController.toggleBookmark(
@@ -73,6 +70,41 @@ describe('toggleBookmark', () => {
     const response = (res.json as jest.Mock).mock.calls[0][0];
     expect(response.data.isBookmarked).toBe(false);
     expect(response.message).toMatch(/unbookmarked/);
+    expect(WordProgress.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'user-id-123', word_id: 'word-id-1', is_bookmarked: true }),
+      expect.objectContaining({ $set: expect.objectContaining({ is_bookmarked: false }) }),
+    );
+  });
+
+  it('다른 세션(main)에 북마크된 단어를 sub에서 해제 → 모든 세션에서 일괄 해제', async () => {
+    // main 세션에만 is_bookmarked: true 문서가 있고, 현재 요청은 sub 세션에서 옴
+    (WordProgress.exists as jest.Mock).mockResolvedValue({ _id: 'wp-main' });
+    (WordProgress.updateMany as jest.Mock).mockResolvedValue({ modifiedCount: 1 });
+
+    const res = makeRes();
+    await bookmarkController.toggleBookmark(
+      makeReq({ body: { wordId: 'word-id-1', progressType: 'sub' } }),
+      res,
+    );
+
+    // sub 세션의 findOne을 거치지 않고 즉시 모든 세션 해제로 처리되어야 함 (반대 동작 방지)
+    expect(WordProgress.findOne).not.toHaveBeenCalled();
+    const response = (res.json as jest.Mock).mock.calls[0][0];
+    expect(response.data.isBookmarked).toBe(false);
+  });
+
+  it('북마크 한도(150개) 도달 시 → 409 반환', async () => {
+    (WordProgress.exists as jest.Mock).mockResolvedValue(null);
+    (WordProgress.distinct as jest.Mock).mockResolvedValue(new Array(150).fill('word-id'));
+
+    const res = makeRes();
+    await bookmarkController.toggleBookmark(
+      makeReq({ body: { wordId: 'word-id-1', progressType: 'main' } }),
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(WordProgress.findOne).not.toHaveBeenCalled();
   });
 });
 

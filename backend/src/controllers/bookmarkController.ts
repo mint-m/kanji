@@ -15,7 +15,41 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
     const { wordId, reason, tags, progressType = 'main' } = req.body;
     const userId = req.user!._id;
 
-    // Find or create word progress
+    // 북마크는 세션 간 공유되므로, 다른 세션에 이미 북마크된 상태인지 먼저 확인해야
+    // 해제/추가 여부를 올바르게 판단할 수 있음 (현재 세션 문서만 보면 반대로 동작할 수 있음)
+    const isCurrentlyBookmarked = await WordProgress.exists({
+      user_id: userId,
+      word_id: wordId,
+      is_bookmarked: true,
+    });
+
+    if (isCurrentlyBookmarked) {
+      // 모든 세션에서 일괄 해제 — 세션별 문서가 따로 있어도 북마크 상태는 하나로 유지
+      await WordProgress.updateMany(
+        { user_id: userId, word_id: wordId, is_bookmarked: true },
+        { $set: { is_bookmarked: false, bookmark_reason: undefined, bookmark_tags: [], bookmarked_at: undefined } }
+      );
+
+      res.json({
+        success: true,
+        data: { wordId, isBookmarked: false, bookmarkInfo: { isBookmarked: false, tags: [] } },
+        message: 'Word unbookmarked successfully',
+      });
+      return;
+    }
+
+    // 새 북마크 추가 — 세션별 문서 수가 아닌 고유 단어 수 기준으로 한도 체크
+    const bookmarkedWordIds = await WordProgress.distinct('word_id', { user_id: userId, is_bookmarked: true });
+    const currentCount = bookmarkedWordIds.length;
+    if (currentCount >= BOOKMARK_LIMIT) {
+      res.status(409).json({
+        success: false,
+        code: 'BOOKMARK_LIMIT_EXCEEDED',
+        message: `북마크 최대 개수(${BOOKMARK_LIMIT}개)에 도달했습니다. 기존 북마크를 정리해주세요.`,
+      });
+      return;
+    }
+
     let wordProgress = await WordProgress.findOne({
       user_id: userId,
       word_id: wordId,
@@ -30,39 +64,15 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
       });
     }
 
-    // Check limit only when adding a new bookmark
-    if (!wordProgress.is_bookmarked) {
-      const currentCount = await WordProgress.countDocuments({ user_id: userId, is_bookmarked: true });
-      if (currentCount >= BOOKMARK_LIMIT) {
-        res.status(409).json({
-          success: false,
-          code: 'BOOKMARK_LIMIT_EXCEEDED',
-          message: `북마크 최대 개수(${BOOKMARK_LIMIT}개)에 도달했습니다. 기존 북마크를 정리해주세요.`,
-        });
-        return;
-      }
-
-      const remaining = BOOKMARK_LIMIT - (currentCount + 1);
-      const isBookmarked = wordProgress.toggleBookmark(reason, tags);
-      await wordProgress.save();
-
-      res.json({
-        success: true,
-        data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
-        message: 'Word bookmarked successfully',
-        ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
-      });
-      return;
-    }
-
-    // Removing bookmark — no limit check needed
-    const isBookmarked = wordProgress.toggleBookmark(reason, tags);
+    const remaining = BOOKMARK_LIMIT - (currentCount + 1);
+    wordProgress.toggleBookmark(reason, tags);
     await wordProgress.save();
 
     res.json({
       success: true,
-      data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
-      message: 'Word unbookmarked successfully',
+      data: { wordId, isBookmarked: true, bookmarkInfo: wordProgress.getBookmarkInfo() },
+      message: 'Word bookmarked successfully',
+      ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
     });
   } catch (error) {
     console.error('Toggle bookmark error:', error);

@@ -40,16 +40,23 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     }
 
     // Get current deck words with progress information (단어·진행 상태 각 1회 조회)
-    const [words, wordProgressList] = await Promise.all([
+    // 북마크는 세션 간 공유되므로 progress_type과 무관하게 별도 조회
+    const [words, wordProgressList, bookmarkedWordIds] = await Promise.all([
       Word.find({ _id: { $in: progress.shuffled_order } }).lean(),
       WordProgress.find({
         user_id: userId,
         word_id: { $in: progress.shuffled_order },
         progress_type: progressType,
       }),
+      WordProgress.distinct('word_id', {
+        user_id: userId,
+        word_id: { $in: progress.shuffled_order },
+        is_bookmarked: true,
+      }),
     ]);
     const wordMap = new Map(words.map((w) => [String(w._id), w]));
     const wordProgressMap = new Map(wordProgressList.map((wp) => [String(wp.word_id), wp]));
+    const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => String(id)));
 
     // Combine word data with progress
     const deckWords = progress.shuffled_order.map((wordId, index) => {
@@ -61,7 +68,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         index,
         isCurrent: index === progress!.current_index,
         isWindowCompleted: wordProgress?.is_window_completed || false,
-        isBookmarked: wordProgress?.is_bookmarked || false,
+        isBookmarked: bookmarkedSet.has(String(wordId)),
         studyStats: wordProgress?.getStudyStats(),
         recommendedAction: wordProgress?.getRecommendedAction(),
       };
@@ -154,6 +161,12 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
 
     const newMasteryLevel = wordProgress.calculateMasteryLevel();
     const recommendedAction = wordProgress.getRecommendedAction();
+    // 북마크는 세션 간 공유되므로 현재 세션 문서만으로 판단하면 다른 세션의 북마크를 놓칠 수 있음
+    const isBookmarkedCrossSession = !!(await WordProgress.exists({
+      user_id: userId,
+      word_id: wordObjectId,
+      is_bookmarked: true,
+    }));
 
     const completionResult: WordCompletionResult = {
       wordId: wordObjectId,
@@ -201,7 +214,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
           studyStreak: wordProgress.study_streak,
           masteryLevel: newMasteryLevel,
           recommendedAction,
-          isBookmarked: wordProgress.is_bookmarked,
+          isBookmarked: isBookmarkedCrossSession,
         },
         currentIndex: progress.current_index,
         passComplete: isPassComplete,

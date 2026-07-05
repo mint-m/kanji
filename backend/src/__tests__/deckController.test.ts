@@ -14,7 +14,12 @@ jest.mock('../models/userCheckpoint', () => ({
 
 jest.mock('../models/wordProgress', () => ({
   __esModule: true,
-  default: { find: jest.fn(), findOrCreate: jest.fn() },
+  default: {
+    find: jest.fn(),
+    findOrCreate: jest.fn(),
+    distinct: jest.fn().mockResolvedValue([]),
+    exists: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 jest.mock('../models/word', () => ({
