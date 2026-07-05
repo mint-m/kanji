@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { escapeRegex } from '../utils/regex';
 
 const BOOKMARK_LIMIT = 150;
 const BOOKMARK_WARNING_THRESHOLD = 10;
@@ -16,7 +15,41 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
     const { wordId, reason, tags, progressType = 'main' } = req.body;
     const userId = req.user!._id;
 
-    // Find or create word progress
+    // 북마크는 세션 간 공유되므로, 다른 세션에 이미 북마크된 상태인지 먼저 확인해야
+    // 해제/추가 여부를 올바르게 판단할 수 있음 (현재 세션 문서만 보면 반대로 동작할 수 있음)
+    const isCurrentlyBookmarked = await WordProgress.exists({
+      user_id: userId,
+      word_id: wordId,
+      is_bookmarked: true,
+    });
+
+    if (isCurrentlyBookmarked) {
+      // 모든 세션에서 일괄 해제 — 세션별 문서가 따로 있어도 북마크 상태는 하나로 유지
+      await WordProgress.updateMany(
+        { user_id: userId, word_id: wordId, is_bookmarked: true },
+        { $set: { is_bookmarked: false, bookmark_reason: undefined, bookmark_tags: [], bookmarked_at: undefined } }
+      );
+
+      res.json({
+        success: true,
+        data: { wordId, isBookmarked: false, bookmarkInfo: { isBookmarked: false, tags: [] } },
+        message: 'Word unbookmarked successfully',
+      });
+      return;
+    }
+
+    // 새 북마크 추가 — 세션별 문서 수가 아닌 고유 단어 수 기준으로 한도 체크
+    const bookmarkedWordIds = await WordProgress.distinct('word_id', { user_id: userId, is_bookmarked: true });
+    const currentCount = bookmarkedWordIds.length;
+    if (currentCount >= BOOKMARK_LIMIT) {
+      res.status(409).json({
+        success: false,
+        code: 'BOOKMARK_LIMIT_EXCEEDED',
+        message: `북마크 최대 개수(${BOOKMARK_LIMIT}개)에 도달했습니다. 기존 북마크를 정리해주세요.`,
+      });
+      return;
+    }
+
     let wordProgress = await WordProgress.findOne({
       user_id: userId,
       word_id: wordId,
@@ -31,39 +64,15 @@ export const toggleBookmark = async (req: AuthenticatedRequest, res: Response): 
       });
     }
 
-    // Check limit only when adding a new bookmark
-    if (!wordProgress.is_bookmarked) {
-      const currentCount = await WordProgress.countDocuments({ user_id: userId, is_bookmarked: true });
-      if (currentCount >= BOOKMARK_LIMIT) {
-        res.status(409).json({
-          success: false,
-          code: 'BOOKMARK_LIMIT_EXCEEDED',
-          message: `북마크 최대 개수(${BOOKMARK_LIMIT}개)에 도달했습니다. 기존 북마크를 정리해주세요.`,
-        });
-        return;
-      }
-
-      const remaining = BOOKMARK_LIMIT - (currentCount + 1);
-      const isBookmarked = wordProgress.toggleBookmark(reason, tags);
-      await wordProgress.save();
-
-      res.json({
-        success: true,
-        data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
-        message: 'Word bookmarked successfully',
-        ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
-      });
-      return;
-    }
-
-    // Removing bookmark — no limit check needed
-    const isBookmarked = wordProgress.toggleBookmark(reason, tags);
+    const remaining = BOOKMARK_LIMIT - (currentCount + 1);
+    wordProgress.toggleBookmark(reason, tags);
     await wordProgress.save();
 
     res.json({
       success: true,
-      data: { wordId, isBookmarked, bookmarkInfo: wordProgress.getBookmarkInfo() },
-      message: 'Word unbookmarked successfully',
+      data: { wordId, isBookmarked: true, bookmarkInfo: wordProgress.getBookmarkInfo() },
+      message: 'Word bookmarked successfully',
+      ...(remaining <= BOOKMARK_WARNING_THRESHOLD && { warning: { remaining } }),
     });
   } catch (error) {
     console.error('Toggle bookmark error:', error);
@@ -222,257 +231,9 @@ export const updateBookmark = async (req: AuthenticatedRequest, res: Response): 
   }
 };
 
-/**
- * Bulk bookmark operations
- * @route POST /api/bookmarks/bulk
- */
-export const bulkBookmarkOperation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { wordIds, action, progressType = 'main', reason, tags } = req.body;
-    const userId = req.user!._id;
-
-    let modified = 0;
-
-    switch (action) {
-      case 'bookmark':
-        const bulkOps = wordIds.map((wordId: string) => ({
-          updateOne: {
-            filter: { user_id: userId, word_id: wordId, progress_type: progressType },
-            update: {
-              $setOnInsert: { user_id: userId, word_id: wordId, progress_type: progressType },
-              $set: { is_bookmarked: true, bookmark_reason: reason, bookmark_tags: tags || [] },
-            },
-            upsert: true,
-          },
-        }));
-        const bulkResult = await WordProgress.bulkWrite(bulkOps);
-        modified = bulkResult.modifiedCount + bulkResult.upsertedCount;
-        break;
-
-      case 'unbookmark':
-        const unbookmarkResult = await WordProgress.updateMany(
-          {
-            user_id: userId,
-            word_id: { $in: wordIds },
-            progress_type: progressType,
-          },
-          {
-            $set: {
-              is_bookmarked: false,
-              bookmark_reason: undefined,
-              bookmark_tags: [],
-            },
-          }
-        );
-        modified = unbookmarkResult.modifiedCount;
-        break;
-
-      default:
-        res.status(400).json({
-          success: false,
-          message: 'Invalid bulk action',
-        });
-        return;
-    }
-
-    res.json({
-      success: true,
-      data: {
-        modifiedCount: modified,
-        action,
-      },
-      message: `Bulk ${action} operation completed successfully`,
-    });
-  } catch (error) {
-    console.error('Bulk bookmark operation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to perform bulk bookmark operation',
-    });
-  }
-};
-
-/**
- * Get bookmark statistics and analytics
- * @route GET /api/bookmarks/stats
- */
-export const getBookmarkStats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const userId = req.user!._id;
-
-    // progressType 파라미터 제거, 전체 북마크 통계 조회
-    const stats = await WordProgress.getBookmarkAnalytics(userId);
-
-    res.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    console.error('Get bookmark stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve bookmark statistics',
-    });
-  }
-};
-
-/**
- * Search bookmarks with advanced filters
- * @route POST /api/bookmarks/search
- */
-export const searchBookmarks = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const userId = req.user!._id;
-    const {
-      searchTerm,
-      level,
-      step,
-      tags,
-      isCompleted,
-      sortBy = 'last_studied_at',
-      sortOrder = 'desc',
-      page = 1,
-      limit = 50,
-    } = req.body;
-
-    // Build search pipeline - progressType 필터 제거, 전체 북마크 검색
-    const pipeline: PipelineStage[] = [
-      {
-        $match: {
-          user_id: userId,
-          is_bookmarked: true,
-        },
-      },
-      {
-        $lookup: {
-          from: 'word',
-          localField: 'word_id',
-          foreignField: '_id',
-          as: 'word',
-        },
-      },
-      { $unwind: '$word' },
-    ];
-
-    // Add search filters
-    const matchConditions: any = {};
-
-    if (searchTerm) {
-      const safeSearch = escapeRegex(searchTerm);
-      matchConditions.$or = [
-        { 'word.entry': { $regex: safeSearch, $options: 'i' } },
-        { 'word.pron': { $regex: safeSearch, $options: 'i' } },
-        { 'word.means': { $regex: safeSearch, $options: 'i' } },
-        { bookmark_reason: { $regex: safeSearch, $options: 'i' } },
-      ];
-    }
-
-    if (level) {
-      matchConditions['word.level'] = level;
-    }
-
-    if (step) {
-      matchConditions['word.step'] = step;
-    }
-
-    if (tags && tags.length > 0) {
-      matchConditions.bookmark_tags = { $in: tags };
-    }
-
-    if (typeof isCompleted === 'boolean') {
-      matchConditions.is_window_completed = isCompleted;
-    }
-
-    if (Object.keys(matchConditions).length > 0) {
-      pipeline.push({ $match: matchConditions });
-    }
-
-    // Add success rate calculation only if sorting by success_rate
-    if (sortBy === 'success_rate') {
-      pipeline.push({
-        $addFields: {
-          successRate: {
-            $cond: [{ $eq: ['$try_count', 0] }, 0, { $divide: ['$correct_count', '$try_count'] }],
-          },
-        },
-      });
-    }
-
-    // Add sorting
-    const sortField =
-      sortBy === 'level'
-        ? 'word.level'
-        : sortBy === 'step'
-        ? 'word.step'
-        : sortBy === 'kanji'
-        ? 'word.kanji'
-        : sortBy === 'success_rate'
-        ? 'successRate'
-        : `${sortBy}`;
-
-    pipeline.push({
-      $sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },
-    });
-
-    // Get total count before pagination
-    const countPipeline = [...pipeline, { $count: 'total' }];
-    const totalCountResult = await WordProgress.aggregate(countPipeline);
-    const totalCount = totalCountResult[0]?.total || 0;
-
-    // Add pagination
-    const skip = (Number(page) - 1) * Number(limit);
-    pipeline.push({ $skip: skip }, { $limit: Number(limit) });
-
-    // Project only needed fields with unified field names
-    pipeline.push({
-      $project: {
-        _id: 1,
-        user_id: 1,
-        word_id: 1,
-        word: 1,
-        notes: '$bookmark_reason',
-        bookmarked_at: 1,
-        is_bookmarked: 1,
-        progress_type: 1,
-      },
-    });
-
-    // Execute search
-    const results = await WordProgress.aggregate(pipeline);
-
-    res.json({
-      success: true,
-      data: {
-        bookmarks: results,
-        pagination: {
-          currentPage: Number(page),
-          totalPages: Math.ceil(totalCount / Number(limit)),
-          totalItems: totalCount,
-          itemsPerPage: Number(limit),
-        },
-        searchCriteria: {
-          searchTerm,
-          level,
-          step,
-          tags,
-          isCompleted,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Search bookmarks error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to search bookmarks',
-    });
-  }
-};
-
 export default {
   toggleBookmark,
   getBookmarks,
   updateBookmark,
-  bulkBookmarkOperation,
-  getBookmarkStats,
-  searchBookmarks,
 };
+

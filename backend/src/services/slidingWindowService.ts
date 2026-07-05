@@ -1,6 +1,7 @@
 import Word from '../models/word';
 import { LearningLevel, StepRange } from '../types/common';
 import { WindowConfig, DeckWindow, WindowCheckpoint } from '../types/services/slidingWindow';
+import { shuffleArray } from '../utils/shuffle';
 
 // Re-export types for backwards compatibility
 export type { WindowConfig, DeckWindow, WindowCheckpoint };
@@ -97,7 +98,7 @@ export class SlidingWindowService {
 
     // Shuffle if requested
     if (shuffled) {
-      wordIds = this.shuffleArray([...wordIds]);
+      wordIds = shuffleArray(wordIds);
     }
 
     return {
@@ -125,15 +126,6 @@ export class SlidingWindowService {
   static async canMoveToNextWindow(currentSteps: StepRange, level: LearningLevel): Promise<boolean> {
     const nextWindow = await this.getNextWindow(currentSteps, level);
     return nextWindow !== null;
-  }
-
-  private static shuffleArray<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
   }
 
 }

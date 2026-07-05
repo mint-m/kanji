@@ -55,12 +55,6 @@ export interface WordProgressDocument extends Document {
 }
 
 export interface WordProgressModel extends Model<WordProgressDocument> {
-  findByUserWordAndType(
-    userId: mongoose.Types.ObjectId,
-    wordId: mongoose.Types.ObjectId,
-    type: ProgressType
-  ): Promise<WordProgressDocument | null>;
-
   findOrCreate(
     userId: mongoose.Types.ObjectId,
     wordId: mongoose.Types.ObjectId,
@@ -72,16 +66,6 @@ export interface WordProgressModel extends Model<WordProgressDocument> {
     wordIds: mongoose.Types.ObjectId[],
     progressType: ProgressType
   ): Promise<number>;
-
-  getUnknownWordsFromDeck(
-    userId: mongoose.Types.ObjectId,
-    wordIds: mongoose.Types.ObjectId[],
-    progressType: ProgressType
-  ): Promise<mongoose.Types.ObjectId[]>;
-
-  getStudyStats(userId: mongoose.Types.ObjectId, type: ProgressType): Promise<any>;
-
-  getBookmarkAnalytics(userId: mongoose.Types.ObjectId): Promise<any>;
 }
 
 export default WordProgressModel;

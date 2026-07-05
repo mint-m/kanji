@@ -16,10 +16,6 @@ export * from './authService';
 export * from './types';
 
 // Re-export service types
-export type {
-  GetProgressResponse,
-  UpdateIndexRequest,
-  LearningStatsResponse,
-} from './progressService';
+export type { GetProgressResponse } from './progressService';
 
 export type { Bookmark, GetBookmarksOptions } from './bookmarkService';

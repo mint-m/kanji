@@ -6,6 +6,11 @@ import {
 } from '../interfaces/userCheckpoint';
 import SlidingWindowService from '../services/slidingWindowService';
 import { InvalidStepRangeError } from '../utils/errors';
+import { shuffleArray } from '../utils/shuffle';
+import { WordProgressModel } from '../interfaces/wordProgress';
+
+// 순환 의존을 피하기 위해 mongoose 레지스트리에서 동적으로 조회
+const wordProgressModel = () => mongoose.model('WordProgress') as WordProgressModel;
 
 // UserCheckpoint - Simplified learning session state
 // Combines session tracking and checkpoint functionality
@@ -81,14 +86,6 @@ userCheckpointSchema.methods.moveToNext = function (this: UserCheckpointDocument
   return false;
 };
 
-userCheckpointSchema.methods.moveToPrevious = function (this: UserCheckpointDocument): boolean {
-  if (this.current_index > 0) {
-    this.current_index--;
-    return true;
-  }
-  return false;
-};
-
 userCheckpointSchema.methods.resetProgress = function (this: UserCheckpointDocument): void {
   this.current_index = 0;
 };
@@ -113,25 +110,13 @@ userCheckpointSchema.methods.getSessionStats = function (this: UserCheckpointDoc
   };
 };
 
-// Simplified checkpoint update - just saves the document
-userCheckpointSchema.methods.updateCheckpoint = async function (this: UserCheckpointDocument): Promise<boolean> {
-  try {
-    await this.save();
-    return true;
-  } catch (error) {
-    console.error('Failed to update checkpoint:', error);
-    return false;
-  }
-};
-
 userCheckpointSchema.methods.isWindowCompleted = async function (
   this: UserCheckpointDocument,
   userId: mongoose.Types.ObjectId,
   progressType: ProgressType
 ): Promise<boolean> {
   if (this.shuffled_order.length === 0) return false;
-  const WordProgress = mongoose.model('WordProgress');
-  const knownCount = await WordProgress.countDocuments({
+  const knownCount = await wordProgressModel().countDocuments({
     user_id: userId,
     word_id: { $in: this.shuffled_order },
     progress_type: progressType,
@@ -145,20 +130,17 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   userId: mongoose.Types.ObjectId,
   progressType: ProgressType
 ): Promise<number> {
-  const WordProgress = mongoose.model('WordProgress');
-  const knownIds = await WordProgress.find({
+  const knownIds = await wordProgressModel().distinct('word_id', {
     user_id: userId,
     word_id: { $in: this.shuffled_order },
     progress_type: progressType,
     is_window_completed: true,
-  }).distinct('word_id');
+  });
+  const knownSet = new Set(knownIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
-  const unknownIds = this.shuffled_order.filter(
-    (id) => !knownIds.some((knownId: mongoose.Types.ObjectId) => id.equals(knownId))
-  );
+  const unknownIds = this.shuffled_order.filter((id) => !knownSet.has(id.toString()));
 
-  const UserCheckpointModel = this.constructor as UserCheckpointModel;
-  this.shuffled_order = UserCheckpointModel.shuffleArray(unknownIds);
+  this.shuffled_order = shuffleArray(unknownIds);
   this.current_index = 0;
   return this.shuffled_order.length;
 };
@@ -186,11 +168,7 @@ userCheckpointSchema.methods.generateNextSlidingWindow = async function (
   const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
 
   // Reset only after deck generation succeeds to avoid data loss on failure
-  const WordProgress = mongoose.model('WordProgress');
-  await WordProgress.updateMany(
-    { user_id: userId, word_id: { $in: this.shuffled_order }, progress_type: progressType },
-    { $set: { is_window_completed: false } }
-  );
+  await wordProgressModel().resetWindowCompletionForWords(userId, this.shuffled_order, progressType);
 
   this.steps = nextWindow;
   this.shuffled_order = nextDeck.wordIds;
@@ -238,11 +216,7 @@ userCheckpointSchema.statics.createNewSession = async function (
   );
 
   // Reset window completion state for all words in this new session
-  const WordProgress = mongoose.model('WordProgress');
-  await WordProgress.updateMany(
-    { user_id: userId, word_id: { $in: filteredWordIds }, progress_type: type },
-    { $set: { is_window_completed: false } }
-  );
+  await wordProgressModel().resetWindowCompletionForWords(userId, filteredWordIds, type);
 
   // Create new session
   const session = new this({
@@ -257,23 +231,6 @@ userCheckpointSchema.statics.createNewSession = async function (
   return await session.save();
 };
 
-userCheckpointSchema.statics.generateSlidingWindowDeck = async function (
-  level: LearningLevel,
-  steps: StepRange,
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType,
-  options: DeckGenerationOptions = {}
-): Promise<mongoose.Types.ObjectId[]> {
-  const deckWindow = await SlidingWindowService.generateDeck(level, steps, options.shuffleOrder !== false);
-
-  return await (this as UserCheckpointModel).filterDeckByUserProgress(
-    deckWindow.wordIds,
-    userId,
-    progressType,
-    options
-  );
-};
-
 userCheckpointSchema.statics.filterDeckByUserProgress = async function (
   wordIds: mongoose.Types.ObjectId[],
   userId: mongoose.Types.ObjectId,
@@ -282,42 +239,37 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
 ): Promise<mongoose.Types.ObjectId[]> {
   const { excludeCompleted = true, prioritizeBookmarked = false, maxWords } = options;
 
-  // Import models dynamically to avoid circular dependency
-  const WordProgress = mongoose.model('WordProgress');
-
   let filteredWordIds = [...wordIds];
 
   // Filter out window-completed words if requested
   if (excludeCompleted) {
-    const completedWordIds = await WordProgress.find({
+    const completedWordIds = await wordProgressModel().distinct('word_id', {
       user_id: userId,
+      word_id: { $in: filteredWordIds },
       progress_type: progressType,
       is_window_completed: true,
-    }).distinct('word_id');
+    });
+    const completedSet = new Set(completedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
-    filteredWordIds = filteredWordIds.filter(
-      (wordId) => !completedWordIds.some((completedId) => wordId.equals(completedId))
-    );
+    filteredWordIds = filteredWordIds.filter((wordId) => !completedSet.has(wordId.toString()));
   }
 
   // Enhanced bookmark prioritization with intelligent placement
   if (prioritizeBookmarked) {
-    const bookmarkedWordIds = await WordProgress.find({
+    const bookmarkedWordIds = await wordProgressModel().distinct('word_id', {
       user_id: userId,
+      word_id: { $in: filteredWordIds },
       is_bookmarked: true, // Bookmarks are cross-session
-    }).distinct('word_id');
+    });
+    const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
 
     // Separate bookmarked and non-bookmarked words
-    const bookmarkedWords = filteredWordIds.filter((wordId) =>
-      bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
-    );
-    const nonBookmarkedWords = filteredWordIds.filter(
-      (wordId) => !bookmarkedWordIds.some((bookmarkedId) => wordId.equals(bookmarkedId))
-    );
+    const bookmarkedWords = filteredWordIds.filter((wordId) => bookmarkedSet.has(wordId.toString()));
+    const nonBookmarkedWords = filteredWordIds.filter((wordId) => !bookmarkedSet.has(wordId.toString()));
 
     // Shuffle both arrays independently for variety
-    const shuffledBookmarks = (this as UserCheckpointModel).shuffleArray(bookmarkedWords);
-    const shuffledNonBookmarks = (this as UserCheckpointModel).shuffleArray(nonBookmarkedWords);
+    const shuffledBookmarks = shuffleArray(bookmarkedWords);
+    const shuffledNonBookmarks = shuffleArray(nonBookmarkedWords);
 
     // Strategy: Distribute bookmarks in the first 40% of the deck
     // This ensures focused review while maintaining deck flow
@@ -361,7 +313,7 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
     const remainingZone = [...remainingBookmarks, ...shuffledNonBookmarks.slice(nonBookmarkIndex)];
 
     // Final deck: priority zone + remaining zone
-    filteredWordIds = [...priorityZone, ...(this as UserCheckpointModel).shuffleArray(remainingZone)];
+    filteredWordIds = [...priorityZone, ...shuffleArray(remainingZone)];
   }
 
   // Limit words if maxWords is specified
@@ -370,60 +322,6 @@ userCheckpointSchema.statics.filterDeckByUserProgress = async function (
   }
 
   return filteredWordIds;
-};
-
-/**
- * Utility: Fisher-Yates shuffle for array randomization
- */
-userCheckpointSchema.statics.shuffleArray = function <T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-userCheckpointSchema.statics.getNextSlidingWindow = async function (
-  currentSteps: StepRange,
-  level: LearningLevel
-): Promise<StepRange | null> {
-  // Use SlidingWindowService for getting next window
-  return await SlidingWindowService.getNextWindow(currentSteps, level);
-};
-
-userCheckpointSchema.statics.getUserLearningStats = async function (userId: mongoose.Types.ObjectId): Promise<any> {
-  const stats = await this.aggregate([
-    { $match: { user_id: userId } },
-    {
-      $lookup: {
-        from: 'word_progress',
-        localField: 'user_id',
-        foreignField: 'user_id',
-        as: 'wordProgress',
-      },
-    },
-    {
-      $group: {
-        _id: '$progress_type',
-        sessions: { $sum: 1 },
-        totalWords: { $sum: { $size: '$shuffled_order' } },
-        completedWords: { $sum: '$current_index' },
-        levels: { $addToSet: '$current_level' },
-        avgProgress: {
-          $avg: {
-            $cond: [
-              { $gt: [{ $size: '$shuffled_order' }, 0] },
-              { $divide: ['$current_index', { $size: '$shuffled_order' }] },
-              0,
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  return stats;
 };
 
 // Create and export model

@@ -2,8 +2,8 @@
 
 > 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
 
-**최종 업데이트**: 2026-07-02
-**버전**: 4.4
+**최종 업데이트**: 2026-07-04
+**버전**: 4.5
 
 ---
 
@@ -285,7 +285,6 @@ backend/src/
 - `generateNextSlidingWindow(userId, progressType)` - 다음 윈도우 생성 + 이전 단어 `is_window_completed` 리셋
 - `getCurrentWord()` - 현재 학습할 단어
 - `moveToNext()` - 다음 단어로 이동
-- `updateCheckpoint()` - 체크포인트 저장
 
 **특징**:
 
@@ -437,12 +436,6 @@ GET /api/users/me/progress/:type
     }
   }
 }
-```
-
-#### 세션 리셋
-
-```
-PUT /api/users/me/progress/:type/reset
 ```
 
 #### 세션 삭제
@@ -637,9 +630,8 @@ PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
 ### 단어 관리 (Words)
 
 ```
-GET /api/words/all                                    # 전체 단어 조회
 GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 (minStep, maxStep)
-GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
+GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 (네이버 API)
 ```
 
 ---
@@ -668,7 +660,7 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 - `ApiError` 클래스(`services/authService.ts`)가 409 응답의 `code` 필드를 보존 — `apiClient`가 4xx를 모두 throw로 변환하기 때문에 필요.
 - `BookmarkStudyPage`는 로딩 시 `progress_type`을 `Map<wordId, ProgressType>`으로 캐싱하여 토글에 전달.
 - `BookmarkPage` 필터 변경 시 generation 카운터로 stale 응답을 무시. 삭제 후에는 `fetchBookmarks(targetPage)` 재호출로 서버 상태와 동기화.
-- `FlashCardContainer` 북마크 초기화는 `limit: 200` 제한이 있어 총 북마크 200개 초과 시 일부 미표시 가능 (추후 덱 범위 기반 API로 개선 예정).
+- `FlashCardContainer` 북마크 초기 상태는 덱 응답의 `isBookmarked` 필드에서 직접 초기화.
 
 ---
 
@@ -759,19 +751,12 @@ GET /api/words/level/:level/step/:step                # 스텝별 단어 조회
 
 - 학습 통계 대시보드(UserStatsPage) 상세 구현
 - 연속 학습일 추적 UI
-- FlashCardContainer 북마크 초기화: 덱 범위 기반 API로 개선 (현재 limit: 200 한계)
 
 ### 마이그레이션 전략
 
 #### 레거시 vs 신규 API
 
-**레거시 (비권장)**:
-
-```
-GET /api/words/level/:level   → 400+ 단어 전체 조회, 클라이언트 처리
-```
-
-**현재 (권장)**:
+**덱 조회 (권장)**:
 
 ```
 GET /api/users/me/progress/:type/current   → 40-120 단어 (3-step window), 서버 셔플 완료
@@ -946,7 +931,6 @@ yarn build          # → frontend/build/
 - **Shuffled Order**: 셔플된 순서 (단어 배열)
 - **Word Progress**: 단어 진행 상황
 - **Completion Status**: 완료 상태
-- **updateCheckpoint()**: 체크포인트 업데이트 메서드
 
 ### Technical Terms
 
@@ -958,6 +942,17 @@ yarn build          # → frontend/build/
 ---
 
 ## 변경 이력
+
+### v4.5 (2026-07-04)
+
+- ✅ perf: `getCurrentDeck` 단어별 N+1 쿼리 제거 (덱당 40~120회 → 배치 2회 + Map 매칭)
+- ✅ perf: `getUserProgress`의 `shuffled_order` populate 제거 (응답 페이로드 경량화)
+- ✅ perf: 덱 필터링 O(n×m) `equals` 탐색 → Set 기반 O(n), 조회 범위를 덱 단어로 스코프 제한
+- ✅ refactor: 미사용 API 제거 — progress(index/reset/stats), deck(bulk-complete/deck-stats), bookmarks(bulk/search/stats), words(all/step 조회/search/random/statistics)
+- ✅ refactor: 미참조 모델 메서드·검증자 대규모 정리 (약 1,700줄 삭제)
+- ✅ refactor: Fisher-Yates 셔플 3중 복제 → `utils/shuffle.ts` 통합
+- ✅ refactor: `is_window_completed` 리셋 updateMany 3곳 → `resetWindowCompletionForWords` 스태틱 통합
+- ✅ refactor(PR): `find().distinct()` → `distinct(field, query)` 표준화 (Gemini 리뷰 반영)
 
 ### v4.4 (2026-07-02)
 

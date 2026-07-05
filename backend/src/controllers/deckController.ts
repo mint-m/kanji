@@ -5,6 +5,7 @@ import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
+import { shuffleArray } from '../utils/shuffle';
 import { AuthenticatedRequest } from '../middleware/auth';
 import {
   ProgressType,
@@ -39,16 +40,23 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     }
 
     // Get current deck words with progress information (단어·진행 상태 각 1회 조회)
-    const [words, wordProgressList] = await Promise.all([
+    // 북마크는 세션 간 공유되므로 progress_type과 무관하게 별도 조회
+    const [words, wordProgressList, bookmarkedWordIds] = await Promise.all([
       Word.find({ _id: { $in: progress.shuffled_order } }).lean(),
       WordProgress.find({
         user_id: userId,
         word_id: { $in: progress.shuffled_order },
         progress_type: progressType,
       }),
+      WordProgress.distinct('word_id', {
+        user_id: userId,
+        word_id: { $in: progress.shuffled_order },
+        is_bookmarked: true,
+      }),
     ]);
     const wordMap = new Map(words.map((w) => [String(w._id), w]));
     const wordProgressMap = new Map(wordProgressList.map((wp) => [String(wp.word_id), wp]));
+    const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => String(id)));
 
     // Combine word data with progress
     const deckWords = progress.shuffled_order.map((wordId, index) => {
@@ -60,7 +68,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         index,
         isCurrent: index === progress!.current_index,
         isWindowCompleted: wordProgress?.is_window_completed || false,
-        isBookmarked: wordProgress?.is_bookmarked || false,
+        isBookmarked: bookmarkedSet.has(String(wordId)),
         studyStats: wordProgress?.getStudyStats(),
         recommendedAction: wordProgress?.getRecommendedAction(),
       };
@@ -153,6 +161,12 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
 
     const newMasteryLevel = wordProgress.calculateMasteryLevel();
     const recommendedAction = wordProgress.getRecommendedAction();
+    // 북마크는 세션 간 공유되므로 현재 세션 문서만으로 판단하면 다른 세션의 북마크를 놓칠 수 있음
+    const isBookmarkedCrossSession = !!(await WordProgress.exists({
+      user_id: userId,
+      word_id: wordObjectId,
+      is_bookmarked: true,
+    }));
 
     const completionResult: WordCompletionResult = {
       wordId: wordObjectId,
@@ -200,7 +214,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
           studyStreak: wordProgress.study_streak,
           masteryLevel: newMasteryLevel,
           recommendedAction,
-          isBookmarked: wordProgress.is_bookmarked,
+          isBookmarked: isBookmarkedCrossSession,
         },
         currentIndex: progress.current_index,
         passComplete: isPassComplete,
@@ -213,209 +227,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     res.status(500).json({
       success: false,
       message: 'Failed to complete word',
-      error: process.env.NODE_ENV === 'development' ? error : undefined,
-    });
-  }
-};
-
-/**
- * Bulk complete multiple words
- */
-export const bulkCompleteWords = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { progressType } = req.params as { progressType: ProgressType };
-    const { completions } = req.body as {
-      completions: Array<{
-        wordId: string;
-        isCorrect: boolean;
-        timeSpent?: number;
-      }>;
-    };
-
-    const userId = req.user!._id;
-
-    if (!completions || completions.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: 'No completions provided',
-      });
-      return;
-    }
-
-    const results: WordCompletionResult[] = [];
-    const errors: any[] = [];
-
-    // Process each completion
-    for (const completion of completions) {
-      try {
-        const wordObjectId = new mongoose.Types.ObjectId(completion.wordId);
-
-        const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
-
-        const previousAttempts = wordProgress.try_count;
-
-        // Record study attempt
-        const studyResult = {
-          isCorrect: completion.isCorrect,
-          timeSpent: completion.timeSpent || 0,
-          studiedAt: new Date(),
-        };
-
-        wordProgress.recordStudyAttempt(studyResult);
-
-        if (completion.isCorrect) {
-          wordProgress.markCompleted();
-        } else {
-          wordProgress.markIncomplete();
-        }
-
-        await wordProgress.save();
-
-        results.push({
-          wordId: wordObjectId,
-          isCorrect: completion.isCorrect,
-          timeSpent: completion.timeSpent,
-          previousAttempts,
-          newMasteryLevel: wordProgress.calculateMasteryLevel(),
-          shouldRepeat: wordProgress.getRecommendedAction() === 'review',
-        });
-      } catch (error) {
-        errors.push({
-          wordId: completion.wordId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    // Update user statistics
-    const totalTimeSpent = completions.reduce((sum, c) => sum + (c.timeSpent || 0), 0);
-    const correctCount = results.filter((r) => r.isCorrect).length;
-
-    const user = await User.findById(userId);
-    if (user) {
-      user.updateStudyStats(totalTimeSpent, results.length);
-      user.updateDailyStreak();
-      await user.save();
-    }
-
-    // Auto-save checkpoint after bulk operation
-    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
-    if (progress) {
-      progress.updateCheckpoint().catch((error: Error) => {
-        console.error('Checkpoint auto-save failed:', error.message);
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: `Processed ${results.length} word completions`,
-      data: {
-        results,
-        summary: {
-          totalProcessed: results.length,
-          correctAnswers: correctCount,
-          incorrectAnswers: results.length - correctCount,
-          averageTimeSpent: totalTimeSpent / results.length,
-          totalTimeSpent,
-        },
-        errors,
-      },
-    });
-  } catch (error) {
-    console.error('Bulk complete words error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to bulk complete words',
-      error: process.env.NODE_ENV === 'development' ? error : undefined,
-    });
-  }
-};
-
-/**
- * Get deck statistics and analytics
- */
-export const getDeckStats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { progressType } = req.params as { progressType: ProgressType };
-    const userId = req.user!._id;
-
-    const progress = await UserCheckpoint.findByUserAndType(userId, progressType);
-
-    if (!progress) {
-      res.status(404).json({
-        success: false,
-        message: `No active ${progressType} session found`,
-      });
-      return;
-    }
-
-    // Get word progress for all words in deck
-    const wordProgressList = await WordProgress.find({
-      user_id: userId,
-      word_id: { $in: progress.shuffled_order },
-      progress_type: progressType,
-    });
-
-    // Calculate detailed statistics
-    const totalWords = progress.shuffled_order.length;
-    const studiedWords = wordProgressList.length;
-    const completedWords = wordProgressList.filter((wp) => wp.is_window_completed).length;
-    const bookmarkedWords = wordProgressList.filter((wp) => wp.is_bookmarked).length;
-
-    const totalAttempts = wordProgressList.reduce((sum, wp) => sum + wp.try_count, 0);
-    const totalCorrect = wordProgressList.reduce((sum, wp) => sum + wp.correct_count, 0);
-    const totalTimeSpent = wordProgressList.reduce((sum, wp) => sum + wp.time_spent_total, 0);
-
-    const averageAccuracy = totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
-    const averageTimePerWord = studiedWords > 0 ? totalTimeSpent / studiedWords : 0;
-
-    // Get mastery level distribution
-    const masteryDistribution = wordProgressList.reduce((acc, wp) => {
-      const level = wp.calculateMasteryLevel();
-      acc[level] = (acc[level] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const sessionStats = progress.getSessionStats();
-
-    res.status(200).json({
-      success: true,
-      data: {
-        deckInfo: {
-          level: progress.current_level,
-          steps: progress.steps,
-          progressType: progress.progress_type,
-          totalWords,
-          currentIndex: progress.current_index,
-        },
-        studyProgress: {
-          studiedWords,
-          completedWords,
-          remainingWords: totalWords - progress.current_index,
-          completionPercentage: sessionStats.progressPercentage,
-          bookmarkedWords,
-        },
-        performance: {
-          totalAttempts,
-          totalCorrect,
-          averageAccuracy: Math.round(averageAccuracy * 100) / 100,
-          averageTimePerWord: Math.round(averageTimePerWord),
-          totalTimeSpent,
-        },
-        distributions: {
-          mastery: masteryDistribution,
-        },
-        recommendations: {
-          wordsNeedingReview: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'review').length,
-          readyToSkip: wordProgressList.filter((wp) => wp.getRecommendedAction() === 'skip').length,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Get deck stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get deck statistics',
       error: process.env.NODE_ENV === 'development' ? error : undefined,
     });
   }
@@ -455,16 +266,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 
     if (progressType === 'sub') {
       // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
-      await WordProgress.updateMany(
-        { user_id: userId, word_id: { $in: progress.shuffled_order }, progress_type: 'sub' },
-        { $set: { is_window_completed: false } }
-      );
-      const shuffled = [...progress.shuffled_order];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      progress.shuffled_order = shuffled as mongoose.Types.ObjectId[];
+      await WordProgress.resetWindowCompletionForWords(userId, progress.shuffled_order, 'sub');
+      progress.shuffled_order = shuffleArray(progress.shuffled_order);
       progress.markModified('shuffled_order');
       progress.current_index = 0;
       await progress.save();
@@ -475,7 +278,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         deckSize: progress.shuffled_order.length,
       };
     } else {
-      canMoveToNext = await progress.canMoveToNextWindow(userId, progressType);
+      // allKnown은 위에서 이미 확인됨 — 다음 윈도우 존재 여부만 확인
+      canMoveToNext = await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
       if (canMoveToNext) {
         try {
           await progress.generateNextSlidingWindow(userId, progressType);
@@ -534,7 +338,5 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
 export default {
   getCurrentDeck,
   completeWord,
-  bulkCompleteWords,
-  getDeckStats,
   completeDeck,
 };

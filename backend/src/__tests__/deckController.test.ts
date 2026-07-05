@@ -9,12 +9,17 @@ jest.mock('mongoose', () => ({
 
 jest.mock('../models/userCheckpoint', () => ({
   __esModule: true,
-  default: { findByUserAndType: jest.fn(), generateSlidingWindowDeck: jest.fn() },
+  default: { findByUserAndType: jest.fn() },
 }));
 
 jest.mock('../models/wordProgress', () => ({
   __esModule: true,
-  default: { find: jest.fn(), findByUserWordAndType: jest.fn(), findOrCreate: jest.fn() },
+  default: {
+    find: jest.fn(),
+    findOrCreate: jest.fn(),
+    distinct: jest.fn().mockResolvedValue([]),
+    exists: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 jest.mock('../models/word', () => ({

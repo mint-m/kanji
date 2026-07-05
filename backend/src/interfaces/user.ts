@@ -72,7 +72,6 @@ export interface UserDocument extends Document {
   updateDailyStreak(): void;
   updateStudyStats(timeSpent: number, wordsStudied: number): void;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
-  getPreferredStudyTime(): string | null;
   canReceiveReminders(): boolean;
   isNewUser(): boolean;
   getDaysSinceJoined(): number;
@@ -90,23 +89,6 @@ export interface UserModel extends Model<UserDocument> {
     name: string;
     profilePicture?: string;
   }): Promise<UserDocument>;
-
-  // User management
-  deactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
-
-  reactivateUser(userId: mongoose.Types.ObjectId): Promise<boolean>;
-
-  updatePreferences(
-    userId: mongoose.Types.ObjectId,
-    preferences: Partial<UserPreferences>
-  ): Promise<UserDocument | null>;
-
-  updateProfile(userId: mongoose.Types.ObjectId, profile: Partial<UserProfile>): Promise<UserDocument | null>;
-
-  // Statistics and analytics
-  getActiveUsers(days?: number): Promise<UserDocument[]>;
-
-  getUserStats(userId: mongoose.Types.ObjectId): Promise<UserStats | null>;
 }
 
 export default UserModel;
