@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { getTokenLocally, getUserLocally, isTokenExpired, logout, refreshTokenIfNeeded } from './services/authService';
-import { triggerAuthBanner } from './contexts/authBannerInstance';
+import { useAuthBanner } from './contexts/AuthBannerContext';
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { show } = useAuthBanner();
   const token = getTokenLocally();
   const user = getUserLocally();
   const isExpired = Boolean(token && user && isTokenExpired(token));
@@ -11,11 +12,11 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   useEffect(() => {
     if (isExpired) {
       logout(true);
-      triggerAuthBanner();
+      show();
       return;
     }
     refreshTokenIfNeeded();
-  }, [isExpired]);
+  }, [isExpired, show]);
 
   if (!token || !user || isExpired) {
     return <Navigate to="/login" replace />;

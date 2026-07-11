@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getAuthHeaders, logout } from './authService';
-import { triggerAuthBanner } from 'contexts/authBannerInstance';
+import { triggerAuthBanner } from 'contexts/authBannerBridge';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '',
