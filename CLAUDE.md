@@ -1,7 +1,6 @@
 # CLAUDE.md
 
 > 기술 문서: [docs/PROJECT_DOCS.md](./docs/PROJECT_DOCS.md) · 배포: [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) · 학습 철학: [docs/LEARNING_PHILOSOPHY.md](./docs/LEARNING_PHILOSOPHY.md)
-> 이전 버전: [docs/_archive/CLAUDE.legacy.md](./docs/_archive/CLAUDE.legacy.md)
 
 ## Project
 
@@ -99,32 +98,10 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 ## Environment Variables
 
-Full lists with comments: `backend/.env.example`, `frontend/.env.example`
-
-**backend/.env**
-```
-MONGO_URI=mongodb://localhost:27017/kanji
-PORT=8000
-ALLOWED_ORIGINS=http://localhost:4200
-JWT_SECRET=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
-KAKAO_REST_API_KEY=
-```
-
-**frontend/.env**
-```
-REACT_APP_API_URL=http://localhost:8000
-REACT_APP_GOOGLE_OAUTH_CLIENT_ID=
-REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:4200/auth/google/callback
-REACT_APP_KAKAO_REST_API_KEY=
-REACT_APP_KAKAO_REDIRECT_URI=http://localhost:4200/auth/kakao/callback
-```
+전체 목록·주석·기본값은 `backend/.env.example`, `frontend/.env.example`가 단일 출처다. 로컬 개발 시 각각 `.env`로 복사해 값을 채운다.
 
 ## Known Limitations
 
 종결 시점 기준으로 인지하고 있는 한계 (재발견 방지용):
 
-- `FlashCardContainer` 북마크 초기화가 `limit: 200`에 의존 — 북마크 200개 초과 시 일부 미표시 가능
 - 프론트가 호출하지 않는 백엔드 엔드포인트 다수 존재 (`bulk-complete`, `deck-stats`, `bookmarks/search`, `bookmarks/bulk`, `words/search`, `words/random` 등) — 정리(삭제) 후보

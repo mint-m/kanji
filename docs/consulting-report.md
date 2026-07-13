@@ -1,6 +1,6 @@
 # KAN-JI — 잔여 이슈 & 작업 목록
 
-> 완료 이력은 [_archive/consulting-completed.md](_archive/consulting-completed.md) 참고
+> 유지보수·종결 단계 문서. 신규 기능보다 안정성·완성도를 우선한다.
 
 ---
 
@@ -28,12 +28,6 @@
 - ✅ E2E: 로그인, 학습 플로우, 패스/윈도우 완료 흐름 (Playwright)
 - 프론트엔드: `FlashCardContainer`, `apiClient` 인터셉터 미완료
 
-**진도 업데이트 Race Condition**
-`FlashCardContainer`에서 단어 완료 요청이 `await` 없이 발사됨. 빠른 카드 넘기기 시 진도 유실 가능. 요청 큐 또는 순차 처리 필요.
-
-**CORS 전체 허용**
-`backend/app.ts`에서 `origin: true`. 프로덕션 배포 전 도메인 화이트리스트 필요.
-
 ### 🟠 Medium
 
 **React 에러 바운더리 누락**
@@ -48,7 +42,6 @@
 ### 🟢 Low
 
 - `SlidingWindowService.getNextWindow` 매 호출마다 DB에서 `maxStep` 조회 — 캐싱 검토
-- `/health` 엔드포인트 없음
 - Swagger/OpenAPI 문서 없음
 
 ---
@@ -59,10 +52,9 @@
 |---|---|---|---|
 | 1 | ~~E2E 테스트 (Playwright)~~ | ✅ 완료 | — |
 | 2 | ~~컨트롤러 단위 테스트~~ | ✅ 완료 | — |
-| 3 | Race Condition 해결 (요청 큐) | 🟡 | 1일 |
-| 4 | CORS 화이트리스트 설정 | 🟡 | 0.5일 |
+| 3 | ~~Race Condition 해결 (요청 큐)~~ | ✅ 완료 | — |
+| 4 | ~~CORS 화이트리스트 설정~~ | ✅ 완료 | — |
 | 5 | React ErrorBoundary 전 페이지 적용 | 🟠 | 0.5일 |
 | 6 | 서버 측 입력값 검증 | 🟠 | 1일 |
 | 7 | 로깅 시스템 도입 | 🟠 | 1일 |
-| 8 | `/health` 엔드포인트 | 🟢 | 0.5일 |
-| 9 | CI/CD 파이프라인 (GitHub Actions) | 🟢 | 1일 |
+| 8 | CI/CD 파이프라인 (GitHub Actions) | 🟢 | 1일 |
