@@ -17,7 +17,7 @@ jest.mock('../store/modules/user', () => ({
   setUser: jest.fn((p: any) => ({ type: 'user/setUser', payload: p })),
 }));
 
-import { toUserState, getUserLocally, saveUserLocally, getTokenLocally, saveTokenLocally, removeTokenLocally, removeUserLocally } from '../services/authService';
+import { toUserState, getUserLocally, saveUserLocally, getTokenLocally, saveTokenLocally, removeTokenLocally, removeUserLocally, isTokenExpired } from '../services/authService';
 import type { UserProfile } from '../services/authService';
 
 const mockUser: UserProfile = {
@@ -87,5 +87,39 @@ describe('localStorage helpers', () => {
 
   it('getUserLocally: 저장된 데이터 없으면 null', () => {
     expect(getUserLocally()).toBeNull();
+  });
+});
+
+// --- isTokenExpired ---
+const makeJwt = (expOffsetSeconds: number): string => {
+  const exp = Math.floor(Date.now() / 1000) + expOffsetSeconds;
+  const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url');
+  return `header.${payload}.sig`;
+};
+
+describe('isTokenExpired', () => {
+  it('null 토큰 → true', () => {
+    expect(isTokenExpired(null)).toBe(true);
+  });
+
+  it('만료된 토큰(1시간 전) → true', () => {
+    expect(isTokenExpired(makeJwt(-3600))).toBe(true);
+  });
+
+  it('유효한 토큰(1시간 후) → false', () => {
+    expect(isTokenExpired(makeJwt(3600))).toBe(false);
+  });
+
+  it('형식이 잘못된 토큰 → true', () => {
+    expect(isTokenExpired('not-a-jwt')).toBe(true);
+  });
+
+  it('payload가 없는 토큰 → true', () => {
+    expect(isTokenExpired('header..sig')).toBe(true);
+  });
+
+  it('exp가 없는 payload → true', () => {
+    const payload = Buffer.from(JSON.stringify({ userId: '123' })).toString('base64url');
+    expect(isTokenExpired(`header.${payload}.sig`)).toBe(true);
   });
 });
