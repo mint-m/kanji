@@ -139,7 +139,7 @@ kan-ji/
 │   │   └── middleware/    # 미들웨어
 │   └── package.json
 ├── docs/                 # 📚 문서 모음
-├── CLAUDE.md              # Claude Code 가이드 (영문)
+├── CLAUDE.md              # Claude Code 가이드
 └── README.md              # 이 파일
 ```
 
@@ -203,9 +203,11 @@ kan-ji/
 
 - **Google OAuth 2.0** - 소셜 로그인
 - **Kakao OAuth 2.0** - 카카오 로그인
-- **MongoDB Atlas** - 클라우드 DB (옵션)
-- **Vercel/Netlify** - 프론트엔드 배포 (옵션)
-- **Heroku/Railway** - 백엔드 배포 (옵션)
+- **MongoDB Atlas** - 클라우드 DB
+- **Vercel** - 프론트엔드 배포
+- **Render** - 백엔드 배포 (`render.yaml` Blueprint)
+
+> 배포 절차는 [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) 참조.
 
 ---
 
@@ -213,12 +215,12 @@ kan-ji/
 
 ### 주요 컬렉션
 
-| 컬렉션             | 용도                   | 비고          |
-| ------------------ | ---------------------- | ------------- |
-| `users`            | 사용자 인증            | Google OAuth  |
-| `words`            | 단어 마스터 데이터     | JLPT N5~N1    |
-| `user_checkpoints` | 세션 상태 + 체크포인트 | Main/Sub 독립 |
-| `word_progress`    | 단어별 완료 상태       | 북마크 포함   |
+| 컬렉션             | 용도                   | 비고               |
+| ------------------ | ---------------------- | ------------------ |
+| `user`             | 사용자 인증            | Google/Kakao OAuth |
+| `word`             | 단어 마스터 데이터     | JLPT N5~N1         |
+| `user_checkpoints` | 세션 상태 + 체크포인트 | Main/Sub 독립      |
+| `word_progress`    | 단어별 완료 상태       | 북마크 포함        |
 
 > 상세 스키마는 [PROJECT_DOCS.md](./docs/PROJECT_DOCS.md#데이터베이스-구조)를 참조하세요.
 
@@ -277,7 +279,7 @@ chore: 빌드 설정 등
   - 체크포인트 시스템
   - 프론트엔드 마이그레이션
 
-- **[CLAUDE.md](./CLAUDE.md)** - 🤖 Claude Code 가이드 (영문)
+- **[CLAUDE.md](./CLAUDE.md)** - 🤖 Claude Code 가이드
   - Development commands
   - Project structure
   - Key concepts
@@ -287,7 +289,9 @@ chore: 빌드 설정 등
 
 ## 🗺️ 로드맵
 
-### Phase 1 (완료)
+> 현재 **유지보수·종결 단계**입니다. 신규 기능보다 안정성·완성도·코드 축소를 우선하며, 아래 계획 항목은 범위 밖으로 보류되어 있습니다.
+
+### Phase 1 — 핵심 시스템 (완료)
 
 - ✅ 슬라이딩 윈도우 시스템
 - ✅ 체크포인트 자동 저장/복원
@@ -295,7 +299,7 @@ chore: 빌드 설정 등
 - ✅ Main/Sub 이중 세션
 - ✅ API 서비스 레이어
 
-### Phase 2 (진행 중)
+### Phase 2 — 프론트엔드·인증 (완료)
 
 - ✅ Redux Store 구조 (user, kanji 모듈)
 - ✅ 프론트엔드 핵심 컴포넌트 구현 (FlashCard, SelectLevel, SelectStep 등)
@@ -303,15 +307,12 @@ chore: 빌드 설정 등
 - ✅ 카카오 OAuth 로그인 추가
 - ✅ Vanilla Extract 마이그레이션 (Styled Components 제거)
 - ✅ 완전 습득형 학습 로직 구현 (패스 반복, 윈도우 완료 조건)
-- 🔄 학습 통계 대시보드 고도화
-- 🔄 연속 학습일 추적 UI
 
-### Phase 3 (계획)
+### 보류 (종결 단계 범위 밖)
 
-- ⏳ 학습 패턴 분석
-- ⏳ 추천 시스템
-- ⏳ 모바일 앱 (React Native)
-- ⏳ 오프라인 모드
+- ⏸️ 학습 통계 대시보드 고도화 / 연속 학습일 추적 UI
+- ⏸️ 학습 패턴 분석 · 추천 시스템
+- ⏸️ 모바일 앱 (React Native) · 오프라인 모드
 
 ---
 
