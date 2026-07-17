@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useContext, createContext, ReactNode } from 'react';
+import { FC, useState, useEffect, useCallback, useContext, createContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setAuthBannerTrigger } from './authBannerBridge';
 import * as styles from './AuthBannerContext.css';
@@ -13,13 +13,13 @@ export const useAuthBanner = () => {
 
 export const AuthBannerProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [showBanner, setShowBanner] = useState(false);
-  const show = () => setShowBanner(true);
+  const show = useCallback(() => setShowBanner(true), []);
 
   useEffect(() => {
     // apiClient(axios 인터셉터)는 React 트리 밖이라 훅을 쓸 수 없어 브릿지로 등록
     setAuthBannerTrigger(show);
     return () => setAuthBannerTrigger(() => {});
-  }, []);
+  }, [show]);
 
   return (
     <AuthBannerContext.Provider value={{ show }}>

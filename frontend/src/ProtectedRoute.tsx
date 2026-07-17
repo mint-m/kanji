@@ -7,6 +7,8 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { show } = useAuthBanner();
   const token = getTokenLocally();
   const user = getUserLocally();
+  const hasToken = Boolean(token);
+  const hasUser = Boolean(user);
   const isExpired = Boolean(token && user && isTokenExpired(token));
 
   useEffect(() => {
@@ -15,8 +17,10 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
       show();
       return;
     }
-    refreshTokenIfNeeded();
-  }, [isExpired, show]);
+    if (hasToken && hasUser) {
+      refreshTokenIfNeeded();
+    }
+  }, [isExpired, show, hasToken, hasUser]);
 
   if (!token || !user || isExpired) {
     return <Navigate to="/login" replace />;
