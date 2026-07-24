@@ -3,7 +3,7 @@
 # 시크릿(sync:false)은 커밋하지 않고 대시보드에서 직접 입력한다.
 services:
   - type: web
-    name: kan-ji-api
+    name: kanji-api
     runtime: node
     plan: free
     rootDir: backend

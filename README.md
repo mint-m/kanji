@@ -1,4 +1,4 @@
-# Kan-ji (칸지)
+# kanji (칸지)
 
 > 일본어 능력시험(JLPT) 단어 학습 애플리케이션
 
@@ -53,8 +53,8 @@
 #### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/mint-m/kan-ji.git
-cd kan-ji
+git clone https://github.com/mint-m/kanji.git
+cd kanji
 ```
 
 #### 2. 의존성 설치
@@ -121,7 +121,7 @@ yarn start
 ## 📖 프로젝트 구조
 
 ```
-kan-ji/
+kanji/
 ├── frontend/              # React 프론트엔드
 │   ├── src/
 │   │   ├── components/    # UI 컴포넌트
@@ -350,7 +350,7 @@ chore: 빌드 설정 등
 
 ## 📧 문의
 
-- GitHub Issues: [Create an issue](https://github.com/mint-m/kan-ji/issues)
+- GitHub Issues: [Create an issue](https://github.com/mint-m/kanji/issues)
 - Email: fwwfly@gmail.com
 
 ---

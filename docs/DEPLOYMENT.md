@@ -53,18 +53,18 @@
 
 ## 2. 백엔드 → Render
 
-**목표**: `https://kan-ji-api.onrender.com` 형태의 API 서버 가동
+**목표**: `https://kanji-api.onrender.com` 형태의 API 서버 가동
 
-1. https://render.com 가입 후 **GitHub 계정 연동** (`mint-m/kan-ji` 저장소 접근 허용)
+1. https://render.com 가입 후 **GitHub 계정 연동** (`mint-m/kanji` 저장소 접근 허용)
 2. 대시보드 > `New > Blueprint` > 이 저장소 선택
-   - 루트의 `render.yaml`을 자동 인식해 `kan-ji-api` 웹 서비스가 생성됨
+   - 루트의 `render.yaml`을 자동 인식해 `kanji-api` 웹 서비스가 생성됨
    - 빌드/실행 명령은 블루프린트에 이미 정의됨: `yarn install --frozen-lockfile && yarn build` / `yarn start`
 3. **환경변수 입력**: 블루프린트 적용 시 `sync: false` 항목은 값을 물어본다. 아래 표대로 입력:
 
    | 변수 | 값 | 비고 |
    |------|-----|------|
    | `MONGO_URI` | 1단계에서 확보한 Atlas URI | DB명 `kanji` 포함 확인 |
-   | `ALLOWED_ORIGINS` | `https://<프론트 도메인>` | 3단계 후 확정 — 일단 예상 도메인(예: `https://kan-ji.vercel.app`) 입력하고 나중에 수정 가능. 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
+   | `ALLOWED_ORIGINS` | `https://<프론트 도메인>` | 3단계 후 확정 — 일단 예상 도메인(예: `https://kanji.vercel.app`) 입력하고 나중에 수정 가능. 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
    | `GOOGLE_CLIENT_ID` | Google Cloud 콘솔 값 | 4단계 참고 |
    | `GOOGLE_CLIENT_SECRET` | Google Cloud 콘솔 값 | |
    | `GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` | validateEnv 필수값. 실제 구글 교환은 팝업(postmessage) 방식이라 이 값이 구글 콘솔과 일치할 필요는 없음 |
@@ -75,7 +75,7 @@
 4. **배포 확인**:
    - 첫 배포 로그에서 `MongoDB connecting Success!!!` 와 `Server listening on port` 확인
    - 환경변수 누락 시 서버가 목록을 출력하고 즉시 종료하므로 로그로 바로 알 수 있음
-   - 브라우저에서 `https://kan-ji-api.onrender.com/` 접속 → `API is running...` 응답 확인
+   - 브라우저에서 `https://kanji-api.onrender.com/` 접속 → `API is running...` 응답 확인
 5. 확정된 백엔드 도메인을 메모 (3단계 Vercel 환경변수에 사용)
 
 > **무료 플랜 주의**: 15분간 요청이 없으면 슬립되어 첫 요청이 30초~1분 걸릴 수 있다. 필요하면 UptimeRobot 같은 무료 모니터링으로 주기적 핑을 걸거나 유료 플랜 전환.
@@ -84,9 +84,9 @@
 
 ## 3. 프론트 → Vercel
 
-**목표**: `https://kan-ji.vercel.app` 형태의 정적 사이트 가동
+**목표**: `https://kanji.vercel.app` 형태의 정적 사이트 가동
 
-1. https://vercel.com 가입 후 GitHub 연동 > `Add New > Project` > `kan-ji` 저장소 Import
+1. https://vercel.com 가입 후 GitHub 연동 > `Add New > Project` > `kanji` 저장소 Import
 2. **Root Directory를 `frontend`로 지정** — 모노레포라서 이걸 빼먹으면 빌드 실패
    - Framework Preset은 `vercel.json`의 `create-react-app` 설정을 자동 인식
    - 빌드 명령/출력 디렉터리도 `vercel.json`에 정의되어 있어 추가 설정 불필요
@@ -94,14 +94,14 @@
 
    | 변수 | 값 |
    |------|-----|
-   | `REACT_APP_API_URL` | `https://kan-ji-api.onrender.com` (2단계에서 확정한 도메인, **끝에 `/` 없이**) |
+   | `REACT_APP_API_URL` | `https://kanji-api.onrender.com` (2단계에서 확정한 도메인, **끝에 `/` 없이**) |
    | `REACT_APP_GOOGLE_OAUTH_CLIENT_ID` | Google 클라이언트 ID (4단계) |
    | `REACT_APP_GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` |
    | `REACT_APP_KAKAO_REST_API_KEY` | Kakao REST API 키 (4단계) |
    | `REACT_APP_KAKAO_REDIRECT_URI` | `https://<프론트 도메인>/auth/kakao/callback` |
 
    > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`)
-4. Deploy 실행 → 발급된 도메인 확인 (예: `https://kan-ji.vercel.app`)
+4. Deploy 실행 → 발급된 도메인 확인 (예: `https://kanji.vercel.app`)
 5. **도메인 확정 후 되돌아가서 갱신**:
    - Render의 `ALLOWED_ORIGINS`, `GOOGLE_REDIRECT_URI`를 실제 프론트 도메인으로 수정 → 백엔드 자동 재배포
    - Vercel의 `REACT_APP_*_REDIRECT_URI`가 실제 도메인과 다르면 수정 후 Redeploy
@@ -119,7 +119,7 @@
 1. https://console.cloud.google.com > 기존 프로젝트 (로컬 개발에 쓰던 것 재사용 가능)
 2. `API 및 서비스 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID` (웹 애플리케이션) 선택
 3. **승인된 자바스크립트 원본**에 추가:
-   - `https://kan-ji.vercel.app` (실제 프론트 도메인)
+   - `https://kanji.vercel.app` (실제 프론트 도메인)
    - 기존 `http://localhost:4200`은 로컬 개발용으로 유지
 4. 승인된 리디렉션 URI는 postmessage 방식에서는 사용되지 않음 — 추가 불필요
 5. **OAuth 동의 화면** 확인 (`API 및 서비스 > OAuth 동의 화면`):
@@ -133,9 +133,9 @@
 
 1. https://developers.kakao.com > 내 애플리케이션 > 기존 앱 선택 (REST API 키가 `KAKAO_REST_API_KEY`)
 2. **플랫폼 등록**: `앱 설정 > 플랫폼 > Web` 에 사이트 도메인 추가:
-   - `https://kan-ji.vercel.app`
+   - `https://kanji.vercel.app`
 3. **Redirect URI 등록**: `제품 설정 > 카카오 로그인 > Redirect URI`:
-   - `https://kan-ji.vercel.app/auth/kakao/callback`
+   - `https://kanji.vercel.app/auth/kakao/callback`
    - 로컬용 `http://localhost:4200/auth/kakao/callback`과 공존 가능 (여러 개 등록 지원)
 4. **카카오 로그인 활성화** 상태(ON) 확인 (`제품 설정 > 카카오 로그인`)
 5. **동의 항목** 확인 (`카카오 로그인 > 동의항목`): 닉네임/프로필 등 앱이 요구하는 항목이 설정되어 있는지 확인
@@ -147,7 +147,7 @@
 
 전부 연결한 뒤 실제 브라우저에서 순서대로 확인:
 
-1. **API 헬스**: `https://kan-ji-api.onrender.com/` → `API is running...`
+1. **API 헬스**: `https://kanji-api.onrender.com/` → `API is running...`
 2. **프론트 로드**: 프론트 도메인 접속 → 랜딩 페이지 렌더링
 3. **SPA 라우팅**: 임의 경로(예: `/bookmarks`)로 **직접 접속 + 새로고침** → 404 없이 렌더링 (vercel.json rewrite 확인)
 4. **CORS**: 개발자도구 Network 탭에서 API 요청이 CORS 오류 없이 통과하는지 — 오류 시 Render `ALLOWED_ORIGINS` 값과 실제 접속 도메인 비교

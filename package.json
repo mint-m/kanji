@@ -1,8 +1,8 @@
 {
-  "name": "kan-ji",
+  "name": "kanji",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "https://github.com/mint-m/kan-ji.git",
+  "repository": "https://github.com/mint-m/kanji.git",
   "author": "mint-m <fwwfly@gmail.com>",
   "license": "MIT",
   "scripts": {
