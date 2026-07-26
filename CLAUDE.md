@@ -45,7 +45,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 
 ## Architecture Rules
 
-- Redux only for auth state and active session type — all other state via service layer
+- Redux는 auth 상태·활성 세션 타입·한자 조회 캐시(`store/modules/kanji.ts`)에 한정 — 신규 상태는 service layer로
 - Business logic in Mongoose model methods, not controllers
 - All API calls through `services/apiClient.ts`, never direct axios in components
 - API 응답은 `{ success, data, message? }` 봉투 형식 유지
@@ -63,19 +63,9 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - 프론트 CI 빌드는 CRA 기준으로 엄격함 — cleanup 함수에서 ref 직접 참조 등 lint 위반 시 빌드 실패 (커밋 37ebbfc 참조).
 - `backend/src/scripts/`는 일회성 데이터 관리 스크립트 — 프로덕션 빌드(`tsconfig.build.json`)에서 제외됨.
 
-## Code Rules
-
-- Write only what is needed now — no future-proofing
-- Delete before adding
-- No abstraction until rule of three
-- One responsibility per function/component
-
 ## Testing
 
-- Backend: Jest 단위 테스트 (`backend/src/__tests__/`, 컨트롤러 중심)
-- Frontend: RTL (`frontend/src/__tests__/`)
-- E2E: Playwright (`e2e/tests/`, API mock 기반이라 백엔드 불필요)
-- 동작 변경 시 해당 영역 테스트를 실행하고, API 응답 형태가 바뀌면 PROJECT_DOCS.md의 해당 섹션도 함께 갱신
+E2E(`e2e/tests/`)는 API mock 기반이라 백엔드를 띄우지 않아도 된다. 변경 후 검증 절차는 `.claude/skills/verify` 참조.
 
 ## Commit Convention
 
@@ -104,4 +94,4 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 종결 시점 기준으로 인지하고 있는 한계 (재발견 방지용):
 
-- 프론트가 호출하지 않는 백엔드 엔드포인트 다수 존재 (`bulk-complete`, `deck-stats`, `bookmarks/search`, `bookmarks/bulk`, `words/search`, `words/random` 등) — 정리(삭제) 후보
+- 프론트가 호출하지 않는 백엔드 엔드포인트 3개 — `GET /api/auth/verify`, `POST /api/auth/logout`, `GET /api/users/me`(프론트는 `/api/auth/profile`을 쓴다). 정리(삭제) 후보이며, 이 목록 자체가 낡기 쉬우니 손대기 전에 실제 호출처를 다시 확인할 것.
