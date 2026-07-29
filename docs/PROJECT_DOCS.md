@@ -346,228 +346,94 @@ backend/src/
 
 ## API 엔드포인트
 
-모든 인증 필요 엔드포인트는 `/api/users/me/` 하위에 위치합니다.
+모든 인증 필요 엔드포인트는 `/api/users/me/` 하위에 위치한다.
+응답은 전부 `{ success, data, message? }` 봉투 형식이다.
 
-### 인증 (Authentication)
+**응답 본문 예시는 이 문서에 두지 않는다.** 손으로 옮겨 적은 JSON은 코드와 어긋나도 아무도 알려주지 않지만,
+타입 정의와 테스트는 CI가 지킨다. 문서와 코드가 다르면 코드가 맞다.
 
-```
-GET  /api/auth/google              # OAuth 시작
-GET  /api/auth/google/callback     # OAuth 콜백
-POST /api/auth/logout              # 로그아웃
-GET  /api/auth/me                  # 현재 사용자 정보
-```
-
----
-
-### 사용자 설정
-
-```
-PATCH /api/users/me/active-progress-type   # 활성 세션 타입 변경 (main|sub)
-PATCH /api/users/me/checkpoint             # 체크포인트 저장
-```
+| 알고 싶은 것 | 볼 곳 |
+|---|---|
+| 응답 필드 구조 | `frontend/src/services/types.ts` — `CurrentDeck`, `DeckWord`, `SessionStats` |
+| 상태 코드·에러 코드·분기 동작 | `backend/src/__tests__/` (아래 표의 각 행 참조) |
 
 ---
 
-### 진행 상황 관리 (Progress)
+### 인증 (`/api/auth`)
 
-#### 세션 목록 조회
+| 메서드 | 경로 | 용도 |
+|---|---|---|
+| POST | `/google/access-token` | 인가 코드 → 액세스 토큰 교환 |
+| POST | `/google/login` | 액세스 토큰으로 로그인 |
+| POST | `/google/one-tap` | One Tap credential 로그인 |
+| POST | `/kakao/callback` | 카카오 인가 코드 콜백 |
+| POST | `/link/google`, `/link/kakao` | 기존 계정에 provider 연결 |
+| POST | `/refresh` | JWT 갱신 |
+| GET | `/profile` | 현재 사용자 정보 |
+| GET | `/verify` | 토큰 검증 — **프론트 미사용** |
+| POST | `/logout` | 로그아웃 — **프론트 미사용** |
 
-```
-GET /api/users/me/progress
-```
-
-#### 세션 생성
-
-```
-POST /api/users/me/progress
-```
-
-**요청 본문**:
-
-```json
-{
-  "type": "main",
-  "level": "N5",
-  "steps": { "start": 1, "end": 3 }
-}
-```
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "session": { "...": "..." },
-    "sessionStats": { "totalWords": 48, "...": "..." },
-    "deckSize": 48
-  }
-}
-```
-
-#### 세션 조회
-
-```
-GET /api/users/me/progress/:type
-```
-
-- `type`: `"main"` | `"sub"`
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "session": {
-      "progress_type": "main",
-      "current_level": "N5",
-      "steps": { "start": 1, "end": 3 },
-      "current_index": 5
-    },
-    "sessionStats": {
-      "totalWords": 50,
-      "completedWords": 5,
-      "remainingWords": 45,
-      "progressPercentage": 10,
-      "currentStep": 1,
-      "totalSteps": 3,
-      "averageWordsPerStep": 16.7
-    }
-  }
-}
-```
-
-#### 세션 삭제
-
-```
-DELETE /api/users/me/progress/:type
-```
+검증: `backend/src/__tests__/authController.test.ts`
 
 ---
 
-### 덱 관리 (Deck)
+### 사용자 (`/api/users/me`)
 
-#### 현재 덱 조회
+| 메서드 | 경로 | 용도 |
+|---|---|---|
+| GET | `/me` | 사용자 정보 — **프론트 미사용** (`/api/auth/profile`을 쓴다) |
+| PATCH | `/me` | 이름 변경 |
+| PATCH | `/me/active-progress-type` | 활성 세션 타입 변경 (`main`\|`sub`) |
+| PATCH | `/me/checkpoint` | 체크포인트 저장 — **세션 생성도 이 경로로 한다** (별도 생성 엔드포인트 없음) |
+| GET | `/me/stats` | 학습 통계 |
 
-```
-GET /api/users/me/progress/:progressType/current
-```
+검증: `userController.test.ts`, `userStatsController.test.ts`
 
-**응답 예시**:
+---
 
-```json
-{
-  "success": true,
-  "data": {
-    "deckId": "userId-main",
-    "level": "N5",
-    "steps": { "start": 1, "end": 3 },
-    "progressType": "main",
-    "words": [
-      {
-        "_id": "...",
-        "entry": "こんにちは",
-        "pron": "今日は",
-        "means": ["안녕하세요"],
-        "parts": ["감탄사"],
-        "level": "N5",
-        "step": 1,
-        "index": 0,
-        "isCurrent": false,
-        "isWindowCompleted": false,
-        "isBookmarked": false
-      }
-    ],
-    "currentIndex": 5,
-    "sessionStats": {
-      "totalWords": 50,
-      "completedWords": 5,
-      "remainingWords": 45,
-      "progressPercentage": 10,
-      "currentStep": 1,
-      "totalSteps": 3,
-      "averageWordsPerStep": 16.7
-    },
-    "deckStatus": {
-      "isPassComplete": false,
-      "isWindowComplete": false,
-      "canMoveToNext": false,
-      "completionPercentage": 10
-    }
-  }
-}
-```
+### 진행 상황 (`/api/users/me/progress`)
 
-#### 단어 완료 처리
+| 메서드 | 경로 | 용도 | 검증 |
+|---|---|---|---|
+| GET | `/` | 세션 목록 | `progressController.test.ts` |
+| GET | `/:type` | 세션 + `sessionStats` 조회 | `progressController.test.ts` — 잘못된 type 400, 없으면 404 |
+| DELETE | `/:type` | 세션 삭제 | `progressController.test.ts` |
 
-```
-POST /api/users/me/progress/:progressType/complete-word
-```
+`type`은 `"main"` \| `"sub"`.
 
-**요청 본문**:
+---
 
-```json
-{
-  "wordId": "64f5a1b2c3d4e5f6g7h8i9j0",
-  "isCorrect": true, // 정답 여부
-  "timeSpent": 15 // 소요 시간 (초)
-}
-```
+### 덱 (`/api/users/me/progress/:progressType`)
 
-**응답 예시 (패스 진행 중)**:
+#### 현재 덱 조회 — `GET /current`
 
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 3, "successRate": 66, "masteryLevel": "learning" },
-    "currentIndex": 6,
-    "passComplete": false,
-    "windowComplete": false
-  }
-}
-```
+응답 구조는 `CurrentDeck` 타입이 단일 출처다.
+동작 검증은 `deckController.test.ts` → `describe('getCurrentDeck')`:
+진행 중인 세션이 없으면 404 + `code: "NO_PROGRESS"`, 잘못된 `progressType`은 400.
 
-**응답 예시 (패스 완료, 모름 단어 있음 → 재셔플)**:
+#### 단어 완료 처리 — `POST /complete-word`
 
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": false },
-    "wordProgress": { "totalAttempts": 3, "successRate": 33, "masteryLevel": "beginner" },
-    "currentIndex": 0,
-    "passComplete": true,
-    "windowComplete": false,
-    "nextPassSize": 12
-  }
-}
-```
+요청 본문: `{ wordId, isCorrect, timeSpent? }` — `timeSpent`는 초 단위이며 선택 항목
 
-**응답 예시 (윈도우 완료)**:
+세 갈래로 분기하며, 각 분기가 그대로 테스트 케이스다 —
+`deckController.test.ts` → `describe('completeWord')`:
 
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 2, "successRate": 100, "masteryLevel": "mastered" },
-    "currentIndex": 0,
-    "passComplete": true,
-    "windowComplete": true
-  }
-}
-```
+| 상황 | 응답 | 테스트 케이스 |
+|---|---|---|
+| 패스 진행 중 | `passComplete: false`, `windowComplete: false` | "성공 - 패스 미완료" |
+| 패스 완료 + 모름 단어 있음 | `passComplete: true`, `nextPassSize: N` | "패스 완료 + 모르는 단어 있음" |
+| 패스 완료 + 전부 알았음 | `windowComplete: true` | "패스 완료 + 모두 외움" |
 
-> `windowComplete: true` 수신 후 프론트엔드에서 `POST complete-deck` 호출하여 다음 윈도우 진행
+> `windowComplete: true` 수신 후 프론트엔드에서 `POST complete-deck`을 호출해야 다음 윈도우가 생성된다.
 
 #### 덱 완료 및 다음 윈도우
 
 ```
 POST /api/users/me/progress/:progressType/complete-deck
 ```
+
+> ⚠️ **이 엔드포인트만 테스트가 없다.** `deckController.test.ts`에 `completeDeck` 케이스가 없어서,
+> 아래 예시가 현재 구현을 검증받지 않은 유일한 응답 형태다. 여기를 수정한다면 테스트를 먼저 추가하는 편이 낫다.
 
 **응답 예시 (메인 세션 — 다음 윈도우로 이동)**:
 
@@ -603,13 +469,15 @@ POST /api/users/me/progress/:progressType/complete-deck
 
 ---
 
-### 북마크 관리 (Bookmarks)
+### 북마크 (`/api/users/me/bookmarks`)
 
 ```
-POST /api/users/me/bookmarks/toggle   # 북마크 토글 (추가/해제)
-GET  /api/users/me/bookmarks          # 북마크 목록 조회
-PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
+POST /toggle       # 북마크 토글 (추가/해제)
+GET  /             # 북마크 목록 조회
+PUT  /:wordId      # 북마크 메모 수정
 ```
+
+검증: `bookmarkController.test.ts` — 세션 간 일괄 해제, 150개 한도 409, 페이지네이션 포함
 
 #### 북마크 토글
 
