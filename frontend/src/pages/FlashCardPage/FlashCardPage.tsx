@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import deckService from 'services/deckService';
 import { DeckWord } from 'services/types';
+import { getErrorMessage } from 'services/apiClient';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
@@ -56,11 +57,7 @@ const FlashCardPage: FC = () => {
         navigate('/level-setup', { replace: true });
         return false;
       }
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        setError('요청 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.');
-      } else {
-        setError(error.response?.data?.message || '단어장을 불러오는데 실패했습니다.');
-      }
+      setError(getErrorMessage(error, '단어장을 불러오는데 실패했습니다.'));
       return false;
     } finally {
       setIsLoading(false);

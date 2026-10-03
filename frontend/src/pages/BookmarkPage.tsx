@@ -2,6 +2,7 @@ import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } from 'services/bookmarkService';
 import { LearningLevel, ProgressType } from 'services/types';
+import { getErrorMessage } from 'services/apiClient';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { clsx } from 'clsx';
 import * as styles from './BookmarkPage.css';
@@ -49,10 +50,10 @@ const BookmarkPage: FC = () => {
         setBookmarks([]);
         setError('북마크를 불러오는데 실패했습니다.');
       }
-    } catch {
+    } catch (err) {
       if (gen !== fetchGenRef.current) return;
       setBookmarks([]);
-      setError('북마크를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
+      setError(getErrorMessage(err, '북마크를 불러오는데 실패했습니다.'));
     } finally {
       if (gen === fetchGenRef.current) setIsLoading(false);
     }

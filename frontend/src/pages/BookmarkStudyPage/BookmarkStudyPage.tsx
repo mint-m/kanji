@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import bookmarkService, { Bookmark } from 'services/bookmarkService';
 import { DeckWord, LearningLevel, ProgressType } from 'services/types';
+import { getErrorMessage } from 'services/apiClient';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
 import FlashCard, { ShowType } from 'components/FlashCard';
 import ControlPanel from 'components/ControlPanel';
@@ -55,9 +56,9 @@ const BookmarkStudyPage: FC = () => {
       } else {
         setError('복습 단어를 불러오는데 실패했습니다.');
       }
-    }).catch(() => {
+    }).catch(err => {
       if (!active) return;
-      setError('복습 단어를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.');
+      setError(getErrorMessage(err, '복습 단어를 불러오는데 실패했습니다.'));
     }).finally(() => {
       if (active) setIsLoading(false);
     });
