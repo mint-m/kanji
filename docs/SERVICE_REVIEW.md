@@ -124,10 +124,10 @@
 | P1 | Google access token의 발급 대상(aud) 확인 (API 변경 없는 방식으로 변경) | S1 | 0.5일 | 타 앱 토큰으로 로그인 불가 | 완료 (`fix/review-p1`) |
 | P1 | 콜드 스타트 대응 안내 + 첫 요청 타임아웃 상향 | O3 | 0.5일 | 유휴 후 첫 진입 성공 | 완료 (`fix/review-p1`) |
 | P1 | 9.5MB TTF → 분할 woff2 | FE2 | 0.5일 | 초기 전송량 1MB 미만 | 완료 (`fix/review-p1`) — 빌드 산출물 13MB → 3.5MB |
-| P2 | 죽은 코드·미사용 엔드포인트·의존성 삭제 (F3, F5 포함) | 부채 | 1일 | 테스트 통과, PROJECT_DOCS 갱신 | 미착수 |
-| P2 | 최상위 ErrorBoundary + 원인별 에러 문구 | FE3, FE4 | 0.5일 | 예외 시 복구 화면 표시 | 미착수 |
-| P2 | PR #24 보완 후 머지, 브랜치 정리, DEPLOYMENT.md 정리 | 문서 | 0.5일 | main과 문서가 일치 | 미착수 |
-| P2 | ~~카카오 테스트 env 의존 제거~~(CI 도입하며 완료), Google `email_verified` 확인, 레벨 끝 안내 | S2, F4 | 0.5일 | 깨끗한 체크아웃에서 전부 통과 | 일부 완료 |
+| P2 | 죽은 코드·미사용 엔드포인트·의존성 삭제 (F3, F5 포함) | 부채 | 1일 | 테스트 통과, PROJECT_DOCS 갱신 | 완료 (`fix/review-p2`) |
+| P2 | 최상위 ErrorBoundary + 원인별 에러 문구 | FE3, FE4 | 0.5일 | 예외 시 복구 화면 표시 | 완료 (`fix/review-p2`) |
+| P2 | PR #24 보완 후 머지, 브랜치 정리, DEPLOYMENT.md 정리 | 문서 | 0.5일 | main과 문서가 일치 | 일부 완료 — DEPLOYMENT.md·구 보고서 정리 완료, PR #24 처리·브랜치 삭제는 확인 대기 |
+| P2 | 카카오 테스트 env 의존 제거, Google `email_verified` 확인, 레벨 끝 안내 | S2, F4 | 0.5일 | 깨끗한 체크아웃에서 전부 통과 | 완료 (`fix/review-p1`, `fix/review-p2`) |
 
 ## 종결 완료 기준
 
