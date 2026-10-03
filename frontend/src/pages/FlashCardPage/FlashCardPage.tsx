@@ -79,9 +79,9 @@ const FlashCardPage: FC = () => {
       try {
         const response = await deckService.completeDeck(activeProgressType || 'main');
         deckCompletedRef.current = true;
-        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 레벨 선택으로 이동
+        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 완료 안내와 함께 레벨 선택으로 이동
         if (response.data && !response.data.isSubLoop && !response.data.canGenerateNext) {
-          navigate('/level-setup', { replace: true });
+          navigate('/level-setup', { replace: true, state: { finishedLevel: level } });
           return true;
         }
       } catch (e) {
@@ -95,7 +95,7 @@ const FlashCardPage: FC = () => {
     deckCompletedRef.current = false;
     setDeckKey(k => k + 1);
     return true;
-  }, [activeProgressType, fetchDeck, navigate]);
+  }, [activeProgressType, fetchDeck, navigate, level]);
 
   const handleGoHome = useCallback(() => navigate('/'), [navigate]);
 

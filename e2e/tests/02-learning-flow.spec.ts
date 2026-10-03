@@ -350,3 +350,43 @@ test.describe('서버 콜드 스타트', () => {
     await expect(page.getByText(/서버를 깨우는 중/)).toHaveCount(0);
   });
 });
+
+test.describe('레벨 끝', () => {
+  test('마지막 윈도우 완료 → 레벨 선택 화면에 완료 안내, 다음 레벨 선택, 초기화 동의 없이 시작 가능', async ({ page }) => {
+    await injectMockAuth(page);
+    let completeCount = 0;
+
+    await page.route('**/api/users/me/progress/main/current', (route) => {
+      route.fulfill({ json: makeDeck(['word0']) });
+    });
+    await page.route('**/api/users/me/progress/main/complete-word', (route) => {
+      completeCount++;
+      route.fulfill({ json: makeCompleteWordResponse(true, true) });
+    });
+    await page.route('**/api/users/me/progress/main/complete-deck', (route) => {
+      route.fulfill({ json: { success: true, data: { nextWindow: null, canGenerateNext: false, isSubLoop: false } } });
+    });
+    // 레벨 선택 화면이 조회하는 기존 세션 (모두 익힌 상태)
+    await page.route('**/api/users/me/progress/main', (route) => {
+      route.fulfill({
+        json: {
+          success: true,
+          data: { progress: { current_level: 'N5', steps: { start: 10, end: 2 }, current_index: 1, shuffled_order: ['word0'] } },
+        },
+      });
+    });
+
+    await page.goto('/flash-cards');
+    await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '외웠습니다' }).click();
+
+    await page.getByRole('button', { name: '다음 윈도우로' }).click();
+
+    await expect(page).toHaveURL(/\/level-setup/);
+    await expect(page.getByText(/마지막 범위까지 모두 익혔어요/)).toBeVisible();
+    await expect(page.getByText('N4 · 초급').first()).toBeVisible();
+    await expect(page.getByText(/진행 중인 학습이 있습니다/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '학습 시작' }).first()).toBeEnabled();
+    expect(completeCount).toBe(1);
+  });
+});

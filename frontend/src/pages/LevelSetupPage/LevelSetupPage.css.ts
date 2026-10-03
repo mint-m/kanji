@@ -218,3 +218,14 @@ export const errorText = style({
   color: vars.color.danger,
   margin: 0,
 });
+
+export const doneBox = style({
+  width: '100%',
+  backgroundColor: vars.color.primaryBg,
+  borderRadius: vars.radius.md,
+  padding: vars.space.md,
+  margin: `0 0 ${vars.space.md}`,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textDark,
+  textAlign: 'center',
+});
