@@ -57,7 +57,7 @@
 
 | # | 항목 | 내용 | 우선순위 |
 | --- | --- | --- | --- |
-| S1 | Google access token의 aud 미검증 | `/google/login`은 받은 토큰으로 userinfo만 조회한다. 다른 앱이 받은 같은 사용자의 토큰으로도 로그인된다. `/link/google`도 같다 | P1 |
+| S1 | Google access token의 aud 미검증 | `/google/login`은 받은 토큰으로 userinfo만 조회한다. 다른 앱이 받은 같은 사용자의 토큰으로도 로그인된다. `/link/google`도 같다. → tokeninfo의 `aud` 확인으로 수정 | P1 |
 | S2 | Google 경로의 이메일 인증 여부 미확인 | 이메일이 같으면 기존 계정에 자동 연동되는데, 카카오와 달리 `email_verified`를 보지 않는다 | P2 |
 | S3 | 무인증 외부 API 프록시 | `/api/words/kanjiSearch`가 로그인·레이트 리밋 없이 네이버 사전의 비공개 내부 API를 호출한다 | P2 |
 | S4 | 토큰 수명 관리 | JWT를 localStorage에 저장하고 `/refresh`가 무제한 재발급한다. XSS 싱크가 없어 현 규모에서는 수용 가능 | P3 |
@@ -118,16 +118,16 @@
 | P0 | 실제 프론트 도메인 확정, `ALLOWED_ORIGINS`·OAuth 리다이렉트·문서 일치 | O2 | 0.5일 | 외부 브라우저에서 Google·카카오 로그인 성공 | 미착수 — 실제 공개 도메인 확인 필요 |
 | P0 | 완료 화면 재진입 막힘 수정 | F1 | 0.5일 | 신규 E2E 통과 | 완료 (`fix/review-p0`, 머지·배포 대기) |
 | P0 | 북마크 복습 조회 상한 불일치 수정 | FE1 | 0.25일 | 라우트 검증 테스트 통과 | 완료 (`fix/review-p0`, 머지·배포 대기) |
-| P1 | GitHub Actions CI + Render 배포를 CI 통과 후로 | O4 | 1일 | PR에 체크 표시 | 미착수 |
-| P1 | 가동률 모니터 + DB 상태를 보는 헬스체크 | O5, O3 | 0.5일 | 장애 시 알림 수신 | 미착수 |
-| P1 | complete-word 서버 멱등화 + 실패 안내·재시도 | F2 | 1.5일 | 500 주입 E2E에서 복구 가능 | 미착수 |
-| P1 | Google 로그인을 `id_token` 검증으로 통합, `/google/login` 삭제 | S1 | 0.5일 | 타 앱 토큰으로 로그인 불가 | 미착수 |
-| P1 | 콜드 스타트 대응 안내 + 첫 요청 타임아웃 상향 | O3 | 0.5일 | 유휴 후 첫 진입 성공 | 미착수 |
-| P1 | 9.5MB TTF → 분할 woff2 | FE2 | 0.5일 | 초기 전송량 1MB 미만 | 미착수 |
+| P1 | GitHub Actions CI + Render 배포를 CI 통과 후로 | O4 | 1일 | PR에 체크 표시 | 완료 (`fix/review-p1`) — Render가 블루프린트 동기화 중이어야 `checksPass`가 적용됨 |
+| P1 | 가동률 모니터 + DB 상태를 보는 헬스체크 | O5, O3 | 0.5일 | 장애 시 알림 수신 | 코드 완료 (`fix/review-p1`) — 저장소 변수 `HEALTHCHECK_URL` 등록 필요 |
+| P1 | complete-word 서버 멱등화 + 실패 안내·재시도 | F2 | 1.5일 | 500 주입 E2E에서 복구 가능 | 완료 (`fix/review-p1`) |
+| P1 | Google access token의 발급 대상(aud) 확인 (API 변경 없는 방식으로 변경) | S1 | 0.5일 | 타 앱 토큰으로 로그인 불가 | 완료 (`fix/review-p1`) |
+| P1 | 콜드 스타트 대응 안내 + 첫 요청 타임아웃 상향 | O3 | 0.5일 | 유휴 후 첫 진입 성공 | 완료 (`fix/review-p1`) |
+| P1 | 9.5MB TTF → 분할 woff2 | FE2 | 0.5일 | 초기 전송량 1MB 미만 | 완료 (`fix/review-p1`) — 빌드 산출물 13MB → 3.5MB |
 | P2 | 죽은 코드·미사용 엔드포인트·의존성 삭제 (F3, F5 포함) | 부채 | 1일 | 테스트 통과, PROJECT_DOCS 갱신 | 미착수 |
 | P2 | 최상위 ErrorBoundary + 원인별 에러 문구 | FE3, FE4 | 0.5일 | 예외 시 복구 화면 표시 | 미착수 |
 | P2 | PR #24 보완 후 머지, 브랜치 정리, DEPLOYMENT.md 정리 | 문서 | 0.5일 | main과 문서가 일치 | 미착수 |
-| P2 | 카카오 테스트 env 의존 제거, Google `email_verified` 확인, 레벨 끝 안내 | S2, F4 | 0.5일 | 깨끗한 체크아웃에서 전부 통과 | 미착수 |
+| P2 | ~~카카오 테스트 env 의존 제거~~(CI 도입하며 완료), Google `email_verified` 확인, 레벨 끝 안내 | S2, F4 | 0.5일 | 깨끗한 체크아웃에서 전부 통과 | 일부 완료 |
 
 ## 종결 완료 기준
 
