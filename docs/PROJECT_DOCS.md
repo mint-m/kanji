@@ -634,6 +634,12 @@ GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 
 GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 (네이버 API)
 ```
 
+### 운영 (Health)
+
+```
+GET /health                                           # DB 연결 확인 — 200 { success: true, data: { db: "up" } } / 503 db: "down"
+```
+
 ---
 
 ## 북마크 시스템
