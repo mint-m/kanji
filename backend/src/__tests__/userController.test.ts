@@ -46,26 +46,6 @@ const makeMockCheckpoint = (overrides: any = {}) => ({
   ...overrides,
 });
 
-describe('getUserProfile', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('사용자 없음 → NotFoundError', async () => {
-    (User.findById as jest.Mock).mockResolvedValue(null);
-    const next = makeNext();
-    await userController.getUserProfile(makeReq(), makeRes(), next);
-    expect(next).toHaveBeenCalled();
-    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(404);
-  });
-
-  it('성공 → 사용자 프로필 반환', async () => {
-    const mockUser = makeUser();
-    (User.findById as jest.Mock).mockResolvedValue(mockUser);
-    const res = makeRes();
-    await userController.getUserProfile(makeReq(), res, makeNext());
-    expect(res.json).toHaveBeenCalledWith(mockUser);
-  });
-});
-
 describe('updateUserName', () => {
   beforeEach(() => jest.clearAllMocks());
 
@@ -170,19 +150,18 @@ describe('updateCheckpoint', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
-  it('세션 존재 → 기존 checkpoint 업데이트 후 성공', async () => {
+  it('세션 존재 → 409, 덱을 바꾸지 않음 (레벨·스텝만 바꾸면 덱이 이전 단어로 남기 때문)', async () => {
     (User.findById as jest.Mock).mockResolvedValue(makeUser());
     const existing = makeMockCheckpoint();
     (UserCheckpoint.findOne as jest.Mock).mockResolvedValue(existing);
-    const res = makeRes();
+    const next = makeNext();
     await userController.updateCheckpoint(
-      makeReq({ body: { progressType: 'main', level: 'N4', steps: { start: 2, end: 4 }, currentIndex: 5 } }),
-      res,
-      makeNext(),
+      makeReq({ body: { progressType: 'main', level: 'N4', steps: { start: 2, end: 4 } } }),
+      makeRes(),
+      next,
     );
-    expect(existing.save).toHaveBeenCalled();
-    expect(existing.current_level).toBe('N4');
-    expect(existing.current_index).toBe(5);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(409);
+    expect(existing.save).not.toHaveBeenCalled();
+    expect(UserCheckpoint.createNewSession).not.toHaveBeenCalled();
   });
 });

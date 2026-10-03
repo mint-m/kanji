@@ -106,4 +106,4 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 종결 시점 기준으로 인지하고 있는 한계 (재발견 방지용):
 
-- 프론트가 호출하지 않는 백엔드 엔드포인트 다수 존재 (`bulk-complete`, `deck-stats`, `bookmarks/search`, `bookmarks/bulk`, `words/search`, `words/random` 등) — 정리(삭제) 후보
+- 윈도우 이동 시 `is_window_completed`는 마지막 패스의 단어만 리셋된다 — 다음 윈도우 첫 패스에서 모든 단어를 다시 답해 덮어쓰므로 현재 영향은 없다 (`docs/SERVICE_REVIEW.md` F6).

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
-import { LearningLevel } from '../types/common';
-import { WordDocument, WordModel, WordLevelStats } from '../interfaces/word';
+import { WordDocument, WordModel } from '../interfaces/word';
 
 const wordSchema = new mongoose.Schema<WordDocument>(
   {
@@ -25,34 +24,6 @@ wordSchema.index({ level: 1, step: 1 });
 wordSchema.index({ level: 1 });
 wordSchema.index({ step: 1 });
 wordSchema.index({ origin_entry_id: 1 }, { unique: true });
-
-wordSchema.statics.getLevelStats = function (level?: LearningLevel): Promise<WordLevelStats[]> {
-  const matchStage = level ? { $match: { level } } : { $match: {} };
-
-  return this.aggregate([
-    matchStage,
-    {
-      $group: {
-        _id: '$level',
-        totalWords: { $sum: 1 },
-        minStep: { $min: '$step' },
-        maxStep: { $max: '$step' },
-        stepsCount: { $addToSet: '$step' },
-      },
-    },
-    {
-      $project: {
-        level: '$_id',
-        totalWords: 1,
-        minStep: 1,
-        maxStep: 1,
-        stepsCount: { $size: '$stepsCount' },
-        averageWordsPerStep: { $divide: ['$totalWords', { $size: '$stepsCount' }] },
-      },
-    },
-    { $sort: { level: -1 } },
-  ]);
-};
 
 const Word = mongoose.model<WordDocument, WordModel>('Word', wordSchema, 'word');
 

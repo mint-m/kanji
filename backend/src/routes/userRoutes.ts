@@ -11,9 +11,6 @@ const router = Router();
 // /api/users/me/* - 현재 로그인한 사용자
 // ========================================
 
-// 내 프로필 조회
-router.get('/me', authenticateUser, userController.getUserProfile);
-
 // 내 닉네임 변경
 router.patch('/me', authenticateUser, userController.updateUserName);
 

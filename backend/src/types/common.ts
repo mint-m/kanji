@@ -36,16 +36,6 @@ export interface StepRange {
 // ============================================================================
 
 /**
- * Options for deck generation
- */
-export interface DeckGenerationOptions {
-  excludeCompleted?: boolean; // Filter out completed words
-  prioritizeBookmarked?: boolean; // Place bookmarked words first
-  shuffleOrder?: boolean; // Randomize word order
-  maxWords?: number; // Limit number of words
-}
-
-/**
  * Learning session statistics
  */
 export interface SessionStats {

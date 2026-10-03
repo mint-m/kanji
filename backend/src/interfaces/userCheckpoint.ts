@@ -1,6 +1,6 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { LearningLevel, ProgressType, StepRange, DeckGenerationOptions, SessionStats } from '../types/common';
+import { LearningLevel, ProgressType, StepRange, SessionStats } from '../types/common';
 
 // UserCheckpoint document interface
 export interface UserCheckpointDocument extends Document {
@@ -37,12 +37,6 @@ export interface UserCheckpointModel extends Model<UserCheckpointDocument> {
     level: LearningLevel,
     steps: StepRange
   ): Promise<UserCheckpointDocument>;
-  filterDeckByUserProgress(
-    wordIds: mongoose.Types.ObjectId[],
-    userId: mongoose.Types.ObjectId,
-    progressType: ProgressType,
-    options?: DeckGenerationOptions
-  ): Promise<mongoose.Types.ObjectId[]>;
 }
 
 export default UserCheckpointModel;

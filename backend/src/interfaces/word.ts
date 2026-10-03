@@ -6,15 +6,6 @@ export interface StepRangeMinMax {
   max: number;
 }
 
-export interface WordLevelStats {
-  level: LearningLevel;
-  totalWords: number;
-  minStep: number;
-  maxStep: number;
-  stepsCount: number;
-  averageWordsPerStep: number;
-}
-
 export interface WordSearchFilters {
   level?: LearningLevel;
   step?: number;
@@ -37,8 +28,6 @@ export interface WordDocument extends Document {
   updatedAt: Date;
 }
 
-export interface WordModel extends Model<WordDocument> {
-  getLevelStats(level?: LearningLevel): Promise<WordLevelStats[]>;
-}
+export type WordModel = Model<WordDocument>;
 
 export default WordModel;

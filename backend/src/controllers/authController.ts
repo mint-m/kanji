@@ -200,57 +200,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
   }
 };
 
-export const logout = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    if (req.user?._id) {
-      const user = await User.findById(req.user._id);
-      if (user) {
-        user.updateLastActive();
-        await user.save();
-      }
-    }
-
-    res.json({ success: true, message: 'Successfully logged out' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    next(new InternalServerError('Logout failed'));
-  }
-};
-
-export const verifyToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user?._id) {
-      return next(new UnauthorizedError('Invalid token'));
-    }
-
-    const user = await User.findById(req.user._id)
-      .select('_id email name type isActive emailVerified updatedAt')
-      .lean();
-
-    if (!user || !user.isActive) {
-      return next(new UnauthorizedError('User account is inactive'));
-    }
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          _id: user._id,
-          email: user.email,
-          name: user.name,
-          type: user.type,
-          isVerified: user.emailVerified,
-          lastActive: user.updatedAt,
-        },
-        tokenValid: true,
-      },
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-    next(new InternalServerError('Token verification failed'));
-  }
-};
-
 export const refreshToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.user?._id) {

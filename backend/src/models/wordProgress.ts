@@ -3,7 +3,6 @@ import {
   WordProgressDocument,
   WordProgressModel,
   StudyResult,
-  WordStudyStats,
   BookmarkInfo,
 } from '../interfaces/wordProgress';
 import { ProgressType } from '../types/common';
@@ -87,24 +86,6 @@ wordProgressSchema.methods.toggleBookmark = function (
   return this.is_bookmarked;
 };
 
-wordProgressSchema.methods.getStudyStats = function (this: WordProgressDocument): WordStudyStats {
-  const totalAttempts = this.try_count;
-  const correctAttempts = this.correct_count;
-  const successRate = totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
-  const averageTimeSpent = totalAttempts > 0 ? this.time_spent_total / totalAttempts : 0;
-
-  return {
-    totalAttempts,
-    correctAttempts,
-    incorrectAttempts: totalAttempts - correctAttempts,
-    successRate,
-    averageTimeSpent,
-    lastStudied: this.last_studied_at,
-    firstStudied: this.first_studied_at,
-    studyStreak: this.study_streak,
-  };
-};
-
 wordProgressSchema.methods.getBookmarkInfo = function (this: WordProgressDocument): BookmarkInfo {
   return {
     isBookmarked: this.is_bookmarked,
@@ -112,34 +93,6 @@ wordProgressSchema.methods.getBookmarkInfo = function (this: WordProgressDocumen
     reason: this.bookmark_reason,
     tags: this.bookmark_tags,
   };
-};
-
-wordProgressSchema.methods.calculateMasteryLevel = function (
-  this: WordProgressDocument
-): 'beginner' | 'intermediate' | 'advanced' | 'mastered' {
-  const { successRate, totalAttempts } = this.getStudyStats();
-
-  if (successRate >= 90 && totalAttempts >= 5 && this.study_streak >= 3) return 'mastered';
-  if (successRate >= 75 && totalAttempts >= 3) return 'advanced';
-  if (successRate >= 50 && totalAttempts >= 2) return 'intermediate';
-  return 'beginner';
-};
-
-wordProgressSchema.methods.getRecommendedAction = function (
-  this: WordProgressDocument
-): 'continue' | 'review' | 'skip' {
-  const { successRate } = this.getStudyStats();
-  const daysSince = this.getDaysSinceLastStudy();
-
-  if (successRate >= 90 && this.study_streak >= 3) return 'skip';
-  if (daysSince >= 7 || successRate < 70) return 'review';
-  return 'continue';
-};
-
-wordProgressSchema.methods.getDaysSinceLastStudy = function (this: WordProgressDocument): number {
-  if (!this.last_studied_at) return Infinity;
-  const diffMs = Math.abs(Date.now() - this.last_studied_at.getTime());
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 };
 
 // ── Static methods ────────────────────────────────────────────────────────────

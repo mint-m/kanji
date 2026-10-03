@@ -196,7 +196,6 @@ backend/src/
     totalTimeSpent: number,      // 총 학습 시간 (초, 기본: 0)
     currentStreak: number,       // 현재 연속 학습일 (기본: 0)
     longestStreak: number,       // 최장 연속 학습일 (기본: 0)
-    levelsCompleted: string[],   // 완료한 레벨 (N5, N4, N3, N2, N1)
     averageSessionTime: number,  // 평균 세션 시간 (초, 기본: 0)
     studyDaysCount: number,      // 학습한 일수 (기본: 0)
     favoriteStudyTime?: string,  // 선호 학습 시간
@@ -351,10 +350,14 @@ backend/src/
 ### 인증 (Authentication)
 
 ```
-GET  /api/auth/google              # OAuth 시작
-GET  /api/auth/google/callback     # OAuth 콜백
-POST /api/auth/logout              # 로그아웃
-GET  /api/auth/me                  # 현재 사용자 정보
+POST /api/auth/google/access-token  # Google 인가 코드 → access token 교환
+POST /api/auth/google/login         # Google access token으로 로그인 (발급 대상 aud 확인)
+POST /api/auth/google/one-tap       # Google One Tap (ID token)
+POST /api/auth/kakao/callback       # 카카오 인가 코드로 로그인
+POST /api/auth/link/google          # 로그인된 계정에 Google 연동
+POST /api/auth/link/kakao           # 로그인된 계정에 카카오 연동
+POST /api/auth/refresh              # 토큰 재발급
+GET  /api/auth/profile              # 현재 사용자 프로필
 ```
 
 ---
@@ -363,7 +366,8 @@ GET  /api/auth/me                  # 현재 사용자 정보
 
 ```
 PATCH /api/users/me/active-progress-type   # 활성 세션 타입 변경 (main|sub)
-PATCH /api/users/me/checkpoint             # 체크포인트 저장
+PATCH /api/users/me                        # 닉네임 변경
+PATCH /api/users/me/checkpoint             # 새 세션 생성 — 같은 타입 세션이 있으면 409 (DELETE 후 생성)
 ```
 
 ---
@@ -528,8 +532,6 @@ POST /api/users/me/progress/:progressType/complete-word
 {
   "success": true,
   "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 3, "successRate": 66, "masteryLevel": "learning" },
     "currentIndex": 6,
     "passComplete": false,
     "windowComplete": false
@@ -543,8 +545,6 @@ POST /api/users/me/progress/:progressType/complete-word
 {
   "success": true,
   "data": {
-    "completion": { "wordId": "...", "isCorrect": false },
-    "wordProgress": { "totalAttempts": 3, "successRate": 33, "masteryLevel": "beginner" },
     "currentIndex": 0,
     "passComplete": true,
     "windowComplete": false,
@@ -559,8 +559,6 @@ POST /api/users/me/progress/:progressType/complete-word
 {
   "success": true,
   "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 2, "successRate": 100, "masteryLevel": "mastered" },
     "currentIndex": 0,
     "passComplete": true,
     "windowComplete": true
@@ -712,32 +710,8 @@ GET /health                                           # DB 연결 확인 — 200
 **파일**: `backend/src/services/slidingWindowService.ts`
 
 1. **단어 조회**: level + steps 범위의 단어 검색
-2. **필터링**: 윈도우 내 모든 단어 포함 (`excludeCompleted: false`가 기본값)
-3. **북마크 우선순위**: 북마크된 단어를 앞쪽 40%에 배치
-4. **셔플링**: Fisher-Yates 알고리즘
-5. **저장**: user_checkpoint shuffled_order 저장
-
-**북마크 우선순위 전략**:
-
-```
-┌─────────────────────────────────────┐
-│  Priority Zone (40%)                │
-│  2:1 비율 - 북마크 : 일반           │
-│  ├─ 북마크 1                        │
-│  ├─ 북마크 2                        │
-│  ├─ 일반 1                          │
-│  ├─ 북마크 3                        │
-│  ├─ 북마크 4                        │
-│  └─ 일반 2                          │
-├─────────────────────────────────────┤
-│  Remaining Zone (60%)               │
-│  나머지 단어들 (셔플)               │
-│  ├─ 랜덤 단어 1                     │
-│  ├─ 북마크 5 (오버플로우)           │
-│  ├─ 랜덤 단어 2                     │
-│  └─ ...                             │
-└─────────────────────────────────────┘
-```
+2. **셔플링**: Fisher-Yates 알고리즘 (윈도우 내 모든 단어 포함)
+3. **저장**: user_checkpoint shuffled_order 저장
 
 ---
 

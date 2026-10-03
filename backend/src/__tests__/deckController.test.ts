@@ -18,7 +18,6 @@ jest.mock('../models/wordProgress', () => ({
     find: jest.fn(),
     findOrCreate: jest.fn(),
     distinct: jest.fn().mockResolvedValue([]),
-    exists: jest.fn().mockResolvedValue(null),
   },
 }));
 
@@ -83,8 +82,6 @@ const makeMockWordProgress = (overrides: any = {}) => ({
   markCompleted: jest.fn(),
   markIncomplete: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
-  calculateMasteryLevel: jest.fn().mockReturnValue('beginner'),
-  getRecommendedAction: jest.fn().mockReturnValue('continue'),
   ...overrides,
 });
 
