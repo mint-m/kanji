@@ -945,7 +945,7 @@ yarn build          # → frontend/build/
 
 - ✅ 배포 설정 추가: Vercel(프론트, SPA rewrite) + Render(백엔드 블루프린트) + MongoDB Atlas 구성
 - ✅ 백엔드 프로덕션 빌드 도입: `tsconfig.build.json` + `yarn build`(tsc → dist) / `yarn start`(node dist)
-- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤 secure 세션 쿠키 동작 보장
+- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤에서 클라이언트 IP(`req.ip`) 인식 (인증 레이트 리밋이 의존)
 - ✅ `.env.example` 실제 코드 기준 재정비 (backend/frontend), 배포 가이드 `docs/DEPLOYMENT.md` 신규 작성
 
 ### v4.3 (2026-07-01)

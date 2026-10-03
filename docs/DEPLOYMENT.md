@@ -1,7 +1,7 @@
 # 배포 가이드
 
 권장 구성: **프론트 = Vercel · 백엔드 = Render · DB = MongoDB Atlas**
-(OAuth 세션 쿠키가 `secure` + `sameSite=none` 이라 양쪽 모두 HTTPS 필수 → 세 서비스 모두 HTTPS 자동 제공)
+(인증은 `Authorization` 헤더의 JWT로 하며 쿠키는 쓰지 않는다. OAuth 콘솔에 HTTPS 도메인을 등록해야 하므로 세 서비스가 기본 제공하는 HTTPS를 쓴다)
 
 ```
 브라우저 ──HTTPS──> Vercel(정적 React)
@@ -64,7 +64,7 @@
    | 변수 | 값 | 비고 |
    |------|-----|------|
    | `MONGO_URI` | 1단계에서 확보한 Atlas URI | DB명 `kanji` 포함 확인 |
-   | `ALLOWED_ORIGINS` | `https://<프론트 도메인>` | 3단계 후 확정 — 일단 예상 도메인(예: `https://kanji.vercel.app`) 입력하고 나중에 수정 가능. 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
+   | `ALLOWED_ORIGINS` | `https://<프론트 도메인>` | 3단계 후 확정 — 일단 예상 도메인 입력하고 나중에 수정 가능. 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
    | `GOOGLE_CLIENT_ID` | Google Cloud 콘솔 값 | 4단계 참고 |
    | `GOOGLE_CLIENT_SECRET` | Google Cloud 콘솔 값 | |
    | `GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` | validateEnv 필수값. 실제 구글 교환은 팝업(postmessage) 방식이라 이 값이 구글 콘솔과 일치할 필요는 없음 |
@@ -84,7 +84,9 @@
 
 ## 3. 프론트 → Vercel
 
-**목표**: `https://kanji.vercel.app` 형태의 정적 사이트 가동
+**목표**: `https://<프로젝트>.vercel.app` 형태의 정적 사이트 가동
+
+> 주의: Vercel은 프로젝트 이름으로 도메인을 정하되 이미 쓰인 이름이면 다른 도메인을 발급한다. `kanji.vercel.app`은 이 앱이 아니다(2026-10 확인). 아래 단계의 `<프론트 도메인>`에는 Vercel이 실제로 발급한 도메인을 넣는다.
 
 1. https://vercel.com 가입 후 GitHub 연동 > `Add New > Project` > `kanji` 저장소 Import
 2. **Root Directory를 `frontend`로 지정** — 모노레포라서 이걸 빼먹으면 빌드 실패
@@ -101,7 +103,7 @@
    | `REACT_APP_KAKAO_REDIRECT_URI` | `https://<프론트 도메인>/auth/kakao/callback` |
 
    > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`)
-4. Deploy 실행 → 발급된 도메인 확인 (예: `https://kanji.vercel.app`)
+4. Deploy 실행 → 발급된 도메인 확인 (`Settings > Domains`의 Production 도메인)
 5. **도메인 확정 후 되돌아가서 갱신**:
    - Render의 `ALLOWED_ORIGINS`, `GOOGLE_REDIRECT_URI`를 실제 프론트 도메인으로 수정 → 백엔드 자동 재배포
    - Vercel의 `REACT_APP_*_REDIRECT_URI`가 실제 도메인과 다르면 수정 후 Redeploy
@@ -119,7 +121,7 @@
 1. https://console.cloud.google.com > 기존 프로젝트 (로컬 개발에 쓰던 것 재사용 가능)
 2. `API 및 서비스 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID` (웹 애플리케이션) 선택
 3. **승인된 자바스크립트 원본**에 추가:
-   - `https://kanji.vercel.app` (실제 프론트 도메인)
+   - `https://<프론트 도메인>`
    - 기존 `http://localhost:4200`은 로컬 개발용으로 유지
 4. 승인된 리디렉션 URI는 postmessage 방식에서는 사용되지 않음 — 추가 불필요
 5. **OAuth 동의 화면** 확인 (`API 및 서비스 > OAuth 동의 화면`):
@@ -133,9 +135,9 @@
 
 1. https://developers.kakao.com > 내 애플리케이션 > 기존 앱 선택 (REST API 키가 `KAKAO_REST_API_KEY`)
 2. **플랫폼 등록**: `앱 설정 > 플랫폼 > Web` 에 사이트 도메인 추가:
-   - `https://kanji.vercel.app`
+   - `https://<프론트 도메인>`
 3. **Redirect URI 등록**: `제품 설정 > 카카오 로그인 > Redirect URI`:
-   - `https://kanji.vercel.app/auth/kakao/callback`
+   - `https://<프론트 도메인>/auth/kakao/callback`
    - 로컬용 `http://localhost:4200/auth/kakao/callback`과 공존 가능 (여러 개 등록 지원)
 4. **카카오 로그인 활성화** 상태(ON) 확인 (`제품 설정 > 카카오 로그인`)
 5. **동의 항목** 확인 (`카카오 로그인 > 동의항목`): 닉네임/프로필 등 앱이 요구하는 항목이 설정되어 있는지 확인
@@ -147,7 +149,7 @@
 
 전부 연결한 뒤 실제 브라우저에서 순서대로 확인:
 
-1. **API 헬스**: `https://kanji-api.onrender.com/` → `API is running...`
+1. **API 헬스**: `https://<backend>.onrender.com/health` → `{"success":true,"data":{"db":"up"}}` (503이면 DB 연결 문제)
 2. **프론트 로드**: 프론트 도메인 접속 → 랜딩 페이지 렌더링
 3. **SPA 라우팅**: 임의 경로(예: `/bookmarks`)로 **직접 접속 + 새로고침** → 404 없이 렌더링 (vercel.json rewrite 확인)
 4. **CORS**: 개발자도구 Network 탭에서 API 요청이 CORS 오류 없이 통과하는지 — 오류 시 Render `ALLOWED_ORIGINS` 값과 실제 접속 도메인 비교
@@ -164,8 +166,9 @@
 | CORS 오류 | `ALLOWED_ORIGINS` 오타, 트레일링 슬래시, `http/https` 불일치 |
 | 구글 `origin_mismatch` | JS 원본 미등록 또는 전파 대기 중 |
 | 카카오 `KOE006` | Redirect URI 불일치 (등록값과 `REACT_APP_KAKAO_REDIRECT_URI` 비교) |
-| 첫 요청 30초+ 지연 | Render 무료 플랜 슬립 — 정상 동작 |
+| 첫 요청 최대 1분 지연 | Render 무료 플랜 스핀다운(15분 유휴) — 정상. 학습 화면에 "서버를 깨우는 중" 안내가 뜬다 |
 | 데이터 없음 (빈 덱) | Atlas 시딩 누락 또는 `MONGO_URI`의 DB명이 `kanji`가 아님 |
+| API가 아예 응답하지 않음 | Atlas 무료 클러스터가 30일 무접속으로 일시정지 → 백엔드가 기동 시 DB 연결에 실패해 종료. Atlas에서 Resume 후 Render 재배포 (6절 모니터로 예방) |
 
 ---
 
@@ -194,4 +197,4 @@
 9. [ ] 스모크 테스트 8항목 통과
 10. [ ] `HEALTHCHECK_URL` 변수 등록 후 `Uptime` 워크플로 수동 실행 성공
 
-> 참고: 백엔드는 프록시 뒤에서 `secure` 쿠키를 사용하므로 `app.set("trust proxy", 1)` 이 설정되어 있다.
+> 참고: Render 프록시 뒤에서 클라이언트 IP(`req.ip`)가 올바르게 잡히도록 `app.set("trust proxy", 1)`이 설정되어 있다 — 인증 레이트 리밋이 이 값에 의존한다.
