@@ -333,3 +333,20 @@ test.describe('진행 저장 실패', () => {
     expect(deckCallCount).toBeGreaterThan(callsBefore);
   });
 });
+
+test.describe('서버 콜드 스타트', () => {
+  test('덱 로딩이 5초를 넘기면 서버를 깨우는 중이라는 안내 표시', async ({ page }) => {
+    await injectMockAuth(page);
+    await page.route('**/api/users/me/progress/main/current', async (route) => {
+      await new Promise<void>((r) => setTimeout(r, 7_000));
+      route.fulfill({ json: makeDeck(['word0']) });
+    });
+
+    await page.goto('/flash-cards');
+
+    await expect(page.getByText(/서버를 깨우는 중/)).toBeVisible({ timeout: 6_500 });
+    // 응답이 오면 안내는 사라지고 카드가 표시된다
+    await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/서버를 깨우는 중/)).toHaveCount(0);
+  });
+});

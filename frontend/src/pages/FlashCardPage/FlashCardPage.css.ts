@@ -59,3 +59,11 @@ export const skeletonWrapper = style({
   flexDirection: 'column',
   gap: vars.space.lg,
 });
+
+export const slowHint = style({
+  width: '100%',
+  margin: `${vars.space.md} 0 0`,
+  textAlign: 'center',
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+});
