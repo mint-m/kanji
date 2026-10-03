@@ -85,6 +85,10 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     if (!userInfo.email || !userInfo.id) {
       return next(new UnauthorizedError('Failed to retrieve user info'));
     }
+    // 같은 이메일의 기존 계정에 자동 연동되므로 인증되지 않은 이메일은 받지 않는다 (카카오와 같은 기준)
+    if (userInfo.verified_email !== true) {
+      return next(new UnauthorizedError('Google account email is not verified'));
+    }
 
     const user = await User.findOrCreateFromOAuth({
       type: 'google',
@@ -114,6 +118,9 @@ export const googleOneTap = async (req: Request, res: Response, next: NextFuncti
 
     if (!payload?.email) {
       return next(new UnauthorizedError('Failed to retrieve user email from credential'));
+    }
+    if (payload.email_verified !== true) {
+      return next(new UnauthorizedError('Google account email is not verified'));
     }
 
     const user = await User.findOrCreateFromOAuth({
