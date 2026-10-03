@@ -17,6 +17,7 @@ jest.mock('../models/wordProgress', () => ({
   default: {
     find: jest.fn(),
     findOrCreate: jest.fn(),
+    resetWindowCompletionForWords: jest.fn().mockResolvedValue(0),
     distinct: jest.fn().mockResolvedValue([]),
   },
 }));
@@ -24,6 +25,11 @@ jest.mock('../models/wordProgress', () => ({
 jest.mock('../models/word', () => ({
   __esModule: true,
   default: { find: jest.fn() },
+}));
+
+jest.mock('../services/slidingWindowService', () => ({
+  __esModule: true,
+  default: { canMoveToNextWindow: jest.fn() },
 }));
 
 jest.mock('../models/user', () => ({
@@ -37,6 +43,7 @@ import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
+import SlidingWindowService from '../services/slidingWindowService';
 import * as deckController from '../controllers/deckController';
 
 const WORD_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa';
@@ -260,5 +267,87 @@ describe('completeWord', () => {
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data.passComplete).toBe(true);
     expect(data.windowComplete).toBe(true);
+  });
+});
+
+describe('completeDeck', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const run = async (progressType: 'main' | 'sub', progress: any) => {
+    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(progress);
+    const res = makeRes();
+    await deckController.completeDeck(makeReq({ params: { progressType } }), res);
+    return res;
+  };
+
+  it('세션 없음 → 404', async () => {
+    const res = await run('main', null);
+    expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('윈도우 미완료 → 400, 다음 윈도우를 만들지 않음', async () => {
+    const progress = makeMockProgress({ isWindowCompleted: jest.fn().mockResolvedValue(false), generateNextSlidingWindow: jest.fn() });
+    const res = await run('main', progress);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(progress.generateNextSlidingWindow).not.toHaveBeenCalled();
+  });
+
+  it('메인 + 다음 윈도우 있음 → 다음 윈도우 생성, canGenerateNext: true', async () => {
+    const progress = makeMockProgress({
+      isWindowCompleted: jest.fn().mockResolvedValue(true),
+      generateNextSlidingWindow: jest.fn().mockImplementation(async function (this: any) {
+        this.steps = { start: 2, end: 4 };
+        this.shuffled_order = [fakeWordIdObj, fakeWordIdObj];
+      }),
+    });
+    (SlidingWindowService.canMoveToNextWindow as jest.Mock).mockResolvedValue(true);
+
+    const res = await run('main', progress);
+
+    expect(progress.generateNextSlidingWindow).toHaveBeenCalled();
+    expect(progress.save).toHaveBeenCalled();
+    const { data } = (res.json as jest.Mock).mock.calls[0][0];
+    expect(data).toEqual(expect.objectContaining({
+      canGenerateNext: true,
+      isSubLoop: false,
+      nextWindow: { level: 'N5', steps: { start: 2, end: 4 }, deckSize: 2 },
+    }));
+    expect(data.completedDeck).toEqual(expect.objectContaining({ level: 'N5', progressType: 'main' }));
+  });
+
+  it('메인 + 레벨의 마지막 윈도우 → nextWindow: null, canGenerateNext: false (프론트는 레벨 선택으로 이동)', async () => {
+    const progress = makeMockProgress({ isWindowCompleted: jest.fn().mockResolvedValue(true), generateNextSlidingWindow: jest.fn() });
+    (SlidingWindowService.canMoveToNextWindow as jest.Mock).mockResolvedValue(false);
+
+    const res = await run('main', progress);
+
+    expect(progress.generateNextSlidingWindow).not.toHaveBeenCalled();
+    const { data } = (res.json as jest.Mock).mock.calls[0][0];
+    expect(data).toEqual(expect.objectContaining({ nextWindow: null, canGenerateNext: false, isSubLoop: false }));
+  });
+
+  it('서브 → 같은 스텝을 리셋·재셔플, isSubLoop: true (다음 윈도우로 가지 않음)', async () => {
+    const progress = makeMockProgress({
+      progress_type: 'sub',
+      steps: { start: 2, end: 2 },
+      shuffled_order: [fakeWordIdObj],
+      current_index: 1,
+      isWindowCompleted: jest.fn().mockResolvedValue(true),
+      generateNextSlidingWindow: jest.fn(),
+      markModified: jest.fn(),
+    });
+
+    const res = await run('sub', progress);
+
+    expect(WordProgress.resetWindowCompletionForWords).toHaveBeenCalledWith('user-id-123', [fakeWordIdObj], 'sub');
+    expect(progress.generateNextSlidingWindow).not.toHaveBeenCalled();
+    expect(SlidingWindowService.canMoveToNextWindow).not.toHaveBeenCalled();
+    expect(progress.current_index).toBe(0);
+    const { data } = (res.json as jest.Mock).mock.calls[0][0];
+    expect(data).toEqual(expect.objectContaining({
+      isSubLoop: true,
+      canGenerateNext: false,
+      nextWindow: { level: 'N5', steps: { start: 2, end: 2 }, deckSize: 1 },
+    }));
   });
 });
