@@ -55,7 +55,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 
 수정 시 깨뜨리기 쉬운 지점:
 
-- `complete-word`는 멱등이 아님 — 프론트는 `requestQueueRef`(직렬화) + `lastSubmittedWordIdRef`(중복 클릭 방어)로 보호한다. 이 패턴을 제거하지 말 것.
+- `complete-word`는 `index`를 보내면 서버 위치와 다를 때 기록 없이 409(`PROGRESS_OUT_OF_SYNC`)를 돌려준다 — 재시도가 다른 단어를 기록하지 않는다. 프론트는 `requestQueueRef`(직렬화) + `lastSubmittedWordIdRef`(중복 클릭 방어)를 유지하고, 요청이 실패하면 이후 요청을 멈추고 "다시 불러오기" 화면을 띄운다.
 - `windowComplete: true` 응답 후 프론트가 `complete-deck`을 호출해야 다음 윈도우가 생성된다. `complete-deck` 중복 호출은 400 — `FlashCardPage`의 `deckCompletedRef`가 방어.
 - Sub 세션의 `complete-deck`은 다음 윈도우 대신 같은 스텝 재셔플(`isSubLoop: true`) — "다시 학습하기" UI로 분기.
 - 완료 화면에서 `complete-deck` 없이 이탈하면 세션이 `currentIndex = 덱 길이`로 남는다 — 재진입 시 `FlashCardPage`가 `deckStatus`로 완료 화면을 복원한다 (E2E `완료 화면 재진입` 참조).

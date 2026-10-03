@@ -67,6 +67,7 @@ const FlashCardPage: FC = () => {
   }, [activeProgressType, navigate]);
 
   // 패스 완료: 몰랐던 단어로 재구성된 덱을 다시 불러온다 (서버가 이미 재셔플 완료)
+  // 진행 저장 실패 시에도 같은 동작으로 서버에 저장된 위치에서 이어간다
   const handleContinue = useCallback(async (): Promise<boolean> => {
     const ok = await fetchDeck();
     if (ok) setDeckKey(k => k + 1);
@@ -122,6 +123,7 @@ const FlashCardPage: FC = () => {
             onContinue={handleContinue}
             onAdvance={handleAdvance}
             onGoHome={handleGoHome}
+            onResync={handleContinue}
             onIndexChange={setLiveIndex}
           />
         )}
