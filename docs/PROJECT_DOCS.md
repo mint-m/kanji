@@ -619,7 +619,7 @@ PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
 
 #### 북마크 목록 조회
 
-**쿼리 파라미터**: `page`(기본 1), `limit`(기본 20), `level`(N5~N1), `sortBy`(`last_studied_at` | `level` | `step`), `sortOrder`(`desc` | `asc`)
+**쿼리 파라미터**: `page`(기본 1), `limit`(기본 20, 최대 150 = 북마크 최대 개수), `level`(N5~N1), `sortBy`(`last_studied_at` | `level` | `step`), `sortOrder`(`desc` | `asc`)
 
 **응답**: `{ bookmarks: [...], pagination: { currentPage, itemsPerPage, totalItems, totalPages } }`
 

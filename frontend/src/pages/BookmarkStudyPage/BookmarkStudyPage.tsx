@@ -40,7 +40,7 @@ const BookmarkStudyPage: FC = () => {
     bookmarkService.getBookmarks({
       level: level !== 'all' ? level : undefined,
       sortBy: (sortBy as any) || 'recent',
-      limit: 150,
+      limit: 150, // 서버 BOOKMARK_LIMIT(북마크 최대 개수)과 같아야 한다 — 넘으면 400
     }).then(res => {
       if (!active) return;
       if (res.success && res.data?.bookmarks) {
