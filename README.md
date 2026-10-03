@@ -279,6 +279,8 @@ chore: 빌드 설정 등
   - 체크포인트 시스템
   - 프론트엔드 마이그레이션
 
+- **[SERVICE_REVIEW.md](./docs/SERVICE_REVIEW.md)** - 서비스 종합 검토 결과와 우선순위 로드맵
+
 - **[CLAUDE.md](./CLAUDE.md)** - 🤖 Claude Code 가이드
   - Development commands
   - Project structure
