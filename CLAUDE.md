@@ -45,7 +45,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 
 ## Architecture Rules
 
-- Redux only for auth state and active session type — all other state via service layer
+- Redux는 auth 상태·활성 세션 타입·한자 조회 캐시(`store/modules/kanji.ts`)에 한정 — 신규 상태는 service layer로
 - Business logic in Mongoose model methods, not controllers
 - All API calls through `services/apiClient.ts`, never direct axios in components
 - API 응답은 `{ success, data, message? }` 봉투 형식 유지
@@ -74,10 +74,8 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 
 ## Testing
 
-- Backend: Jest 단위 테스트 (`backend/src/__tests__/`, 컨트롤러 중심)
-- Frontend: RTL (`frontend/src/__tests__/`)
-- E2E: Playwright (`e2e/tests/`, API mock 기반이라 백엔드 불필요)
-- 동작 변경 시 해당 영역 테스트를 실행하고, API 응답 형태가 바뀌면 PROJECT_DOCS.md의 해당 섹션도 함께 갱신
+PR마다 GitHub Actions CI(`.github/workflows/ci.yml`)가 백엔드 테스트·빌드, 프론트 테스트, E2E를 돌린다.
+E2E(`e2e/tests/`)는 API mock 기반이라 백엔드를 띄우지 않아도 된다. 변경 후 무엇을 돌리고 어떤 문서를 갱신할지는 `.claude/skills/verify` 참조.
 
 ## Commit Convention
 
