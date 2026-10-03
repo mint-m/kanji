@@ -58,6 +58,8 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `complete-word`는 멱등이 아님 — 프론트는 `requestQueueRef`(직렬화) + `lastSubmittedWordIdRef`(중복 클릭 방어)로 보호한다. 이 패턴을 제거하지 말 것.
 - `windowComplete: true` 응답 후 프론트가 `complete-deck`을 호출해야 다음 윈도우가 생성된다. `complete-deck` 중복 호출은 400 — `FlashCardPage`의 `deckCompletedRef`가 방어.
 - Sub 세션의 `complete-deck`은 다음 윈도우 대신 같은 스텝 재셔플(`isSubLoop: true`) — "다시 학습하기" UI로 분기.
+- 완료 화면에서 `complete-deck` 없이 이탈하면 세션이 `currentIndex = 덱 길이`로 남는다 — 재진입 시 `FlashCardPage`가 `deckStatus`로 완료 화면을 복원한다 (E2E `완료 화면 재진입` 참조).
+- 북마크 조회 `limit` 상한은 `BOOKMARK_LIMIT`(150)과 같아야 한다 — 복습 페이지가 전체를 한 번에 조회한다 (`bookmarkRoutes.test.ts` 참조).
 - `ApiError`(`services/authService.ts`)가 409 응답의 `code`를 보존한다 — `apiClient`가 4xx를 throw로 변환하기 때문. 에러 처리 수정 시 유지 필수.
 - 프론트에서 상대 경로 API 호출 금지 — Vercel/Render 분리 배포에서 405 발생 (커밋 84d8bf8 참조). 항상 `API_URL` 기반으로 호출.
 - 프론트 CI 빌드는 CRA 기준으로 엄격함 — cleanup 함수에서 ref 직접 참조 등 lint 위반 시 빌드 실패 (커밋 37ebbfc 참조).
