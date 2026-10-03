@@ -96,6 +96,14 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 - Group files by purpose; split if different purposes
 - No WIP commits
 
+## Branch · PR · Issue
+
+- Branch: `<type>/<english-kebab-summary>` with the commit types above (e.g. `fix/bookmark-limit`). `claude/*` branches created by remote Claude Code sessions are fine as-is
+- Merge into `main` only via PR. The repo allows squash merge only, so the PR title becomes the `main` commit message (`(#N)` appended) — write the PR title in the commit format above
+- One PR = one logical change. Body follows `.github/pull_request_template.md`; link issues with `Closes #N`
+- Issue: use a template in `.github/ISSUE_TEMPLATE/` (결함·작업 / 검토) with at least one label (`bug`, `enhancement`, `documentation`, `security`, `tech-debt`)
+- Add every issue to the GitHub project "개발 리스트업 및 이슈 추적용 프로젝트" (mint-m #1, shared with other repos) — from the CLI: `gh issue create --project "개발 리스트업 및 이슈 추적용 프로젝트"`
+
 ## Environment Variables
 
 전체 목록·주석·기본값은 `backend/.env.example`, `frontend/.env.example`가 단일 출처다. 로컬 개발 시 각각 `.env`로 복사해 값을 채운다.
