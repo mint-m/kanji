@@ -298,3 +298,55 @@ test.describe('완료 화면 재진입', () => {
     await expect(page.getByRole('button').getByText('홈으로', { exact: true })).toBeVisible();
   });
 });
+
+test.describe('진행 저장 실패', () => {
+  test.beforeEach(async ({ page }) => {
+    await injectMockAuth(page);
+  });
+
+  test('complete-word 실패 시 복구 화면 → "다시 불러오기"로 덱 재조회', async ({ page }) => {
+    let deckCallCount = 0;
+    const sentIndexes: number[] = [];
+
+    await page.route('**/api/users/me/progress/main/current', (route) => {
+      deckCallCount++;
+      route.fulfill({ json: makeDeck(['word0', 'word1', 'word2']) });
+    });
+    await page.route('**/api/users/me/progress/main/complete-word', (route) => {
+      sentIndexes.push(route.request().postDataJSON().index);
+      route.fulfill({ status: 500, json: { success: false, message: 'Failed to complete word' } });
+    });
+
+    await page.goto('/flash-cards');
+    await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: '외웠습니다' }).click();
+
+    // 조용히 넘어가지 않고 복구 화면을 보여준다
+    await expect(page.getByText('진행 상황을 저장하지 못했어요')).toBeVisible({ timeout: 8_000 });
+    expect(sentIndexes).toEqual([0]); // 답한 카드 위치를 함께 보낸다
+
+    const callsBefore = deckCallCount;
+    await page.getByRole('button', { name: '다시 불러오기' }).click();
+
+    await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 8_000 });
+    expect(deckCallCount).toBeGreaterThan(callsBefore);
+  });
+});
+
+test.describe('서버 콜드 스타트', () => {
+  test('덱 로딩이 5초를 넘기면 서버를 깨우는 중이라는 안내 표시', async ({ page }) => {
+    await injectMockAuth(page);
+    await page.route('**/api/users/me/progress/main/current', async (route) => {
+      await new Promise<void>((r) => setTimeout(r, 7_000));
+      route.fulfill({ json: makeDeck(['word0']) });
+    });
+
+    await page.goto('/flash-cards');
+
+    await expect(page.getByText(/서버를 깨우는 중/)).toBeVisible({ timeout: 6_500 });
+    // 응답이 오면 안내는 사라지고 카드가 표시된다
+    await expect(page.getByRole('button', { name: '외웠습니다' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/서버를 깨우는 중/)).toHaveCount(0);
+  });
+});

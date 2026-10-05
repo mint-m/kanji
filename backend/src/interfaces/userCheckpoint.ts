@@ -17,6 +17,7 @@ export interface UserCheckpointDocument extends Document {
   isCompleted(): boolean; // pass traversal complete (current_index >= shuffled_order.length)
   isWindowCompleted(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>; // all words known
   getCurrentWord(): mongoose.Types.ObjectId | null;
+  isAtWord(index: number, wordId: mongoose.Types.ObjectId): boolean;
   getRemainingWords(): mongoose.Types.ObjectId[];
   moveToNext(): boolean;
   resetProgress(): void;

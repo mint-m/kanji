@@ -169,6 +169,18 @@
 
 ---
 
+## 6. 가동률 모니터 — 장애 알림 + Atlas 휴면 방지
+
+무료 티어는 조용히 멈춘다. Render는 15분 무트래픽 시 스핀다운하고, Atlas 무료 클러스터는 30일 무접속 시 자동 일시정지된다(일시정지되면 백엔드가 기동 시 DB 연결에 실패해 종료한다).
+
+1. 백엔드 `GET /health`는 DB 연결 상태까지 확인한다 — 연결 시 200, 끊김 시 503
+2. GitHub 저장소 `Settings > Secrets and variables > Actions > Variables`에 `HEALTHCHECK_URL` = `https://<backend>.onrender.com/health` 등록
+3. `.github/workflows/uptime.yml`이 6시간마다 호출한다. 실패하면 GitHub 알림 메일이 오고, 주기적 접속으로 Atlas 휴면도 막는다
+   - Actions 탭에서 `Uptime` > `Run workflow`로 즉시 확인 가능
+   - GitHub는 60일간 저장소 활동이 없으면 예약 워크플로를 비활성화한다 — 알림 메일이 오면 Actions 탭에서 다시 켠다
+
+---
+
 ## 부록: 최종 체크리스트
 
 1. [ ] Atlas 클러스터 + DB 사용자 + `0.0.0.0/0` 허용 + `MONGO_URI` 확보
@@ -180,5 +192,6 @@
 7. [ ] Google 콘솔: JS 원본 등록 + 동의 화면 게시 상태 확인
 8. [ ] Kakao 콘솔: Web 플랫폼 + Redirect URI 등록 + 로그인 활성화
 9. [ ] 스모크 테스트 8항목 통과
+10. [ ] `HEALTHCHECK_URL` 변수 등록 후 `Uptime` 워크플로 수동 실행 성공
 
 > 참고: 백엔드는 프록시 뒤에서 `secure` 쿠키를 사용하므로 `app.set("trust proxy", 1)` 이 설정되어 있다.

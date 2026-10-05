@@ -156,6 +156,49 @@ describe('completeWord', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Word is not in current deck' }));
   });
 
+  it('index가 서버 위치와 다름 → 409, 아무것도 기록하지 않음', async () => {
+    const mockProgress = makeMockProgress({
+      shuffled_order: [fakeWordIdObj],
+      current_index: 3,
+      isAtWord: jest.fn().mockReturnValue(false),
+    });
+    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(mockProgress);
+
+    const res = makeRes();
+    await deckController.completeWord(
+      makeReq({ params: { progressType: 'main' }, body: { wordId: WORD_ID, isCorrect: true, index: 2 } }),
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'PROGRESS_OUT_OF_SYNC', data: { currentIndex: 3 } }),
+    );
+    expect(WordProgress.findOrCreate).not.toHaveBeenCalled();
+    expect(mockProgress.moveToNext).not.toHaveBeenCalled();
+    expect(mockProgress.save).not.toHaveBeenCalled();
+  });
+
+  it('index가 서버 위치와 같음 → 정상 처리', async () => {
+    const mockProgress = makeMockProgress({
+      shuffled_order: [fakeWordIdObj],
+      isAtWord: jest.fn().mockReturnValue(true),
+    });
+    (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(mockProgress);
+    (WordProgress.findOrCreate as jest.Mock).mockResolvedValue(makeMockWordProgress());
+    (User.findById as jest.Mock).mockResolvedValue(makeUser());
+
+    const res = makeRes();
+    await deckController.completeWord(
+      makeReq({ params: { progressType: 'main' }, body: { wordId: WORD_ID, isCorrect: true, index: 0 } }),
+      res,
+    );
+
+    expect(mockProgress.isAtWord).toHaveBeenCalledWith(0, expect.anything());
+    expect(mockProgress.moveToNext).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
   it('성공 - 패스 미완료 → passComplete: false, windowComplete: false 반환', async () => {
     (UserCheckpoint.findByUserAndType as jest.Mock).mockResolvedValue(
       makeMockProgress({ shuffled_order: [fakeWordIdObj], isCompleted: jest.fn().mockReturnValue(false) }),

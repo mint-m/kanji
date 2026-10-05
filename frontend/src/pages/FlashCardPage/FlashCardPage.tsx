@@ -27,6 +27,7 @@ const FlashCardPage: FC = () => {
   const [initialPassResult, setInitialPassResult] = useState<{ windowComplete: boolean } | null>(null);
   const [liveIndex, setLiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSlow, setIsSlow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deckKey, setDeckKey] = useState(0);
   // completeDeck 성공 후 fetchDeck만 실패한 경우, 재시도 시 서버 완료를 중복 호출하지 않도록 추적
@@ -67,6 +68,7 @@ const FlashCardPage: FC = () => {
   }, [activeProgressType, navigate]);
 
   // 패스 완료: 몰랐던 단어로 재구성된 덱을 다시 불러온다 (서버가 이미 재셔플 완료)
+  // 진행 저장 실패 시에도 같은 동작으로 서버에 저장된 위치에서 이어간다
   const handleContinue = useCallback(async (): Promise<boolean> => {
     const ok = await fetchDeck();
     if (ok) setDeckKey(k => k + 1);
@@ -102,6 +104,13 @@ const FlashCardPage: FC = () => {
 
   useEffect(() => { fetchDeck(); }, [fetchDeck]);
 
+  // 로딩이 5초를 넘기면 서버 콜드 스타트일 가능성이 높다 → 기다려야 하는 이유를 알려준다
+  useEffect(() => {
+    if (!isLoading) { setIsSlow(false); return; }
+    const timer = setTimeout(() => setIsSlow(true), 5000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
   return (
     <div className={styles.page}>
       <Kanji />
@@ -122,10 +131,14 @@ const FlashCardPage: FC = () => {
             onContinue={handleContinue}
             onAdvance={handleAdvance}
             onGoHome={handleGoHome}
+            onResync={handleContinue}
             onIndexChange={setLiveIndex}
           />
         )}
         {isLoading && !deck && <SkeletonFlashCard />}
+        {isLoading && isSlow && (
+          <p className={styles.slowHint}>서버를 깨우는 중이에요. 첫 접속은 최대 1분 정도 걸릴 수 있어요.</p>
+        )}
       </div>
     </div>
   );

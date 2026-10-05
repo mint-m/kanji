@@ -22,8 +22,11 @@ jest.mock('../store/modules/user', () => ({
   setUser: jest.fn((payload: any) => ({ type: 'user/setUser', payload })),
 }));
 
-import KakaoOAuthCallback from '../components/auth/KakaoOAuthCallback';
 import { loginWithKakaoCode, linkKakaoAccount, getUserLocally, saveUserLocally } from '../services/authService';
+
+// 컴포넌트가 모듈 로드 시점에 env를 읽으므로 require 전에 설정한다 (로컬 .env 없이도 통과하도록)
+process.env.REACT_APP_KAKAO_REDIRECT_URI = 'http://localhost/auth/kakao/callback';
+const KakaoOAuthCallback = require('../components/auth/KakaoOAuthCallback').default;
 
 const setSearchParams = (params: Record<string, string>) => {
   const url = new URL('http://localhost/auth/kakao/callback');
@@ -35,7 +38,6 @@ const setSearchParams = (params: Record<string, string>) => {
 describe('KakaoOAuthCallback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.REACT_APP_KAKAO_REDIRECT_URI = 'http://localhost/auth/kakao/callback';
   });
 
   it('code 없으면 /login으로 리다이렉트', async () => {

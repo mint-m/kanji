@@ -10,7 +10,7 @@ services:
     buildCommand: yarn install --frozen-lockfile && yarn build
     startCommand: yarn start
     healthCheckPath: /
-    autoDeploy: true
+    autoDeployTrigger: checksPass  # main의 CI(GitHub 체크)가 통과한 커밋만 배포
     envVars:
       - key: NODE_ENV
         value: production

@@ -511,8 +511,15 @@ POST /api/users/me/progress/:progressType/complete-word
 {
   "wordId": "64f5a1b2c3d4e5f6g7h8i9j0",
   "isCorrect": true, // 정답 여부
-  "timeSpent": 15 // 소요 시간 (초)
+  "timeSpent": 15, // 소요 시간 (초)
+  "index": 6 // 답한 카드의 덱 내 위치 (선택) — 서버 current_index·단어와 다르면 기록하지 않고 409
 }
+```
+
+**위치 불일치 (409)**: 실패 후 재시도나 앞선 요청 유실로 위치가 어긋나면 아무것도 기록하지 않는다. 프론트는 덱을 다시 불러와 서버 위치에서 이어간다.
+
+```json
+{ "success": false, "code": "PROGRESS_OUT_OF_SYNC", "data": { "currentIndex": 5 } }
 ```
 
 **응답 예시 (패스 진행 중)**:
@@ -632,6 +639,12 @@ PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
 ```
 GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 (minStep, maxStep)
 GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 (네이버 API)
+```
+
+### 운영 (Health)
+
+```
+GET /health                                           # DB 연결 확인 — 200 { success: true, data: { db: "up" } } / 503 db: "down"
 ```
 
 ---

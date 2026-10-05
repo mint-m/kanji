@@ -22,6 +22,6 @@ export default defineConfig({
     command: 'cd frontend && yarn start',
     url: 'http://localhost:4200',
     reuseExistingServer: true,
-    timeout: 60_000,
+    timeout: 120_000, // CI 러너에서 CRA 첫 컴파일이 60초를 넘길 수 있다
   },
 });
