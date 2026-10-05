@@ -71,6 +71,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - Delete before adding
 - No abstraction until rule of three
 - One responsibility per function/component
+- 일회성 산출물(검토 보고서·분석·진행 메모)은 새 `.md` 파일로 만들지 않고 Claude 문서로 정리한다 — 저장소 `.md`는 이후 세션이 실제로 읽고 의존하는 문서(CLAUDE.md, `.claude/skills`, 기존 docs)만 둔다
 
 ## Testing
 
@@ -104,4 +105,4 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 종결 시점 기준으로 인지하고 있는 한계 (재발견 방지용):
 
-- 윈도우 이동 시 `is_window_completed`는 마지막 패스의 단어만 리셋된다 — 다음 윈도우 첫 패스에서 모든 단어를 다시 답해 덮어쓰므로 현재 영향은 없다 (`docs/SERVICE_REVIEW.md` F6).
+- 윈도우 이동 시 `is_window_completed`는 마지막 패스의 단어만 리셋된다 — 다음 윈도우 첫 패스에서 모든 단어를 다시 답해 덮어쓰므로 현재 영향은 없다.
