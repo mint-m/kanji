@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { UserAuthType, LEARNING_LEVELS } from '../types/common';
+import { UserAuthType } from '../types/common';
 import {
   UserDocument,
   UserModel,
@@ -61,7 +61,6 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       totalTimeSpent: { type: Number, default: 0, min: 0 },
       currentStreak: { type: Number, default: 0, min: 0 },
       longestStreak: { type: Number, default: 0, min: 0 },
-      levelsCompleted: [{ type: String, enum: LEARNING_LEVELS }],
       averageSessionTime: { type: Number, default: 0, min: 0 },
       studyDaysCount: { type: Number, default: 0, min: 0 },
       favoriteStudyTime: { type: String },

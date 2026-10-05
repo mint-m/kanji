@@ -13,7 +13,6 @@ const makeDeckWord = (idx: number) => ({
   isCurrent: idx === 0,
   isWindowCompleted: false,
   isBookmarked: false,
-  studyStats: { tryCount: 0, correctCount: 0, successRate: 0, timeSpent: 0 },
 });
 
 export const makeDeck = (wordIds: string[], words?: ReturnType<typeof makeDeckWord>[]) => ({
@@ -52,20 +51,6 @@ export const makeCompleteWordResponse = (
 ) => ({
   success: true,
   data: {
-    completion: {
-      wordId: 'word0',
-      isCorrect: true,
-      previousAttempts: 0,
-      shouldRepeat: false,
-    },
-    wordProgress: {
-      totalAttempts: 1,
-      successRate: 100,
-      studyStreak: 1,
-      masteryLevel: 'learning',
-      recommendedAction: 'continue',
-      isBookmarked: false,
-    },
     currentIndex: 1,
     passComplete,
     windowComplete,

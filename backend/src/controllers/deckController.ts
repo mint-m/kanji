@@ -7,10 +7,7 @@ import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
 import { shuffleArray } from '../utils/shuffle';
 import { AuthenticatedRequest } from '../middleware/auth';
-import {
-  ProgressType,
-  WordCompletionResult,
-} from '../types';
+import { ProgressType } from '../types';
 
 /**
  * Get current deck from active session
@@ -69,8 +66,6 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         isCurrent: index === progress!.current_index,
         isWindowCompleted: wordProgress?.is_window_completed || false,
         isBookmarked: bookmarkedSet.has(String(wordId)),
-        studyStats: wordProgress?.getStudyStats(),
-        recommendedAction: wordProgress?.getRecommendedAction(),
       };
     });
 
@@ -158,7 +153,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     const wordProgress = await WordProgress.findOrCreate(userId, wordObjectId, progressType);
-    const previousAttempts = wordProgress.try_count;
 
     // Record historical study stats
     wordProgress.recordStudyAttempt({ isCorrect, studiedAt: new Date(), timeSpent: timeSpent || 0 });
@@ -171,24 +165,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     await wordProgress.save();
-
-    const newMasteryLevel = wordProgress.calculateMasteryLevel();
-    const recommendedAction = wordProgress.getRecommendedAction();
-    // 북마크는 세션 간 공유되므로 현재 세션 문서만으로 판단하면 다른 세션의 북마크를 놓칠 수 있음
-    const isBookmarkedCrossSession = !!(await WordProgress.exists({
-      user_id: userId,
-      word_id: wordObjectId,
-      is_bookmarked: true,
-    }));
-
-    const completionResult: WordCompletionResult = {
-      wordId: wordObjectId,
-      isCorrect,
-      timeSpent,
-      previousAttempts,
-      newMasteryLevel,
-      shouldRepeat: recommendedAction === 'review',
-    };
 
     // Update user statistics
     const user = await User.findById(userId);
@@ -220,15 +196,6 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       success: true,
       message: isCorrect ? 'Word marked as completed' : 'Word marked as incorrect',
       data: {
-        completion: completionResult,
-        wordProgress: {
-          totalAttempts: wordProgress.try_count,
-          successRate: (wordProgress.correct_count / wordProgress.try_count) * 100,
-          studyStreak: wordProgress.study_streak,
-          masteryLevel: newMasteryLevel,
-          recommendedAction,
-          isBookmarked: isBookmarkedCrossSession,
-        },
         currentIndex: progress.current_index,
         passComplete: isPassComplete,
         windowComplete,
@@ -309,18 +276,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
       }
     }
 
-    const user = await User.findById(userId);
-    if (user && !user.statistics.levelsCompleted.includes(progress.current_level)) {
-      const levelStats = await Word.getLevelStats(progress.current_level);
-      if (levelStats.length > 0) {
-        const maxStep = levelStats[0].maxStep;
-        if (progress.steps.end >= maxStep) {
-          user.statistics.levelsCompleted.push(progress.current_level);
-          await user.save();
-        }
-      }
-    }
-
     res.status(200).json({
       success: true,
       message: 'Deck completed successfully',
@@ -335,7 +290,6 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
         nextWindow,
         canGenerateNext: canMoveToNext,
         isSubLoop,
-        levelCompleted: user?.statistics.levelsCompleted.includes(progress.current_level),
       },
     });
   } catch (error) {

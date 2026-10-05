@@ -196,7 +196,6 @@ backend/src/
     totalTimeSpent: number,      // 총 학습 시간 (초, 기본: 0)
     currentStreak: number,       // 현재 연속 학습일 (기본: 0)
     longestStreak: number,       // 최장 연속 학습일 (기본: 0)
-    levelsCompleted: string[],   // 완료한 레벨 (N5, N4, N3, N2, N1)
     averageSessionTime: number,  // 평균 세션 시간 (초, 기본: 0)
     studyDaysCount: number,      // 학습한 일수 (기본: 0)
     favoriteStudyTime?: string,  // 선호 학습 시간
@@ -346,277 +345,109 @@ backend/src/
 
 ## API 엔드포인트
 
-모든 인증 필요 엔드포인트는 `/api/users/me/` 하위에 위치합니다.
+모든 인증 필요 엔드포인트는 `/api/users/me/` 하위에 위치한다.
+응답은 전부 `{ success, data, message? }` 봉투 형식이다.
 
-### 인증 (Authentication)
+**응답 본문 예시는 이 문서에 두지 않는다.** 손으로 옮겨 적은 JSON은 코드와 어긋나도 아무도 알려주지 않지만,
+타입 정의와 테스트는 CI가 지킨다. 문서와 코드가 다르면 코드가 맞다.
 
-```
-GET  /api/auth/google              # OAuth 시작
-GET  /api/auth/google/callback     # OAuth 콜백
-POST /api/auth/logout              # 로그아웃
-GET  /api/auth/me                  # 현재 사용자 정보
-```
-
----
-
-### 사용자 설정
-
-```
-PATCH /api/users/me/active-progress-type   # 활성 세션 타입 변경 (main|sub)
-PATCH /api/users/me/checkpoint             # 체크포인트 저장
-```
+| 알고 싶은 것 | 볼 곳 |
+|---|---|
+| 응답 필드 구조 | `frontend/src/services/types.ts` — `CurrentDeck`, `DeckWord`, `CompleteWordResponse`, `SessionStats` |
+| 상태 코드·에러 코드·분기 동작 | `backend/src/__tests__/` (아래 표의 각 행 참조) |
+| 프론트가 보내는 쿼리가 검증을 통과하는지 | 라우트 테스트 (`bookmarkRoutes.test.ts`처럼 실제 라우터로 요청) |
 
 ---
 
-### 진행 상황 관리 (Progress)
+### 인증 (`/api/auth`)
 
-#### 세션 목록 조회
+| 메서드 | 경로 | 용도 |
+|---|---|---|
+| POST | `/google/access-token` | 인가 코드 → 액세스 토큰 교환 |
+| POST | `/google/login` | 액세스 토큰으로 로그인 — 토큰 발급 대상(`aud`)과 이메일 인증 여부를 확인한다 |
+| POST | `/google/one-tap` | One Tap credential 로그인 — 이메일 인증 여부를 확인한다 |
+| POST | `/kakao/callback` | 카카오 인가 코드 콜백 |
+| POST | `/link/google`, `/link/kakao` | 기존 계정에 provider 연결 |
+| POST | `/refresh` | JWT 갱신 |
+| GET | `/profile` | 현재 사용자 정보 |
 
-```
-GET /api/users/me/progress
-```
-
-#### 세션 생성
-
-```
-POST /api/users/me/progress
-```
-
-**요청 본문**:
-
-```json
-{
-  "type": "main",
-  "level": "N5",
-  "steps": { "start": 1, "end": 3 }
-}
-```
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "session": { "...": "..." },
-    "sessionStats": { "totalWords": 48, "...": "..." },
-    "deckSize": 48
-  }
-}
-```
-
-#### 세션 조회
-
-```
-GET /api/users/me/progress/:type
-```
-
-- `type`: `"main"` | `"sub"`
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "session": {
-      "progress_type": "main",
-      "current_level": "N5",
-      "steps": { "start": 1, "end": 3 },
-      "current_index": 5
-    },
-    "sessionStats": {
-      "totalWords": 50,
-      "completedWords": 5,
-      "remainingWords": 45,
-      "progressPercentage": 10,
-      "currentStep": 1,
-      "totalSteps": 3,
-      "averageWordsPerStep": 16.7
-    }
-  }
-}
-```
-
-#### 세션 삭제
-
-```
-DELETE /api/users/me/progress/:type
-```
+검증: `backend/src/__tests__/authController.test.ts`
 
 ---
 
-### 덱 관리 (Deck)
+### 사용자 (`/api/users/me`)
 
-#### 현재 덱 조회
+| 메서드 | 경로 | 용도 |
+|---|---|---|
+| PATCH | `/me` | 이름 변경 |
+| PATCH | `/me/active-progress-type` | 활성 세션 타입 변경 (`main`\|`sub`) |
+| PATCH | `/me/checkpoint` | 세션 생성 — **같은 타입 세션이 있으면 409** (교체는 `DELETE /me/progress/:type` 후 생성) |
+| GET | `/me/stats` | 학습 통계 |
 
-```
-GET /api/users/me/progress/:progressType/current
-```
-
-**응답 예시**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "deckId": "userId-main",
-    "level": "N5",
-    "steps": { "start": 1, "end": 3 },
-    "progressType": "main",
-    "words": [
-      {
-        "_id": "...",
-        "entry": "こんにちは",
-        "pron": "今日は",
-        "means": ["안녕하세요"],
-        "parts": ["감탄사"],
-        "level": "N5",
-        "step": 1,
-        "index": 0,
-        "isCurrent": false,
-        "isWindowCompleted": false,
-        "isBookmarked": false
-      }
-    ],
-    "currentIndex": 5,
-    "sessionStats": {
-      "totalWords": 50,
-      "completedWords": 5,
-      "remainingWords": 45,
-      "progressPercentage": 10,
-      "currentStep": 1,
-      "totalSteps": 3,
-      "averageWordsPerStep": 16.7
-    },
-    "deckStatus": {
-      "isPassComplete": false,
-      "isWindowComplete": false,
-      "canMoveToNext": false,
-      "completionPercentage": 10
-    }
-  }
-}
-```
-
-#### 단어 완료 처리
-
-```
-POST /api/users/me/progress/:progressType/complete-word
-```
-
-**요청 본문**:
-
-```json
-{
-  "wordId": "64f5a1b2c3d4e5f6g7h8i9j0",
-  "isCorrect": true, // 정답 여부
-  "timeSpent": 15, // 소요 시간 (초)
-  "index": 6 // 답한 카드의 덱 내 위치 (선택) — 서버 current_index·단어와 다르면 기록하지 않고 409
-}
-```
-
-**위치 불일치 (409)**: 실패 후 재시도나 앞선 요청 유실로 위치가 어긋나면 아무것도 기록하지 않는다. 프론트는 덱을 다시 불러와 서버 위치에서 이어간다.
-
-```json
-{ "success": false, "code": "PROGRESS_OUT_OF_SYNC", "data": { "currentIndex": 5 } }
-```
-
-**응답 예시 (패스 진행 중)**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 3, "successRate": 66, "masteryLevel": "learning" },
-    "currentIndex": 6,
-    "passComplete": false,
-    "windowComplete": false
-  }
-}
-```
-
-**응답 예시 (패스 완료, 모름 단어 있음 → 재셔플)**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": false },
-    "wordProgress": { "totalAttempts": 3, "successRate": 33, "masteryLevel": "beginner" },
-    "currentIndex": 0,
-    "passComplete": true,
-    "windowComplete": false,
-    "nextPassSize": 12
-  }
-}
-```
-
-**응답 예시 (윈도우 완료)**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "completion": { "wordId": "...", "isCorrect": true },
-    "wordProgress": { "totalAttempts": 2, "successRate": 100, "masteryLevel": "mastered" },
-    "currentIndex": 0,
-    "passComplete": true,
-    "windowComplete": true
-  }
-}
-```
-
-> `windowComplete: true` 수신 후 프론트엔드에서 `POST complete-deck` 호출하여 다음 윈도우 진행
-
-#### 덱 완료 및 다음 윈도우
-
-```
-POST /api/users/me/progress/:progressType/complete-deck
-```
-
-**응답 예시 (메인 세션 — 다음 윈도우로 이동)**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "completedWindow": { "level": "N5", "steps": { "start": 1, "end": 3 } },
-    "nextWindow": { "level": "N5", "steps": { "start": 2, "end": 4 }, "deckSize": 50 },
-    "canGenerateNext": true,
-    "isSubLoop": false,
-    "stats": { "wordsCompleted": 50, "windowsCompleted": 1 }
-  }
-}
-```
-
-**응답 예시 (서브 세션 — 같은 스텝 재셔플 루프)**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "completedWindow": { "level": "N5", "steps": { "start": 2, "end": 2 } },
-    "nextWindow": { "level": "N5", "steps": { "start": 2, "end": 2 }, "deckSize": 16 },
-    "canGenerateNext": false,
-    "isSubLoop": true,
-    "stats": { "wordsCompleted": 16, "windowsCompleted": 1 }
-  }
-}
-```
-
-> **서브 세션 루프**: Sub 세션은 `canMoveToNext = false`일 때 다음 윈도우로 이동하지 않고 동일 스텝의 `is_window_completed`를 초기화한 뒤 재셔플한다. `isSubLoop: true` 수신 시 프론트엔드는 "다시 학습하기" UI를 표시한다.
+검증: `userController.test.ts`, `userStatsController.test.ts`
 
 ---
 
-### 북마크 관리 (Bookmarks)
+### 진행 상황 (`/api/users/me/progress`)
+
+| 메서드 | 경로 | 용도 | 검증 |
+|---|---|---|---|
+| GET | `/` | 세션 목록 | `progressController.test.ts` |
+| GET | `/:type` | 세션 + `sessionStats` 조회 | `progressController.test.ts` — 잘못된 type 400, 없으면 404 |
+| DELETE | `/:type` | 세션 삭제 | `progressController.test.ts` |
+
+`type`은 `"main"` \| `"sub"`.
+
+---
+
+### 덱 (`/api/users/me/progress/:progressType`)
+
+#### 현재 덱 조회 — `GET /current`
+
+응답 구조는 `CurrentDeck` 타입이 단일 출처다.
+동작 검증은 `deckController.test.ts` → `describe('getCurrentDeck')`:
+진행 중인 세션이 없으면 404 + `code: "NO_PROGRESS"`, 잘못된 `progressType`은 400.
+완료 화면에서 이탈한 세션은 `currentIndex = 덱 길이`로 응답하며, 프론트는 `deckStatus`로 완료 화면을 복원한다.
+
+#### 단어 완료 처리 — `POST /complete-word`
+
+요청 본문: `{ wordId, isCorrect, timeSpent?, index? }` — `timeSpent`는 초 단위, `index`는 답한 카드의 덱 내 위치(배포 순서 호환을 위해 선택값)
+
+응답 구조는 `CompleteWordResponse` 타입. 분기마다 테스트 케이스가 있다 —
+`deckController.test.ts` → `describe('completeWord')`:
+
+| 상황 | 응답 | 테스트 케이스 |
+|---|---|---|
+| `index`가 서버 위치·단어와 다름 (실패 후 재시도 등) | 409 + `code: "PROGRESS_OUT_OF_SYNC"`, 아무것도 기록하지 않음 | "index가 서버 위치와 다름" |
+| 패스 진행 중 | `passComplete: false`, `windowComplete: false` | "성공 - 패스 미완료" |
+| 패스 완료 + 모름 단어 있음 | `passComplete: true`, `nextPassSize: N` (서버가 재셔플) | "패스 완료 + 모르는 단어 있음" |
+| 패스 완료 + 전부 알았음 | `windowComplete: true` | "패스 완료 + 모두 외움" |
+
+> `windowComplete: true` 수신 후 프론트엔드에서 `POST complete-deck`을 호출해야 다음 윈도우가 생성된다.
+
+#### 덱 완료 및 다음 윈도우 — `POST /complete-deck`
+
+응답: `{ completedDeck: { level, steps, progressType, finalStats, completedAt }, nextWindow, canGenerateNext, isSubLoop }`.
+`deckController.test.ts` → `describe('completeDeck')`:
+
+| 상황 | 응답 | 테스트 케이스 |
+|---|---|---|
+| 윈도우 미완료 | 400 (중복 호출도 여기에 걸린다) | "윈도우 미완료" |
+| 메인 + 다음 윈도우 있음 | `nextWindow`, `canGenerateNext: true` | "메인 + 다음 윈도우 있음" |
+| 메인 + 레벨의 마지막 윈도우 | `nextWindow: null`, `canGenerateNext: false` → 프론트는 완료 안내와 함께 레벨 선택으로 이동 | "메인 + 레벨의 마지막 윈도우" |
+| 서브 | 같은 스텝의 `is_window_completed`를 리셋하고 재셔플, `isSubLoop: true` → "다시 학습하기" UI | "서브" |
+
+---
+
+### 북마크 (`/api/users/me/bookmarks`)
 
 ```
-POST /api/users/me/bookmarks/toggle   # 북마크 토글 (추가/해제)
-GET  /api/users/me/bookmarks          # 북마크 목록 조회
-PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
+POST /toggle       # 북마크 토글 (추가/해제)
+GET  /             # 북마크 목록 조회
+PUT  /:wordId      # 북마크 메모 수정
 ```
+
+검증: `bookmarkController.test.ts` — 세션 간 일괄 해제, 150개 한도 409, 페이지네이션 포함 · `bookmarkRoutes.test.ts` — 쿼리 검증
 
 #### 북마크 토글
 
@@ -626,7 +457,7 @@ PUT  /api/users/me/bookmarks/:wordId  # 북마크 메모 수정
 
 #### 북마크 목록 조회
 
-**쿼리 파라미터**: `page`(기본 1), `limit`(기본 20, 최대 150 = 북마크 최대 개수), `level`(N5~N1), `sortBy`(`last_studied_at` | `level` | `step`), `sortOrder`(`desc` | `asc`)
+**쿼리 파라미터**: `page`(기본 1), `limit`(기본 20, 최대 150 = 북마크 최대 개수 — 복습 페이지가 전체를 한 번에 조회), `level`(N5~N1), `sortBy`(`last_studied_at` | `level` | `step`), `sortOrder`(`desc` | `asc`)
 
 **응답**: `{ bookmarks: [...], pagination: { currentPage, itemsPerPage, totalItems, totalPages } }`
 
@@ -644,8 +475,10 @@ GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 
 ### 운영 (Health)
 
 ```
-GET /health                                           # DB 연결 확인 — 200 { success: true, data: { db: "up" } } / 503 db: "down"
+GET /health                                           # DB 연결 확인 — 200 db: "up" / 503 db: "down" (가동률 모니터용)
 ```
+
+검증: `health.test.ts`
 
 ---
 
@@ -712,32 +545,8 @@ GET /health                                           # DB 연결 확인 — 200
 **파일**: `backend/src/services/slidingWindowService.ts`
 
 1. **단어 조회**: level + steps 범위의 단어 검색
-2. **필터링**: 윈도우 내 모든 단어 포함 (`excludeCompleted: false`가 기본값)
-3. **북마크 우선순위**: 북마크된 단어를 앞쪽 40%에 배치
-4. **셔플링**: Fisher-Yates 알고리즘
-5. **저장**: user_checkpoint shuffled_order 저장
-
-**북마크 우선순위 전략**:
-
-```
-┌─────────────────────────────────────┐
-│  Priority Zone (40%)                │
-│  2:1 비율 - 북마크 : 일반           │
-│  ├─ 북마크 1                        │
-│  ├─ 북마크 2                        │
-│  ├─ 일반 1                          │
-│  ├─ 북마크 3                        │
-│  ├─ 북마크 4                        │
-│  └─ 일반 2                          │
-├─────────────────────────────────────┤
-│  Remaining Zone (60%)               │
-│  나머지 단어들 (셔플)               │
-│  ├─ 랜덤 단어 1                     │
-│  ├─ 북마크 5 (오버플로우)           │
-│  ├─ 랜덤 단어 2                     │
-│  └─ ...                             │
-└─────────────────────────────────────┘
-```
+2. **셔플링**: Fisher-Yates 알고리즘 (윈도우 내 모든 단어 포함)
+3. **저장**: user_checkpoint shuffled_order 저장
 
 ---
 
@@ -971,7 +780,7 @@ yarn build          # → frontend/build/
 
 - ✅ 배포 설정 추가: Vercel(프론트, SPA rewrite) + Render(백엔드 블루프린트) + MongoDB Atlas 구성
 - ✅ 백엔드 프로덕션 빌드 도입: `tsconfig.build.json` + `yarn build`(tsc → dist) / `yarn start`(node dist)
-- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤 secure 세션 쿠키 동작 보장
+- ✅ `app.set("trust proxy", 1)` 추가 — 프록시 뒤에서 클라이언트 IP(`req.ip`) 인식 (인증 레이트 리밋이 의존)
 - ✅ `.env.example` 실제 코드 기준 재정비 (backend/frontend), 배포 가이드 `docs/DEPLOYMENT.md` 신규 작성
 
 ### v4.3 (2026-07-01)

@@ -44,6 +44,16 @@ apiClient.interceptors.response.use(
   }
 );
 
+// 실패 원인에 맞는 안내 문구 — 모두 "네트워크 확인"으로 묶으면 사용자 문의로 원인을 가릴 수 없다
+export const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (!axios.isAxiosError(error)) return fallback;
+  if (error.code === 'ERR_UNAUTHORIZED') return '로그인이 만료되었어요. 다시 로그인해주세요.';
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') return '서버 응답이 늦어요. 잠시 후 다시 시도해주세요.';
+  if (!error.response) return '서버에 연결하지 못했어요. 네트워크 연결을 확인해주세요.';
+  if (error.response.status >= 500) return '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
+  return fallback;
+};
+
 export const api = {
   get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     const response = await apiClient.get<T>(url, config);

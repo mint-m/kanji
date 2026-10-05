@@ -1,10 +1,11 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import Navbar from 'components/Navbar';
 import Brand from 'components/Brand/Brand';
 import ProtectedRoute from './ProtectedRoute';
+import ErrorBoundary from 'components/ErrorBoundary';
 import { setUser } from 'store/modules/user';
 import { AuthBannerProvider } from 'contexts/AuthBannerContext';
 import { loginWithGoogleIdToken, toUserState, getUserLocally } from 'services/authService';
@@ -26,6 +27,7 @@ const UserStats = lazy(() => import('pages/UserStatsPage'));
 const AppContent = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
 
   useEffect(() => {
@@ -55,62 +57,65 @@ const AppContent = () => {
     <AuthBannerProvider>
       <Brand />
       <Navbar />
-      <Suspense fallback={<div>Loading...</div>}>
-        <Routes>
-          <Route path='/' element={<Main />} />
-          <Route path='/login' element={<Login />} />
-          <Route path='/auth/kakao/callback' element={<KakaoOAuthCallback />} />
-          <Route path='*' element={<NotFound />} />
+      {/* 경로가 바뀌면 다시 시도하도록 key로 초기화한다 */}
+      <ErrorBoundary key={location.pathname}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <Routes>
+            <Route path='/' element={<Main />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/auth/kakao/callback' element={<KakaoOAuthCallback />} />
+            <Route path='*' element={<NotFound />} />
 
-          <Route path='/profile' element={
-            <ProtectedRoute>
-              <UserProfile />
-            </ProtectedRoute>
-          } />
+            <Route path='/profile' element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/profile/stats' element={
-            <ProtectedRoute>
-              <UserStats />
-            </ProtectedRoute>
-          } />
+            <Route path='/profile/stats' element={
+              <ProtectedRoute>
+                <UserStats />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/bookmark' element={
-            <ProtectedRoute>
-              <Bookmark />
-            </ProtectedRoute>
-          } />
+            <Route path='/bookmark' element={
+              <ProtectedRoute>
+                <Bookmark />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/bookmark-study' element={
-            <ProtectedRoute>
-              <BookmarkStudy />
-            </ProtectedRoute>
-          } />
+            <Route path='/bookmark-study' element={
+              <ProtectedRoute>
+                <BookmarkStudy />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/select-level' element={
-            <ProtectedRoute>
-              <SelectLevel />
-            </ProtectedRoute>
-          } />
+            <Route path='/select-level' element={
+              <ProtectedRoute>
+                <SelectLevel />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/dashboard' element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+            <Route path='/dashboard' element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/level-setup' element={
-            <ProtectedRoute>
-              <LevelSetup />
-            </ProtectedRoute>
-          } />
+            <Route path='/level-setup' element={
+              <ProtectedRoute>
+                <LevelSetup />
+              </ProtectedRoute>
+            } />
 
-          <Route path='/flash-cards' element={
-            <ProtectedRoute>
-              <FlashCard />
-            </ProtectedRoute>
-          } />
-        </Routes>
-      </Suspense>
+            <Route path='/flash-cards' element={
+              <ProtectedRoute>
+                <FlashCard />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </AuthBannerProvider>
   );
 };
