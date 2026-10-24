@@ -41,8 +41,16 @@ const getStatus = (path: string) =>
   });
 
 describe('GET /bookmarks 쿼리 검증', () => {
-  it('북마크 복습 페이지 요청(BookmarkStudyPage: limit=150, sortBy=recent→last_studied_at)을 허용한다', async () => {
-    expect(await getStatus('/?limit=150&sortBy=last_studied_at')).toBe(200);
+  it('북마크 복습 페이지 요청(BookmarkStudyPage: limit=150, sortBy=recent→bookmarked_at)을 허용한다', async () => {
+    expect(await getStatus('/?limit=150&sortBy=bookmarked_at')).toBe(200);
+  });
+
+  it('레벨 필터는 daily를 포함한 모든 학습 레벨을 허용한다', async () => {
+    expect(await getStatus('/?level=daily&sortBy=level')).toBe(200);
+  });
+
+  it('정의되지 않은 정렬 필드는 400', async () => {
+    expect(await getStatus('/?sortBy=kanji')).toBe(400);
   });
 
   it('북마크 최대 개수를 넘는 limit은 400', async () => {

@@ -95,7 +95,7 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
       level,
       page = 1,
       limit = 20,
-      sortBy = 'last_studied_at',
+      sortBy = 'bookmarked_at',
       sortOrder = 'desc',
     } = req.query;
 
@@ -138,14 +138,7 @@ export const getBookmarks = async (req: AuthenticatedRequest, res: Response): Pr
     const totalCount = totalCountResult[0]?.total || 0;
 
     // Add sorting
-    const sortField =
-      sortBy === 'level'
-        ? 'word.level'
-        : sortBy === 'step'
-        ? 'word.step'
-        : sortBy === 'kanji'
-        ? 'word.kanji'
-        : `${sortBy}`;
+    const sortField = sortBy === 'level' ? 'word.level' : sortBy === 'step' ? 'word.step' : `${sortBy}`;
 
     pipeline.push({
       $sort: { [sortField]: sortOrder === 'desc' ? -1 : 1 },

@@ -8,11 +8,11 @@ jest.mock('../services/apiClient', () => ({
 describe('bookmarkService.getBookmarks', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('sortBy recent → last_studied_at으로 변환해서 전송', async () => {
+  it('sortBy recent → bookmarked_at(북마크한 시각)으로 변환해서 전송', async () => {
     (api.get as jest.Mock).mockResolvedValue({ success: true, data: null });
     await bookmarkService.getBookmarks({ sortBy: 'recent' });
     expect(api.get as jest.Mock).toHaveBeenCalledWith(
-      expect.stringContaining('sortBy=last_studied_at'),
+      expect.stringContaining('sortBy=bookmarked_at'),
     );
   });
 
@@ -35,7 +35,7 @@ describe('bookmarkService.getBookmarks', () => {
     await bookmarkService.getBookmarks({ level: 'N3', sortBy: 'recent', page: 2 });
     const url = (api.get as jest.Mock).mock.calls[0][0] as string;
     expect(url).toContain('level=N3');
-    expect(url).toContain('sortBy=last_studied_at');
+    expect(url).toContain('sortBy=bookmarked_at');
     expect(url).toContain('page=2');
   });
 });

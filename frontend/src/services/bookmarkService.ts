@@ -49,7 +49,8 @@ const bookmarkService = {
     const params = new URLSearchParams();
     if (options?.level) params.append('level', options.level);
     if (options?.sortBy) {
-      const sortMap: Record<string, string> = { recent: 'last_studied_at', level: 'level', step: 'step' };
+      // 최근 순 = 북마크한 시각 (마지막 학습 시각이 아니다)
+      const sortMap: Record<string, string> = { recent: 'bookmarked_at', level: 'level', step: 'step' };
       params.append('sortBy', sortMap[options.sortBy] ?? options.sortBy);
     }
     if (options?.page) params.append('page', options.page.toString());
