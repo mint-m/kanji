@@ -16,6 +16,8 @@ description: kanji 저장소의 변경 검증 절차. 코드를 수정한 뒤 �
 
 E2E는 API mock 기반이라 백엔드·DB를 띄우지 않아도 된다 (`e2e/helpers/`). `.env`가 없으면 `PORT=4200`을 함께 준다.
 
+백엔드 `yarn test`에는 메모리 MongoDB로 실제 라우터·모델·집계 쿼리를 돌리는 통합 테스트(`learningFlow.int.test.ts`)가 포함된다. 첫 실행 때 MongoDB 바이너리를 내려받는다(`mongodb-memory-server`).
+
 ## 함께 갱신해야 하는 것
 
 - **API 응답 형태가 바뀌었다** → `frontend/src/services/types.ts`의 타입과 `docs/PROJECT_DOCS.md`의 해당 엔드포인트 표. 응답 예시 JSON은 문서에 두지 않는다 — 타입과 테스트가 단일 출처다.
@@ -25,7 +27,7 @@ E2E는 API mock 기반이라 백엔드·DB를 띄우지 않아도 된다 (`e2e/h
 
 ## 학습 플로우를 건드렸다면
 
-`complete-word` / `complete-deck` / 윈도우 전환은 단위 테스트만으로는 부족하다. 다음을 확인한다 (괄호는 지키는 E2E):
+`complete-word` / `complete-deck` / 윈도우 전환은 컨트롤러 단위 테스트만으로는 부족하다. 서버 쪽 흐름은 `learningFlow.int.test.ts`가 실제 DB로 지킨다(패스 재셔플, 다음 윈도우, 순환 윈도우 끝, 서브 루프, 위치 어긋남 409, 동시 생성). 화면 쪽은 다음을 확인한다 (괄호는 지키는 E2E):
 
 - 덱 마지막 단어에서 `windowComplete: true`가 오고, 프론트가 `complete-deck`을 한 번만 호출하는지 (`윈도우 완료 흐름`)
 - "모름"이 남은 패스가 재셔플되어 새 패스로 이어지는지 (`패스 완료 흐름`)
