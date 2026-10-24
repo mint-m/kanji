@@ -168,8 +168,7 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     // Update user statistics
     const user = await User.findById(userId);
     if (user) {
-      user.updateStudyStats(timeSpent || 0, 1);
-      user.updateDailyStreak();
+      user.recordStudy(timeSpent || 0);
       await user.save();
     }
 

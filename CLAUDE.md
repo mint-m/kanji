@@ -59,6 +59,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `windowComplete: true` 응답 후 프론트가 `complete-deck`을 호출해야 다음 윈도우가 생성된다. `complete-deck` 중복 호출은 400 — `FlashCardPage`의 `deckCompletedRef`가 방어.
 - Sub 세션의 `complete-deck`은 다음 윈도우 대신 같은 스텝의 단어 **전체**로 새 덱을 만든다(`restartWindow`, `isSubLoop: true`) — "다시 학습하기" UI로 분기. 마지막 패스의 단어만 섞으면 루프가 점점 줄어든다 (`deckController.test.ts` "서브").
 - 새 윈도우를 만들 때(`createNewSession`·`generateNextSlidingWindow`·`restartWindow`) 새 덱 단어의 `is_window_completed`를 리셋한다 — 겹치는 스텝의 단어가 이전 윈도우의 '알았음'을 들고 오지 않는다.
+- 연속 학습일은 `statistics.lastStudyDate`(한국 시간 날짜)로 센다. 로그인·토큰 갱신이 `profile.lastActiveAt`을 바꾸므로 그 값으로 판단하면 로그인한 날의 학습이 빠진다 (`userModel.test.ts`).
 - 완료 화면에서 `complete-deck` 없이 이탈하면 세션이 `currentIndex = 덱 길이`로 남는다 — 재진입 시 `FlashCardPage`가 `deckStatus`로 완료 화면을 복원한다 (E2E `완료 화면 재진입` 참조).
 - 북마크 조회 `limit` 상한은 `BOOKMARK_LIMIT`(150)과 같아야 한다 — 복습 페이지가 전체를 한 번에 조회한다 (`bookmarkRoutes.test.ts` 참조).
 - `ApiError`(`services/authService.ts`)가 409 응답의 `code`를 보존한다 — `apiClient`가 4xx를 throw로 변환하기 때문. 에러 처리 수정 시 유지 필수.

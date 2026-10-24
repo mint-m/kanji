@@ -6,6 +6,7 @@ import {
   AuthProvider,
 } from '../interfaces/user';
 import { ConflictError } from '../utils/errors';
+import { toKstDate, daysBetween } from '../utils/date';
 
 const UserSchema = new mongoose.Schema<UserDocument>(
   {
@@ -64,6 +65,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       averageSessionTime: { type: Number, default: 0, min: 0 },
       studyDaysCount: { type: Number, default: 0, min: 0 },
       favoriteStudyTime: { type: String },
+      lastStudyDate: { type: String }, // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
     },
     isActive: {
       type: Boolean,
@@ -95,27 +97,30 @@ UserSchema.methods.updateLastActive = function (this: UserDocument): void {
   this.profile.lastActiveAt = new Date();
 };
 
-// 하루에 한 번만 streak/studyDaysCount 증가, lastActiveAt 갱신
-UserSchema.methods.updateDailyStreak = function (this: UserDocument): void {
-  const now = new Date();
-  const last = this.profile.lastActiveAt;
-  if (last && last.toDateString() === now.toDateString()) return;
+// 단어 응답 1회를 기록한다. 연속 학습일은 실제로 학습한 날(한국 시간)만 센다 —
+// 로그인·토큰 갱신도 lastActiveAt을 바꾸므로 그 값으로 판단하면 로그인한 날의 학습이 누락된다
+UserSchema.methods.recordStudy = function (this: UserDocument, timeSpent: number): void {
+  const stats = this.statistics;
+  const today = toKstDate();
+  // lastStudyDate 도입 전 사용자는 이전 방식의 기준이던 마지막 접속일을 이어받는다
+  const lastStudyDate = stats.lastStudyDate ?? (this.profile.lastActiveAt && toKstDate(this.profile.lastActiveAt));
 
-  const toMidnight = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  stats.totalWordsStudied += 1;
+  stats.totalTimeSpent += timeSpent;
+  this.profile.lastActiveAt = new Date();
 
-  const diffDays = last ? Math.round((toMidnight(now) - toMidnight(last)) / 86400000) : 0;
-  this.statistics.currentStreak = diffDays === 1 ? this.statistics.currentStreak + 1 : 1;
-  if (this.statistics.currentStreak > this.statistics.longestStreak) {
-    this.statistics.longestStreak = this.statistics.currentStreak;
+  if (stats.lastStudyDate === today) return;
+
+  const gap = lastStudyDate ? daysBetween(lastStudyDate, today) : null;
+  if (gap === 0) {
+    // 도입 전 사용자가 오늘 이미 접속한 경우 — 이전 방식이 오늘을 셌을 수 있으니 연속 일수는 유지한다
+    stats.currentStreak = Math.max(stats.currentStreak, 1);
+  } else {
+    stats.currentStreak = gap === 1 ? stats.currentStreak + 1 : 1;
+    stats.studyDaysCount += 1;
   }
-  this.statistics.studyDaysCount++;
-  this.profile.lastActiveAt = now;
-};
-
-UserSchema.methods.updateStudyStats = function (this: UserDocument, timeSpent: number, wordsStudied: number): void {
-  this.statistics.totalTimeSpent += timeSpent;
-  this.statistics.totalWordsStudied += wordsStudied;
+  stats.longestStreak = Math.max(stats.longestStreak, stats.currentStreak);
+  stats.lastStudyDate = today;
 };
 
 UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | 'intermediate' | 'advanced' {

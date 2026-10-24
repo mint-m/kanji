@@ -92,8 +92,7 @@ const makeMockWordProgress = (overrides: any = {}) => ({
 });
 
 const makeUser = () => ({
-  updateStudyStats: jest.fn(),
-  updateDailyStreak: jest.fn(),
+  recordStudy: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
 });
 
@@ -216,8 +215,8 @@ describe('completeWord', () => {
       res,
     );
 
-    expect(mockUser.updateDailyStreak).toHaveBeenCalled();
-    expect(mockUser.updateStudyStats).toHaveBeenCalledWith(5, 1);
+    expect(mockUser.recordStudy).toHaveBeenCalledWith(5);
+    expect(mockUser.save).toHaveBeenCalled();
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data.passComplete).toBe(false);
     expect(data.windowComplete).toBe(false);

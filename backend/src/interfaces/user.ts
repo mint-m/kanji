@@ -31,6 +31,7 @@ export interface UserStats {
   averageSessionTime: number;
   studyDaysCount: number;
   favoriteStudyTime?: string; // Most common study hour
+  lastStudyDate?: string; // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
 }
 
 // User profile interface
@@ -68,8 +69,7 @@ export interface UserDocument extends Document {
   // Instance methods
   getDisplayName(): string;
   updateLastActive(): void;
-  updateDailyStreak(): void;
-  updateStudyStats(timeSpent: number, wordsStudied: number): void;
+  recordStudy(timeSpent: number): void;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
   canReceiveReminders(): boolean;
   isNewUser(): boolean;
