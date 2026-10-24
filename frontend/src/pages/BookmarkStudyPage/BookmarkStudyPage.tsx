@@ -1,11 +1,13 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import bookmarkService, { Bookmark } from 'services/bookmarkService';
-import { DeckWord, LearningLevel, ProgressType } from 'services/types';
+import { LearningLevel, ProgressType, Word } from 'services/types';
 import { getErrorMessage } from 'services/apiClient';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
 import StudyCard from 'components/StudyCard';
-import CenterDiv from 'components/CommonStyled/CenterDiv';
+import StudyHeader from 'components/StudyHeader';
+import DefaultButton from 'components/CommonStyled/DefaultButton';
+import { shuffle } from 'utils/shuffle';
 import * as styles from './BookmarkStudyPage.css';
 
 interface LocationState {
@@ -13,20 +15,30 @@ interface LocationState {
   sortBy?: string;
 }
 
+// 북마크 학습 — 섞어서 한 바퀴, 몰랐던 단어만 다시 섞어 다음 바퀴. 다 알 때까지 반복할 수 있다
+// (응답은 서버에 기록하지 않는다: 진도·복습 일정과 섞이지 않는 자유 연습)
 const BookmarkStudyPage: FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { level, sortBy } = (state as LocationState) || {};
 
-  const [deck, setDeck] = useState<DeckWord[] | null>(null);
+  const [allWords, setAllWords] = useState<Word[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wordIndex, setWordIndex] = useState(0);
-  const [masteredCount, setMasteredCount] = useState(0);
-  const [learningCount, setLearningCount] = useState(0);
+  const [roundWords, setRoundWords] = useState<Word[]>([]);
+  const [round, setRound] = useState(1);
+  const [index, setIndex] = useState(0);
+  const [unknown, setUnknown] = useState<Word[]>([]);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
   const progressTypeMapRef = useRef<Map<string, ProgressType | undefined>>(new Map());
+
+  const startRound = useCallback((words: Word[], roundNumber: number) => {
+    setRoundWords(shuffle(words));
+    setRound(roundNumber);
+    setIndex(0);
+    setUnknown([]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -39,77 +51,89 @@ const BookmarkStudyPage: FC = () => {
     }).then(res => {
       if (!active) return;
       if (res.success && res.data?.bookmarks) {
-        const progressMap = new Map<string, ProgressType | undefined>();
-        const words: DeckWord[] = res.data.bookmarks.map((b: Bookmark, idx: number) => {
-          progressMap.set(b.word._id, b.progress_type);
-          return { ...b.word, index: idx, isCurrent: false, isWindowCompleted: false, isBookmarked: true };
-        });
-        progressTypeMapRef.current = progressMap;
-        setDeck(words);
-        setBookmarkedIds(new Set(res.data.bookmarks.map((b: Bookmark) => b.word._id)));
+        progressTypeMapRef.current = new Map(res.data.bookmarks.map((b: Bookmark) => [b.word._id, b.progress_type]));
+        const words = res.data.bookmarks.map((b: Bookmark) => b.word);
+        setAllWords(words);
+        setBookmarkedIds(new Set(words.map((w) => w._id)));
+        startRound(words, 1);
       } else {
-        setError('복습 단어를 불러오는데 실패했습니다.');
+        setError('북마크 단어를 불러오지 못했어요.');
       }
     }).catch(err => {
       if (!active) return;
-      setError(getErrorMessage(err, '복습 단어를 불러오는데 실패했습니다.'));
+      setError(getErrorMessage(err, '북마크 단어를 불러오지 못했어요.'));
     }).finally(() => {
       if (active) setIsLoading(false);
     });
     return () => { active = false; };
-  }, [level, sortBy]);
+  }, [level, sortBy, startRound]);
 
-  const handleKnowClick = useCallback((know: boolean) => {
-    know ? setMasteredCount(p => p + 1) : setLearningCount(p => p + 1);
-    setWordIndex(p => p + 1);
-  }, []);
+  useEffect(() => {
+    if (!bookmarkWarning) return;
+    const timer = setTimeout(() => setBookmarkWarning(null), 5000);
+    return () => clearTimeout(timer);
+  }, [bookmarkWarning]);
 
-  const currentWordId = deck?.[wordIndex]?._id;
-  const currentProgressType = currentWordId
-    ? progressTypeMapRef.current.get(currentWordId)
-    : undefined;
+  const current = roundWords[index];
+
+  const handleAnswer = useCallback((know: boolean) => {
+    if (!current) return;
+    if (!know) setUnknown((prev) => [...prev, current]);
+    setIndex((prev) => prev + 1);
+  }, [current]);
 
   const handleBookmark = useToggleBookmark({
-    wordId: currentWordId,
-    progressType: currentProgressType,
+    wordId: current?._id,
+    progressType: current ? progressTypeMapRef.current.get(current._id) : undefined,
     setBookmarkedIds,
     onWarning: setBookmarkWarning,
     onLimitError: setBookmarkWarning,
   });
 
-  if (isLoading) return <CenterDiv><div>복습 단어를 불러오는 중...</div></CenterDiv>;
-  if (error) return <CenterDiv><div className={styles.centerContent}><p>{error}</p><button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button></div></CenterDiv>;
+  const backButton = (
+    <DefaultButton variant="ghost" className={styles.backLink} onClick={() => navigate('/bookmark')}>← 북마크</DefaultButton>
+  );
 
-  if (!deck || deck.length === 0) {
+  if (isLoading) return <div className={styles.page}><p className="loading-text">북마크 단어를 불러오는 중...</p></div>;
+
+  if (error || !allWords || allWords.length === 0) {
     return (
-      <CenterDiv>
-        <div className={styles.centerContent}>
-          <p>복습할 단어가 없습니다.</p>
-          <button className={styles.backBtn} onClick={() => navigate('/bookmark')}>돌아가기</button>
+      <div className={styles.page}>
+        {backButton}
+        <div className={styles.resultCard}>
+          <p>{error ?? '북마크한 단어가 없어요. 학습 중 어려운 단어에 ☆를 눌러 모아 보세요.'}</p>
+          <DefaultButton onClick={() => navigate('/bookmark')}>북마크로 돌아가기</DefaultButton>
         </div>
-      </CenterDiv>
+      </div>
     );
   }
 
-  const isComplete = wordIndex >= deck.length;
-
-  if (isComplete) {
+  if (!current) {
+    const allKnown = unknown.length === 0;
     return (
       <div className={styles.page}>
-        <div className={styles.flashCardArea}>
-          <div className={styles.resultCard}>
-            <h2 className={styles.resultTitle}>복습 완료!</h2>
-            <div className={styles.statsRow}>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>알았음</span>
-                <span className={styles.statValueGreen}>{masteredCount}</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>몰랐음</span>
-                <span className={styles.statValueAmber}>{learningCount}</span>
-              </div>
+        {backButton}
+        <div className={styles.resultCard}>
+          <h2 className={styles.resultTitle}>{allKnown ? '북마크 단어를 모두 알았어요 🎉' : `${round}회차 완료`}</h2>
+          <div className={styles.statsRow}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>알았음</span>
+              <span className={styles.statValueGreen}>{roundWords.length - unknown.length}</span>
             </div>
-            <button className={styles.backBtn} onClick={() => navigate('/bookmark')}>북마크로 돌아가기</button>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>몰랐음</span>
+              <span className={styles.statValueAmber}>{unknown.length}</span>
+            </div>
+          </div>
+          <div className={styles.actions}>
+            {allKnown ? (
+              <DefaultButton variant="primary" onClick={() => startRound(allWords, 1)} autoFocus>처음부터 다시</DefaultButton>
+            ) : (
+              <DefaultButton variant="primary" onClick={() => startRound(unknown, round + 1)} autoFocus>
+                몰랐던 {unknown.length}개 다시
+              </DefaultButton>
+            )}
+            <DefaultButton onClick={() => navigate('/bookmark')}>북마크로 돌아가기</DefaultButton>
           </div>
         </div>
       </div>
@@ -118,23 +142,21 @@ const BookmarkStudyPage: FC = () => {
 
   return (
     <div className={styles.page}>
-      <div className={styles.flashCardArea}>
-        <div className={styles.header}>
-          <button className={styles.backLink} onClick={() => navigate('/bookmark')}>← 북마크</button>
-          <span className={styles.progress}>{wordIndex + 1} / {deck.length}</span>
-        </div>
-        {bookmarkWarning && (
-          <div className={styles.bookmarkWarningBanner}>
-            🔖 {bookmarkWarning}
-          </div>
-        )}
-        <StudyCard
-          word={deck[wordIndex]}
-          onAnswer={handleKnowClick}
-          isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
-          onBookmark={handleBookmark}
-        />
-      </div>
+      {backButton}
+      <StudyHeader
+        title="북마크 학습"
+        subtitle={`${round}회차`}
+        counter={`${index + 1} / ${roundWords.length}`}
+        progress={{ value: index, max: roundWords.length, label: '이번 회차 진행', caption: `몰랐음 ${unknown.length}` }}
+      />
+      {bookmarkWarning && <div className={styles.bookmarkWarningBanner} role="status">🔖 {bookmarkWarning}</div>}
+      <StudyCard
+        key={`${round}-${index}`}
+        word={current}
+        onAnswer={handleAnswer}
+        isBookmarked={bookmarkedIds.has(current._id)}
+        onBookmark={handleBookmark}
+      />
     </div>
   );
 };

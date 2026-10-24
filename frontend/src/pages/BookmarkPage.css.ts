@@ -313,6 +313,11 @@ export const cancelBtn = style({
 });
 
 export const notesDisplay = style({
+  width: '100%',
+  border: 'none',
+  background: 'none',
+  fontFamily: 'inherit',
+  textAlign: 'left',
   fontSize: vars.fontSize.sm,
   color: vars.color.textMuted,
   cursor: 'pointer',
