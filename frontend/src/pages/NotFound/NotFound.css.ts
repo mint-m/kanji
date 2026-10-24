@@ -6,7 +6,7 @@ export const container = style({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  height: '100vh',
+  minHeight: `calc(100vh - ${vars.layout.header})`,
   gap: vars.space.lg,
 });
 

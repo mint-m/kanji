@@ -4,13 +4,15 @@ import * as styles from './DefaultButton.css';
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   pressed?: boolean;
+  variant?: keyof typeof styles.variant;
 };
 
 const DefaultButton = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, pressed: isPressed, ...props }, ref) => (
+  ({ className, pressed: isPressed, variant = 'default', type = 'button', ...props }, ref) => (
     <button
       ref={ref}
-      className={clsx(styles.button, isPressed && styles.pressed, className)}
+      type={type}
+      className={clsx(styles.button, styles.variant[variant], isPressed && styles.pressed, className)}
       {...props}
     />
   )

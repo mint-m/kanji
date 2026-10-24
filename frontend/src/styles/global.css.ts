@@ -13,6 +13,12 @@ globalStyle('body', {
   fontFamily: vars.font.base,
 });
 
+// 키보드로 이동할 때만 보이는 포커스 표시 — 컴포넌트에서 outline을 지우지 않는다
+globalStyle(':focus-visible', {
+  outline: `2px solid ${vars.color.focus}`,
+  outlineOffset: '2px',
+});
+
 // Utility classes (shared across components)
 globalStyle('.card', {
   backgroundColor: vars.color.white,
@@ -61,7 +67,6 @@ globalStyle('.filter-select', {
   backgroundColor: vars.color.white,
   cursor: 'pointer',
   fontSize: vars.fontSize.base,
-  outline: 'none',
 });
 
 globalStyle('.filter-select:focus', {

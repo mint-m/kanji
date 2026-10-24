@@ -10,7 +10,7 @@ const shimmerBg = `linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)
 
 export const page = style({
   display: 'grid',
-  height: '100vh',
+  height: `calc(100vh - ${vars.layout.header})`,
   gridTemplateColumns: '1fr auto 1fr',
   gridTemplateRows: '1fr 1fr',
   placeItems: 'center',

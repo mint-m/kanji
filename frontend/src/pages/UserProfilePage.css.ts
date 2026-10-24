@@ -116,7 +116,6 @@ export const nameInput = style({
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.bg,
   boxShadow: TRACK,
-  outline: 'none',
   width: '160px',
   maxWidth: '100%',
 });
