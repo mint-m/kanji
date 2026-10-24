@@ -104,6 +104,16 @@ yarn start
 - Frontend: http://localhost:4200
 - Backend: http://localhost:8000
 
+**운영 DB 없이 실행** (메모리 MongoDB + 샘플 단어 124개):
+
+```bash
+# 루트 디렉토리에서 — 종료하면 데이터도 사라진다
+yarn start:memory
+```
+
+- Atlas 접속 정보가 없어도 된다. 시작 로그에 나오는 한 줄을 브라우저 콘솔에 붙여넣으면 개발용 계정으로 로그인된다
+- `.env`에 Google·카카오 키가 있으면 실제 로그인도 동작한다 (사용자는 메모리 DB에만 생긴다)
+
 **개별 실행**:
 
 ```bash

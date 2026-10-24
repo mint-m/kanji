@@ -16,6 +16,7 @@ kanji — JLPT 일본어 단어 학습 앱 (슬라이딩 윈도우 덱 시스템
 
 ```bash
 yarn start                  # frontend + backend
+yarn start:memory           # frontend + backend on in-memory MongoDB with sample words (no Atlas)
 cd frontend && yarn start   # frontend only (http://localhost:4200)
 cd backend && yarn dev      # backend only (http://localhost:8000)
 cd backend && yarn build    # production build (tsc → dist/)
