@@ -24,9 +24,11 @@ jest.mock('../store/modules/user', () => ({
 
 import { loginWithKakaoCode, linkKakaoAccount, getUserLocally, saveUserLocally } from '../services/authService';
 
-// 컴포넌트가 모듈 로드 시점에 env를 읽으므로 require 전에 설정한다 (로컬 .env 없이도 통과하도록)
+// 모듈 로드 시점에 env를 읽으므로 require 전에 설정한다 (로컬 .env 없이도 통과하도록)
 process.env.REACT_APP_KAKAO_REDIRECT_URI = 'http://localhost/auth/kakao/callback';
 const KakaoOAuthCallback = require('../components/auth/KakaoOAuthCallback').default;
+
+const STATE_KEY = 'kakao_oauth_state';
 
 const setSearchParams = (params: Record<string, string>) => {
   const url = new URL('http://localhost/auth/kakao/callback');
@@ -35,9 +37,14 @@ const setSearchParams = (params: Record<string, string>) => {
   (window as any).location = { search: url.search, href: '' };
 };
 
+// startKakaoAuth가 이 탭에 남기는 값
+const saveState = (state: string, mode: 'login' | 'link') =>
+  sessionStorage.setItem(STATE_KEY, JSON.stringify({ state, mode }));
+
 describe('KakaoOAuthCallback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('code 없으면 /login으로 리다이렉트', async () => {
@@ -51,22 +58,25 @@ describe('KakaoOAuthCallback', () => {
     expect(loginWithKakaoCode).not.toHaveBeenCalled();
   });
 
-  it('state 없을 때 loginWithKakaoCode 호출 후 / 으로 이동', async () => {
-    setSearchParams({ code: 'kakao-auth-code' });
+  it('로그인 모드 state가 일치하면 loginWithKakaoCode 호출 후 / 으로 이동', async () => {
+    saveState('s-login', 'login');
+    setSearchParams({ code: 'kakao-auth-code', state: 's-login' });
     const mockUser = { _id: 'u1', email: 'a@b.com', name: '유저', type: 'kakao', activeProgressType: null };
     (loginWithKakaoCode as jest.Mock).mockResolvedValue({ token: 'jwt', user: mockUser });
 
     render(<KakaoOAuthCallback />);
 
     await waitFor(() => {
-      expect(loginWithKakaoCode).toHaveBeenCalledWith('kakao-auth-code', expect.any(String));
+      expect(loginWithKakaoCode).toHaveBeenCalledWith('kakao-auth-code', 'http://localhost/auth/kakao/callback');
       expect(mockDispatch).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
     });
+    expect(sessionStorage.getItem(STATE_KEY)).toBeNull();
   });
 
-  it('state=link일 때 linkKakaoAccount 호출 후 /profile로 이동', async () => {
-    setSearchParams({ code: 'kakao-auth-code', state: 'link' });
+  it('연동 모드 state가 일치하면 linkKakaoAccount 호출 후 /profile로 이동', async () => {
+    saveState('s-link', 'link');
+    setSearchParams({ code: 'kakao-auth-code', state: 's-link' });
     const storedUser = { _id: 'u1', email: 'a@b.com', name: '유저', type: 'google', activeProgressType: null, authProviders: ['google'] };
     (getUserLocally as jest.Mock).mockReturnValue(storedUser);
     (linkKakaoAccount as jest.Mock).mockResolvedValue(['google', 'kakao']);
@@ -74,15 +84,48 @@ describe('KakaoOAuthCallback', () => {
     render(<KakaoOAuthCallback />);
 
     await waitFor(() => {
-      expect(linkKakaoAccount).toHaveBeenCalledWith('kakao-auth-code', expect.any(String));
+      expect(linkKakaoAccount).toHaveBeenCalledWith('kakao-auth-code', 'http://localhost/auth/kakao/callback');
       expect(saveUserLocally).toHaveBeenCalledWith({ ...storedUser, authProviders: ['google', 'kakao'] });
       expect(mockNavigate).toHaveBeenCalledWith('/profile', { replace: true });
     });
     expect(loginWithKakaoCode).not.toHaveBeenCalled();
   });
 
-  it('state=link이고 getUserLocally가 null이어도 /profile로 이동', async () => {
-    setSearchParams({ code: 'kakao-auth-code', state: 'link' });
+  it('외부에서 만든 링크(state=link, 이 탭에서 시작한 요청 없음) → 코드를 보내지 않는다', async () => {
+    setSearchParams({ code: 'attacker-code', state: 'link' });
+    (getUserLocally as jest.Mock).mockReturnValue({ _id: 'victim' });
+
+    render(<KakaoOAuthCallback />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/profile', {
+        replace: true,
+        state: { linkError: expect.stringContaining('확인하지 못했어요') },
+      });
+    });
+    expect(linkKakaoAccount).not.toHaveBeenCalled();
+    expect(loginWithKakaoCode).not.toHaveBeenCalled();
+  });
+
+  it('state가 저장된 값과 다르면 → 로그인 화면으로, 코드를 보내지 않는다', async () => {
+    saveState('mine', 'login');
+    setSearchParams({ code: 'kakao-auth-code', state: 'someone-else' });
+    (getUserLocally as jest.Mock).mockReturnValue(null);
+
+    render(<KakaoOAuthCallback />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/login', {
+        replace: true,
+        state: { error: expect.stringContaining('확인하지 못했어요') },
+      });
+    });
+    expect(loginWithKakaoCode).not.toHaveBeenCalled();
+  });
+
+  it('연동 모드에서 getUserLocally가 null이어도 /profile로 이동', async () => {
+    saveState('s-link', 'link');
+    setSearchParams({ code: 'kakao-auth-code', state: 's-link' });
     (getUserLocally as jest.Mock).mockReturnValue(null);
     (linkKakaoAccount as jest.Mock).mockResolvedValue(['google', 'kakao']);
 
@@ -95,7 +138,8 @@ describe('KakaoOAuthCallback', () => {
   });
 
   it('loginWithKakaoCode 실패 시 /login으로 이동', async () => {
-    setSearchParams({ code: 'bad-code' });
+    saveState('s-login', 'login');
+    setSearchParams({ code: 'bad-code', state: 's-login' });
     (loginWithKakaoCode as jest.Mock).mockRejectedValue(new Error('login failed'));
 
     render(<KakaoOAuthCallback />);
@@ -106,7 +150,8 @@ describe('KakaoOAuthCallback', () => {
   });
 
   it('linkKakaoAccount 실패 시 /profile로 이동', async () => {
-    setSearchParams({ code: 'bad-code', state: 'link' });
+    saveState('s-link', 'link');
+    setSearchParams({ code: 'bad-code', state: 's-link' });
     (linkKakaoAccount as jest.Mock).mockRejectedValue(new Error('link failed'));
 
     render(<KakaoOAuthCallback />);

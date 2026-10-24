@@ -9,10 +9,8 @@ import deckService from 'services/deckService';
 import { CurrentDeck } from 'services/types';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally, updateLocalUser } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
+import { startKakaoAuth } from 'services/kakaoOAuth';
 import * as styles from './UserProfilePage.css';
-
-const KAKAO_REST_API_KEY = process.env['REACT_APP_KAKAO_REST_API_KEY'];
-const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
@@ -121,18 +119,6 @@ const UserProfilePage: FC = () => {
     onError: () => setLinkError('Google 인증에 실패했습니다.'),
   });
 
-  const handleKakaoLink = () => {
-    if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) return;
-    const url =
-      `https://kauth.kakao.com/oauth/authorize` +
-      `?client_id=${KAKAO_REST_API_KEY}` +
-      `&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}` +
-      `&response_type=code` +
-      `&scope=account_email,profile_nickname` +
-      `&state=link`;
-    window.location.href = url;
-  };
-
   const linkedProviders: string[] = userData?.authProviders ?? (userData?.type ? [userData.type] : []);
 
   if (isLoading) {
@@ -236,7 +222,7 @@ const UserProfilePage: FC = () => {
             ) : (
               <button
                 className={styles.linkBtn}
-                onClick={handleKakaoLink}
+                onClick={() => startKakaoAuth('link')}
                 disabled={linkLoading === 'kakao'}
               >
                 연동하기

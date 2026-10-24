@@ -66,6 +66,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - 프론트에서 상대 경로 API 호출 금지 — Vercel/Render 분리 배포에서 405 발생 (커밋 84d8bf8 참조). 항상 `API_URL` 기반으로 호출.
 - 프론트 CI 빌드는 CRA 기준으로 엄격함 — cleanup 함수에서 ref 직접 참조 등 lint 위반 시 빌드 실패 (커밋 37ebbfc 참조).
 - `backend/src/scripts/`는 일회성 데이터 관리 스크립트 — 프로덕션 빌드(`tsconfig.build.json`)에서 제외됨.
+- 카카오 OAuth는 `startKakaoAuth`가 탭(sessionStorage)에 저장한 무작위 `state`를 콜백에서 대조한 뒤에만 코드를 서버로 보낸다(`services/kakaoOAuth.ts`). 대조를 빼면 남이 만든 콜백 링크로 공격자 카카오가 연동돼 계정을 빼앗긴다 (`KakaoOAuthCallback.test.tsx`).
 
 ## Code Rules
 

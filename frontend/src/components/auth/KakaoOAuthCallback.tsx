@@ -2,9 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginWithKakaoCode, linkKakaoAccount, toUserState, getUserLocally, saveUserLocally } from 'services/authService';
+import { consumeKakaoState, KAKAO_REDIRECT_URI } from 'services/kakaoOAuth';
 import { setUser } from 'store/modules/user';
-
-const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI']!;
 
 const KakaoOAuthCallback = () => {
   const navigate = useNavigate();
@@ -17,14 +16,22 @@ const KakaoOAuthCallback = () => {
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    const state = params.get('state'); // 'link' or null
+    const mode = consumeKakaoState(params.get('state'));
 
     if (!code) {
       navigate('/login', { replace: true });
       return;
     }
 
-    if (state === 'link') {
+    // 이 탭에서 시작하지 않은 콜백(외부에서 만든 링크 등)은 코드를 서버에 보내지 않는다
+    if (!mode) {
+      const message = '카카오 인증 요청을 확인하지 못했어요. 다시 시도해주세요.';
+      if (getUserLocally()) navigate('/profile', { replace: true, state: { linkError: message } });
+      else navigate('/login', { replace: true, state: { error: message } });
+      return;
+    }
+
+    if (mode === 'link') {
       linkKakaoAccount(code, KAKAO_REDIRECT_URI)
         .then((authProviders) => {
           const stored = getUserLocally();
