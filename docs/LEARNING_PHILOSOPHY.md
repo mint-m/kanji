@@ -100,7 +100,7 @@
 2. **`UserCheckpoint.isCompleted()`**: 패스 순회 완료 여부 (인덱스 기반, 그대로 유지)
 3. **`UserCheckpoint.isWindowCompleted(userId, progressType)`**: 모든 단어 `is_window_completed = true` 확인
 4. **`UserCheckpoint.reshuffleUnknownWords(userId, progressType)`**: 미지 단어 추출 후 재셔플, `current_index = 0` 리셋
-5. **`UserCheckpoint.generateNextSlidingWindow(userId, progressType)`**: 다음 윈도우 생성 + 이전 단어 `is_window_completed` 자동 리셋
+5. **`UserCheckpoint.generateNextSlidingWindow(userId, progressType)`**: 다음 윈도우 생성 + 새 덱 단어의 `is_window_completed` 리셋
 6. **`deckController.completeWord()`**: 패스 완료 감지 → 자동 재셔플 또는 윈도우 완료 플래그 반환
 7. **`deckController.completeDeck()`**: `isWindowCompleted` 기반 완료 조건으로 변경
 8. **중복 카운팅 버그 수정**: `markCompleted()`/`markIncomplete()`가 `try_count`를 중복 증가하던 버그 제거

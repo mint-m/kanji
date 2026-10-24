@@ -325,7 +325,7 @@ describe('completeDeck', () => {
     expect(data).toEqual(expect.objectContaining({ nextWindow: null, canGenerateNext: false, isSubLoop: false }));
   });
 
-  it('서브 → 같은 스텝을 리셋·재셔플, isSubLoop: true (다음 윈도우로 가지 않음)', async () => {
+  it('서브 → 같은 스텝의 단어 전체로 다시 시작, isSubLoop: true (다음 윈도우로 가지 않음)', async () => {
     const progress = makeMockProgress({
       progress_type: 'sub',
       steps: { start: 2, end: 2 },
@@ -333,20 +333,24 @@ describe('completeDeck', () => {
       current_index: 1,
       isWindowCompleted: jest.fn().mockResolvedValue(true),
       generateNextSlidingWindow: jest.fn(),
-      markModified: jest.fn(),
+      // 마지막 패스에 1개만 남았어도 스텝의 단어 3개 전체로 돌아간다
+      restartWindow: jest.fn().mockImplementation(async function (this: any) {
+        this.shuffled_order = [fakeWordIdObj, fakeWordIdObj, fakeWordIdObj];
+        this.current_index = 0;
+      }),
     });
 
     const res = await run('sub', progress);
 
-    expect(WordProgress.resetWindowCompletionForWords).toHaveBeenCalledWith('user-id-123', [fakeWordIdObj], 'sub');
+    expect(progress.restartWindow).toHaveBeenCalledWith('user-id-123', 'sub');
+    expect(progress.save).toHaveBeenCalled();
     expect(progress.generateNextSlidingWindow).not.toHaveBeenCalled();
     expect(SlidingWindowService.canMoveToNextWindow).not.toHaveBeenCalled();
-    expect(progress.current_index).toBe(0);
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data).toEqual(expect.objectContaining({
       isSubLoop: true,
       canGenerateNext: false,
-      nextWindow: { level: 'N5', steps: { start: 2, end: 2 }, deckSize: 1 },
+      nextWindow: { level: 'N5', steps: { start: 2, end: 2 }, deckSize: 3 },
     }));
   });
 });

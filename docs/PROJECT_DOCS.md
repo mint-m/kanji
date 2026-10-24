@@ -281,7 +281,8 @@ backend/src/
 - `isWindowCompleted(userId, progressType)` - 윈도우 완료 여부 (모든 단어 `is_window_completed = true`)
 - `reshuffleUnknownWords(userId, progressType)` - 미지 단어만 추출해 재셔플 후 새 패스 시작
 - `canMoveToNextWindow(userId, progressType)` - `isWindowCompleted` 기반으로 이동 가능 여부 판단
-- `generateNextSlidingWindow(userId, progressType)` - 다음 윈도우 생성 + 이전 단어 `is_window_completed` 리셋
+- `generateNextSlidingWindow(userId, progressType)` - 다음 윈도우 생성 + 새 덱 단어의 `is_window_completed` 리셋
+- `restartWindow(userId, progressType)` - 같은 윈도우의 단어 전체로 새 덱 (서브 세션 집중 루프)
 - `getCurrentWord()` - 현재 학습할 단어
 - `moveToNext()` - 다음 단어로 이동
 
@@ -435,7 +436,7 @@ backend/src/
 | 윈도우 미완료 | 400 (중복 호출도 여기에 걸린다) | "윈도우 미완료" |
 | 메인 + 다음 윈도우 있음 | `nextWindow`, `canGenerateNext: true` | "메인 + 다음 윈도우 있음" |
 | 메인 + 레벨의 마지막 윈도우 | `nextWindow: null`, `canGenerateNext: false` → 프론트는 완료 안내와 함께 레벨 선택으로 이동 | "메인 + 레벨의 마지막 윈도우" |
-| 서브 | 같은 스텝의 `is_window_completed`를 리셋하고 재셔플, `isSubLoop: true` → "다시 학습하기" UI | "서브" |
+| 서브 | 같은 스텝의 단어 전체로 새 덱(`restartWindow`, 완료 표시 리셋), `isSubLoop: true` → "다시 학습하기" UI | "서브" |
 
 ---
 

@@ -25,6 +25,7 @@ export interface UserCheckpointDocument extends Document {
   canMoveToNextWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
   reshuffleUnknownWords(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<number>;
   generateNextSlidingWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
+  restartWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
 }
 
 // UserCheckpoint model interface with static methods

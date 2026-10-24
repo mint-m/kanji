@@ -5,7 +5,6 @@ import WordProgress from '../models/wordProgress';
 import Word from '../models/word';
 import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
-import { shuffleArray } from '../utils/shuffle';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ProgressType } from '../types';
 
@@ -245,11 +244,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     let canMoveToNext = false;
 
     if (progressType === 'sub') {
-      // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
-      await WordProgress.resetWindowCompletionForWords(userId, progress.shuffled_order, 'sub');
-      progress.shuffled_order = shuffleArray(progress.shuffled_order);
-      progress.markModified('shuffled_order');
-      progress.current_index = 0;
+      // 서브 세션 집중 루프: 같은 스텝의 단어 전체를 다시 섞어 처음부터
+      await progress.restartWindow(userId, 'sub');
       await progress.save();
       isSubLoop = true;
       nextWindow = {

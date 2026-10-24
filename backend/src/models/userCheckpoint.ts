@@ -12,6 +12,18 @@ import { WordProgressModel } from '../interfaces/wordProgress';
 // 순환 의존을 피하기 위해 mongoose 레지스트리에서 동적으로 조회
 const wordProgressModel = () => mongoose.model('WordProgress') as WordProgressModel;
 
+// 윈도우의 단어 전체를 섞어 새 덱을 만들고 그 단어들의 윈도우 완료 표시를 지운다 — 새 윈도우는 모두 '모름'에서 시작한다
+const buildFreshDeck = async (
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType,
+  level: LearningLevel,
+  steps: StepRange
+): Promise<mongoose.Types.ObjectId[]> => {
+  const { wordIds } = await SlidingWindowService.generateDeck(level, steps, true);
+  await wordProgressModel().resetWindowCompletionForWords(userId, wordIds, progressType);
+  return wordIds;
+};
+
 // UserCheckpoint - Simplified learning session state
 // Combines session tracking and checkpoint functionality
 const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
@@ -170,13 +182,19 @@ userCheckpointSchema.methods.generateNextSlidingWindow = async function (
     throw new Error('No next window available for this level');
   }
 
-  const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
-
-  // Reset only after deck generation succeeds to avoid data loss on failure
-  await wordProgressModel().resetWindowCompletionForWords(userId, this.shuffled_order, progressType);
-
+  // 겹치는 스텝의 단어는 이전 윈도우에서 '알았음'으로 남아 있으므로 새 덱 기준으로 리셋한다
+  this.shuffled_order = await buildFreshDeck(userId, progressType, this.current_level, nextWindow);
   this.steps = nextWindow;
-  this.shuffled_order = nextDeck.wordIds;
+  this.current_index = 0;
+};
+
+// 같은 윈도우를 처음부터 다시 — 서브 세션 집중 루프. 마지막 패스의 단어만 섞으면 루프가 점점 줄어든다
+userCheckpointSchema.methods.restartWindow = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<void> {
+  this.shuffled_order = await buildFreshDeck(userId, progressType, this.current_level, this.steps);
   this.current_index = 0;
 };
 
@@ -206,19 +224,12 @@ userCheckpointSchema.statics.createNewSession = async function (
     throw new InvalidStepRangeError(`Invalid step range ${steps.start}-${steps.end} for level ${level}`);
   }
 
-  // Generate deck using SlidingWindowService
-  const deckWindow = await SlidingWindowService.generateDeck(level, steps, true);
-
-  // Reset window completion state for all words in this new session
-  await wordProgressModel().resetWindowCompletionForWords(userId, deckWindow.wordIds, type);
-
-  // Create new session
   const session = new this({
     user_id: userId,
     progress_type: type,
     current_level: level,
     steps,
-    shuffled_order: deckWindow.wordIds,
+    shuffled_order: await buildFreshDeck(userId, type, level, steps),
     current_index: 0,
   });
 
