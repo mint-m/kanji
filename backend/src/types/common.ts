@@ -16,8 +16,8 @@ export type LearningLevel = (typeof LEARNING_LEVELS)[number];
 
 /**
  * Progress session types
- * - main: Systematic progression through levels
- * - sub: Bookmark-focused review sessions
+ * - main: 진도 학습 — 슬라이딩 윈도우로 레벨을 따라 진행
+ * - sub: 집중 학습 — 고른 스텝 하나를 반복
  */
 export type ProgressType = 'main' | 'sub';
 

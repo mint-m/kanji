@@ -1,9 +1,9 @@
 # kanji 프로젝트 문서
 
-> 일본어 단어 학습 애플리케이션 - 슬라이딩 윈도우 덱 시스템
+> 일본어 단어 학습 애플리케이션 — 슬라이딩 윈도우 덱 + 간격 복습
 
-**최종 업데이트**: 2026-07-04
-**버전**: 4.5
+**최종 업데이트**: 2026-10-24
+**버전**: 5.0
 
 ---
 
@@ -15,7 +15,7 @@
 4. [API 엔드포인트](#api-엔드포인트)
 5. [북마크 시스템](#북마크-시스템)
 6. [슬라이딩 윈도우 시스템](#슬라이딩-윈도우-시스템)
-7. [프론트엔드 마이그레이션](#프론트엔드-마이그레이션)
+7. [화면 구성과 학습 플로우](#화면-구성과-학습-플로우)
 8. [환경 설정](#환경-설정)
 
 ---
@@ -26,13 +26,16 @@ kanji는 일본어 능력시험(JLPT) 단어를 효율적으로 학습하기 위
 
 ### 핵심 기능
 
-- **슬라이딩 윈도우 덱**: 3단계씩 진행하는 점진적 학습 (1-3 → 2-4 → 3-5)
-- **이중 세션**: Main(체계적 슬라이딩 윈도우), Sub(단일 스텝 집중 반복) 독립 관리
-- **서브 세션 집중 루프**: Sub 세션 완료 시 다음 윈도우로 이동하지 않고 같은 스텝을 재셔플해 반복 학습
-- **daily 레벨**: 시험 무관 생활 필수 어휘 카테고리 (N5~N1 외 별도 관리)
-- **자동 체크포인트**: 학습 진행 상황 자동 저장 및 복원
-- **북마크 시스템**: 어려운 단어 우선 복습
-- **진행 상황 추적**: 레벨별, 단계별 학습 완료 상태 관리
+"윈도우로 익히고, 간격 복습으로 굳힌다."
+
+- **진도 학습** (`main`): 3스텝 윈도우(1-3 → 2-4 → …)를 모두 알 때까지 — 모르는 단어만 다시 섞어 다음 패스
+- **집중 학습** (`sub`): 한 스텝을 완전히 익힐 때까지 반복, 끝나면 같은 스텝 전체로 다시
+- **오늘의 복습**: 처음 "알아요"를 누른 단어를 1·3·7·14·30·60일 간격으로 다시 묻는 간격 복습(Leitner)
+- **북마크 학습**: 어려운 단어를 모아 회차 반복 (최대 150개)
+- **기록**: 익힌 단어·장기 기억(레벨별), 연속 학습일, 오늘 학습량/하루 목표
+- **학습 카드**: 응답 강조(몰라요/알아요), 키보드 단축키, 발음 듣기, 한자 풀이, 범위 진행 막대
+- **daily 레벨**: 시험 무관 생활 필수 어휘 (N5~N1 외 별도)
+- **자동 체크포인트**: 단어마다 서버에 위치를 저장하고 어긋나면 409로 막는다
 
 ### 기술 스택
 
@@ -58,90 +61,59 @@ kanji는 일본어 능력시험(JLPT) 단어를 효율적으로 학습하기 위
 
 ```
 frontend/src/
-├── components/          # 재사용 가능한 UI 컴포넌트
-│   ├── FlashCard/       # 플래시카드 UI
-│   ├── FlashCardContainer/ # 플래시카드 컨테이너
-│   ├── Kanji/           # 한자 관련 컴포넌트 (KanjiCard, KanjiRead, KanjiExample)
-│   ├── OriginWord/      # 원형 단어 표시
-│   ├── ControlPanel/    # 학습 컨트롤 패널
-│   ├── SelectLevel/     # 레벨 선택
-│   ├── SelectStep/      # 스텝 선택 (StepGrid/슬라이더 분기 포함)
-│   ├── StepGrid/        # 스텝 선택 그리드 (터치 기기용)
-│   ├── StepRangeSlider/ # 스텝 범위 슬라이더 (포인터 기기용)
-│   ├── LoginButton/     # 로그인 버튼 (Google, Kakao, Logout)
-│   ├── Navbar/          # 네비게이션 바
-│   ├── HeaderSection/   # 헤더 섹션
-│   ├── CommonStyled/    # 공통 스타일 컴포넌트
-│   ├── UserProgress.tsx # 사용자 진행 상황 표시
-│   └── ErrorMessage.tsx # 에러 메시지
-├── hooks/               # 커스텀 훅
-│   └── useToggleBookmark.ts # 북마크 토글 (낙관적 업데이트 + 롤백)
-├── pages/               # 라우트 레벨 페이지
-│   ├── Login/           # 로그인 페이지
-│   ├── Main/            # 메인 페이지 (메인/서브 세션 카드 선택)
-│   ├── FlashCardPage/   # 플래시카드 학습 페이지
-│   ├── LevelSelectionPage/ # 레벨·범위 선택 (3단계 스크롤 UI)
-│   ├── DashboardPage/   # 진도 대시보드 (현재 위치, 세션 전환, 레벨별 통계)
-│   ├── UserProfilePage.tsx # 사용자 프로필 (계정 연동)
-│   ├── UserStatsPage/   # 학습 통계 상세 페이지 (/profile/stats)
-│   ├── BookmarkPage/    # 북마크 관리 페이지 (레벨 필터, 정렬, 페이지네이션)
-│   ├── BookmarkStudyPage/ # 북마크 복습 플래시카드 페이지
-│   └── NotFound/        # 404 페이지
-├── store/               # Redux 스토어
-│   └── modules/
-│       ├── user.ts      # 사용자 상태 (로그인, activeProgressType)
-│       └── kanji.ts     # 한자 데이터 (한자 조회용)
-├── services/            # API 서비스 레이어
-│   ├── apiClient.ts     # 공통 HTTP 클라이언트
-│   ├── authService.ts   # 인증 서비스
-│   ├── progressService.ts # Progress/Checkpoint API
-│   ├── deckService.ts   # Deck 생성 및 관리 API
-│   ├── bookmarkService.ts # 북마크 API
-│   ├── userService.ts   # 사용자 관리 API
-│   ├── types.ts         # TypeScript 타입 정의
-│   └── index.ts         # 서비스 통합 export
-└── utils/               # 유틸리티 함수
+├── components/
+│   ├── Navigation/        # 상단 바(로고·주 메뉴·사용자 메뉴) + 모바일 하단 탭
+│   ├── StudyCard/         # 진도 학습·오늘의 복습·북마크 학습 공용 단어 카드 (공개·응답·단축키·발음)
+│   ├── StudyHeader/       # 카드 학습 화면 머리글 (제목·범위·카드 순번·진행 막대)
+│   ├── FlashCardContainer/ # 진도·집중 학습 상태 머신 (요청 직렬화, 패스·윈도우 완료 화면)
+│   ├── OriginWord/        # 단어 표기 — 한자는 누르면 풀이를 조회하는 버튼 (조회 결과 캐시)
+│   ├── Kanji/             # 한자 풀이 패널 (넓은 화면은 카드 옆, 좁은 화면은 아래 시트)
+│   ├── ProgressBar/       # 공용 진행 막대 (장기 기억 겹침 표시)
+│   ├── LoginButton/       # Google · 카카오 로그인 버튼
+│   ├── CommonStyled/      # CenterDiv, DefaultButton(variant: primary·know·unknown·ghost)
+│   ├── auth/              # 카카오 OAuth 콜백 (state 검증)
+│   └── ErrorBoundary.tsx
+├── pages/
+│   ├── Main/              # / — 로그인 전 Landing, 로그인 후 Home(오늘의 복습·세션 카드)
+│   ├── Login/             # /login — Landing과 같은 화면
+│   ├── StartPage/         # /start — 학습 방식·레벨·범위 선택 (진도·집중 공통)
+│   ├── FlashCardPage/     # /flash-cards — 진도·집중 학습
+│   ├── ReviewPage/        # /review — 오늘의 복습
+│   ├── StatsPage/         # /stats — 기록
+│   ├── BookmarkPage.tsx   # /bookmark — 북마크 목록·메모
+│   ├── BookmarkStudyPage/ # /bookmark-study — 북마크 학습(회차 반복)
+│   ├── UserProfilePage.tsx # /profile — 닉네임·하루 목표·계정 연동
+│   └── NotFound/
+├── services/              # 모든 API 호출 (apiClient 경유)
+│   ├── apiClient.ts       # axios 인스턴스, 401 처리, getErrorMessage·getErrorCode
+│   ├── authService.ts · kakaoOAuth.ts
+│   ├── progressService.ts · deckService.ts · reviewService.ts
+│   ├── bookmarkService.ts · userService.ts · wordService.ts
+│   └── types.ts           # API 응답 타입 (단일 출처)
+├── constants/levels.ts    # 레벨 이름·설명, 범위 표기(formatSteps)
+├── hooks/useToggleBookmark.ts # 북마크 토글 (낙관적 업데이트 + 롤백)
+├── store/modules/         # Redux: user(로그인·활성 세션), kanji(한자 풀이 목록)
+├── styles/                # vars(디자인 토큰), global, layout(목록형 페이지 공통 틀)
+└── utils/                 # speech(발음 듣기), shuffle
 ```
 
-**주요 특징**:
-- Redux 스토어는 `user`와 `kanji` 두 개의 모듈로만 구성
-- Checkpoint/Deck/Bookmark 상태는 Services 레이어에서 API로 관리
-- 서비스 레이어가 모든 API 통신 담당
-- 컴포넌트는 재사용 가능한 단위로 모듈화
-
+라우트 정리: `/level-setup`·`/select-level` → `/start`, `/dashboard`·`/profile/stats` → `/stats` (리다이렉트).
 
 ### Backend 구조
 
 ```
 backend/src/
-├── controllers/         # 요청 핸들러
-│   ├── authController.ts
-│   ├── progressController.ts
-│   ├── deckController.ts
-│   ├── bookmarkController.ts
-│   ├── userController.ts
-│   ├── userStatsController.ts
-│   └── wordController.ts
-├── models/              # Mongoose 스키마
-│   ├── user.ts          # 사용자 인증
-│   ├── word.ts          # 단어 마스터 데이터
-│   ├── userCheckpoint.ts  # 세션 상태 + 체크포인트 (통합)
-│   └── wordProgress.ts  # 단어별 완료 상태
-├── routes/              # Express 라우트
-│   ├── authRoutes.ts
-│   ├── progressRoutes.ts
-│   ├── bookmarkRoutes.ts
-│   ├── userRoutes.ts
-│   └── wordRoutes.ts
-├── scripts/             # 데이터 관리 스크립트 (일회성 실행용)
-│   ├── augmentFrequency.ts   # frequency 필드 외부 데이터로 보강
-│   ├── cleanWords.ts         # 중복·불량 단어 정리
-│   ├── createDailyWords.ts   # daily 레벨 단어 생성
-│   └── reorderByFrequency.ts # 빈도 기준 step 재정렬
-├── services/            # 비즈니스 로직
-│   └── slidingWindowService.ts
-└── middleware/          # 커스텀 미들웨어
-    └── auth.ts
+├── controllers/   # auth, progress, deck(학습 플로우), review(간격 복습), bookmark, user, userStats(기록), word, kanji
+├── models/        # user, word, kanji, userCheckpoint(세션·패스·윈도우), wordProgress(세션별 단어 상태), wordReview(간격 복습)
+├── routes/        # /api/auth, /api/words, /api/users/me/{progress, bookmarks, reviews, stats, preferences, …}
+├── services/      # slidingWindowService(윈도우·덱), auth(JWT), kakao
+├── middleware/    # auth(JWT·레이트 리밋), validation, errorHandler({ success: false, message })
+├── utils/         # date(한국 시간 날짜), errors, shuffle, regex
+└── scripts/       # 일회성 데이터 관리 + 로컬 개발 (프로덕션 빌드 제외)
+    ├── devServer.ts        # yarn dev:memory — 메모리 MongoDB + 샘플 단어로 API 실행
+    ├── sampleWords.ts      # 로컬 개발·통합 테스트용 샘플 단어 (N5 10스텝, daily 3스텝)
+    ├── backfillReviews.ts  # yarn backfill:reviews — v5 배포 후 1회, 과거 학습을 간격 복습에 등록
+    ├── seedKanji.ts · augmentFrequency.ts · cleanWords.ts · createDailyWords.ts · reorderByFrequency.ts
 ```
 
 ---
@@ -199,6 +171,8 @@ backend/src/
     averageSessionTime: number,  // 평균 세션 시간 (초, 기본: 0)
     studyDaysCount: number,      // 학습한 일수 (기본: 0)
     favoriteStudyTime?: string,  // 선호 학습 시간
+    lastStudyDate?: string,      // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD') — 연속 학습일 기준
+    todayCount: number,          // lastStudyDate 하루 동안의 응답 수 (오늘 학습량)
   },
 
   isActive: boolean,             // 계정 활성 여부 (기본: true)
@@ -295,32 +269,6 @@ backend/src/
 
 ---
 
-#### 5. WordReview
-
-단어별 간격 복습 일정 — **컬렉션 이름**: `word_review`
-
-```typescript
-{
-  _id: ObjectId,
-  user_id: ObjectId,          // ref: User
-  word_id: ObjectId,          // ref: Word
-  stage: number,              // 0 = 다시 익히는 중, 1~6 = 간격 단계 (1·3·7·14·30·60일)
-  next_review_at: Date,       // 이 시각부터 오늘의 복습에 나온다 (간격은 한국 자정 기준)
-  review_count: number,       // 복습 응답 수
-  lapse_count: number,        // 잊은 횟수 (1단계 이상에서 몰라요)
-  last_reviewed_at?: Date,
-  learned_at: Date            // 등록 시각 = 처음 "알아요"를 누른 시각
-}
-```
-
-**인덱스**: `{ user_id: 1, word_id: 1 }` (unique), `{ user_id: 1, next_review_at: 1 }`
-
-- 진도·집중 학습에서 처음 "알아요"를 누르면 1단계로 등록된다(다음 날 한국 자정부터 복습). 세션(main/sub)과 무관하게 단어당 하나다
-- 복습에서 알아요 → 다음 단계, 몰라요 → 0단계(바로 다시). 기한 전 응답은 반영하지 않는다
-- "익힌 단어" = 등록된 단어, "장기 기억" = 4단계(14일 간격) 이상
-
----
-
 #### 4. WordProgress
 
 단어별 완료 상태 추적
@@ -367,6 +315,32 @@ backend/src/
 - `is_window_completed`는 윈도우 범위 플래그 — 다음 윈도우 진행 시 `false`로 초기화
 - `try_count`, `correct_count`, `study_history`, `is_bookmarked`는 영구 보존
 - `is_bookmarked`는 progress_type과 무관하게 공유됨 (Main 북마크 → Sub에서도 유지)
+
+---
+
+#### 5. WordReview
+
+단어별 간격 복습 일정 — **컬렉션 이름**: `word_review`
+
+```typescript
+{
+  _id: ObjectId,
+  user_id: ObjectId,          // ref: User
+  word_id: ObjectId,          // ref: Word
+  stage: number,              // 0 = 다시 익히는 중, 1~6 = 간격 단계 (1·3·7·14·30·60일)
+  next_review_at: Date,       // 이 시각부터 오늘의 복습에 나온다 (간격은 한국 자정 기준)
+  review_count: number,       // 복습 응답 수
+  lapse_count: number,        // 잊은 횟수 (1단계 이상에서 몰라요)
+  last_reviewed_at?: Date,
+  learned_at: Date            // 등록 시각 = 처음 "알아요"를 누른 시각
+}
+```
+
+**인덱스**: `{ user_id: 1, word_id: 1 }` (unique), `{ user_id: 1, next_review_at: 1 }`
+
+- 진도·집중 학습에서 처음 "알아요"를 누르면 1단계로 등록된다(다음 날 한국 자정부터 복습). 세션(main/sub)과 무관하게 단어당 하나다
+- 복습에서 알아요 → 다음 단계, 몰라요 → 0단계(바로 다시). 기한 전 응답은 반영하지 않는다
+- "익힌 단어" = 등록된 단어, "장기 기억" = 4단계(14일 간격) 이상
 
 ---
 
@@ -542,7 +516,7 @@ GET /health                                           # DB 연결 확인 — 200
 ### 구현 참고
 
 - 409 응답의 `code`는 `getErrorCode`(`services/apiClient.ts`)로 읽는다 — `apiClient`는 4xx를 `AxiosError`로 던진다.
-- `BookmarkStudyPage`는 로딩 시 `progress_type`을 `Map<wordId, ProgressType>`으로 캐싱하여 토글에 전달.
+- `BookmarkStudyPage`(북마크 학습)는 섞어서 한 바퀴, 몰랐던 단어만 다음 회차로 반복한다. 응답은 서버에 기록하지 않는다. 로딩 시 `progress_type`을 `Map<wordId, ProgressType>`으로 캐싱하여 토글에 전달.
 - `BookmarkPage` 필터 변경 시 generation 카운터로 stale 응답을 무시. 삭제 후에는 `fetchBookmarks(targetPage)` 재호출로 서버 상태와 동기화.
 - `FlashCardContainer` 북마크 초기 상태는 덱 응답의 `isBookmarked` 필드에서 직접 초기화.
 
@@ -588,97 +562,61 @@ GET /health                                           # DB 연결 확인 — 200
 
 ---
 
-## 프론트엔드 마이그레이션
+## 화면 구성과 학습 플로우
 
-### 현재 상태 (2026-07-01 기준)
+| 경로 | 화면 | 쓰는 API |
+|---|---|---|
+| `/` | 로그인 전: 소개 + 로그인 버튼 / 로그인 후: 인사·연속 학습일·오늘 학습량, 오늘의 복습, 진도·집중 학습 카드 | `GET /me/progress`, `GET /me/stats` |
+| `/start` | 학습 방식 → 레벨 → 범위 → 확인 (진행 중 세션을 바꾸면 무엇이 남는지 안내) | `GET /words/level/:level/steps`, `GET /me/progress`, `DELETE /me/progress/:type`, `PATCH /me/checkpoint`, `PATCH /me/active-progress-type` |
+| `/flash-cards` | 진도·집중 학습 (활성 세션) | `GET /me/progress/:type/current`, `POST complete-word`, `POST complete-deck` |
+| `/review` | 오늘의 복습 | `GET /me/reviews/due`, `POST /me/reviews/answer` |
+| `/bookmark`, `/bookmark-study` | 북마크 목록·메모, 북마크 학습 | `GET /me/bookmarks`, `POST /me/bookmarks/toggle`, `PUT /me/bookmarks/:wordId` |
+| `/stats` | 기록 | `GET /me/stats` |
+| `/profile` | 닉네임, 하루 목표, 계정 연동 | `PATCH /me`, `PATCH /me/preferences`, `/api/auth/link/*` |
 
-#### ✅ 완료된 작업
-
-1. **API 서비스 레이어**: 인증, 진행상황, 덱, 북마크, 사용자 서비스 및 TypeScript 타입 정의
-2. **Redux Store**: 인증 상태 + 활성 세션 타입만 관리. API 상태는 서비스 레이어로 분리
-3. **핵심 컴포넌트**: FlashCard, FlashCardContainer, ControlPanel, LevelSetup, Bookmark 등
-4. **완전 습득형 학습 로직**: 패스 반복 + 윈도우 완료 판정 + 재셔플 흐름
-5. **북마크 시스템 고도화**: 제한(150개) + warning 알림 + progress_type 보존 + race condition 방어
-6. **북마크 복습 페이지**: `BookmarkStudyPage` — 레벨/정렬 필터 기반 플래시카드 복습
-7. **테스트**: 백엔드 컨트롤러 단위 테스트, Playwright E2E 테스트
-8. **서브 세션 집중 루프**: Sub 세션 완료 시 재셔플 반복 학습
-9. **daily 레벨**: 생활 필수 어휘 카테고리 + 데이터 관리 스크립트
-10. **메인/레벨선택/대시보드 UI 개편**: 세션 카드 선택, 3단계 스크롤 레벨 선택, 진도 표시 통합
-11. **StepGrid**: 터치 기기용 스텝 선택 그리드 (포인터 기기는 슬라이더 유지)
-12. **통계 페이지 분리**: `/profile/stats` 라우트에 UserStatsPage 독립
-
-#### 🔄 진행 중
-
-- 학습 통계 대시보드(UserStatsPage) 상세 구현
-- 연속 학습일 추적 UI
-
-### 마이그레이션 전략
-
-#### 레거시 vs 신규 API
-
-**덱 조회 (권장)**:
+### 진도·집중 학습
 
 ```
-GET /api/users/me/progress/:type/current   → 40-120 단어 (3-step window), 서버 셔플 완료
+1. /start에서 세션 생성 (PATCH /me/checkpoint, 활성 세션 타입도 함께 변경)
+2. GET /me/progress/:type/current → 덱 + window(이번 범위 익힘/전체)
+3. 카드마다 POST complete-word { wordId, isCorrect, index } — 요청은 순서대로 하나씩, 실패하면 "다시 불러오기"
+   - 처음 "알아요"인 단어는 간격 복습에 등록된다 (다음 날 한국 자정부터)
+4. 패스 끝
+   - 모름이 남음 → 서버가 모름 단어만 재셔플 → "이어가기"로 덱 재조회
+   - 모두 앎 → POST complete-deck → 진도: 다음 윈도우(레벨 끝이면 /start로 완료 안내) / 집중: 같은 스텝 전체로 다시
 ```
 
-### 학습 플로우
-
-**학습 플로우**:
+### 오늘의 복습
 
 ```
-1. 앱 진입
-2. GET /api/users/me/progress/main → 세션 존재 확인
-   - 없으면: 세션 생성 UI 표시
-3. POST /api/users/me/progress → 세션 생성 (type, level, steps)
-4. GET /api/users/me/progress/main/current → 덱 로딩
-5. 패스 시작:
-   - POST /api/users/me/progress/main/complete-word (단어마다 알았음/모름 제출)
-   - 응답에 passComplete, windowComplete 포함
-6. 패스 완료 처리:
-   - passComplete=true, windowComplete=false → 서버 자동 재셔플
-     프론트엔드: 새 패스 시작 UI 표시 (nextPassSize 활용)
-   - passComplete=true, windowComplete=true → 윈도우 완료
-     POST /api/users/me/progress/main/complete-deck → 다음 윈도우 생성
-7. 반복
+1. GET /me/reviews/due → 기한이 지난 단어(섞어서) + dueCount + nextDueAt
+2. 알아요 → 다음 단계 간격 뒤로 / 몰라요 → 0단계, 이번 복습의 맨 뒤로 보내 다시 묻는다
+3. 기한 전 응답(재전송)은 서버가 반영하지 않는다 (applied: false)
 ```
 
-### Redux Store 구조 (실제 구현)
+### 키보드 단축키 (학습 카드)
+
+`Space`·`Enter` 공개 · `←` 몰라요 · `→` 알아요 · `R` 요미가나 · `M` 한글 뜻 · `S` 발음 · `B` 북마크 — 입력 중이거나 버튼에 포커스가 있으면 동작하지 않는다.
+
+### Redux Store 구조
 
 ```typescript
 // store/modules/user.ts
 interface UserState {
-  isLoggin: boolean;
+  isLoggedIn: boolean;
   loginStatusType: 'google' | 'kakao' | 'local' | null;
   email: string | null;
   name?: string;
   activeProgressType: 'main' | 'sub' | null;
 }
 
-// store/modules/kanji.ts
-interface KanjiStoreState {
-  kanjis: KanjiDataType[];  // 한자 상세 조회 데이터
-}
-
-export interface KanjiDataType {
-  level: string;
-  kanji: string;          // 한자 문자
-  onRead?: string;        // 음독
-  kunRead?: string;       // 훈독
-  koreanPron: string;     // 한국 발음
-  means: Mean[];          // 의미 및 예문
+// store/modules/kanji.ts — 현재 카드에서 연 한자 풀이 목록 (카드가 바뀌면 비운다)
+interface KanjiState {
+  kanjis: KanjiDataType[];
 }
 ```
 
-**설계 철학**:
-- **Redux는 최소한의 전역 상태만 관리**: 사용자 인증 및 한자 조회 데이터
-- **Checkpoint/Deck/Bookmark는 Services로 관리**: API 호출을 통해 직접 서버와 통신
-- **장점**:
-  - 상태 동기화 문제 감소 (서버가 single source of truth)
-  - Redux 보일러플레이트 최소화
-  - 컴포넌트에서 서비스 직접 호출로 간결한 코드
-
-**서비스 레이어 원칙**: 컴포넌트에서 서비스를 직접 호출하며, Redux 액션을 거치지 않는다.
+Redux는 인증·활성 세션 타입·한자 풀이 목록만 둔다. 덱·복습·북마크·기록은 서비스 레이어로 서버에서 직접 읽는다 (서버가 단일 출처).
 
 ---
 
@@ -742,6 +680,13 @@ yarn start
 # Backend: http://localhost:8000
 ```
 
+**운영 DB 없이** (메모리 MongoDB + 샘플 단어, 종료하면 데이터도 사라짐):
+
+```bash
+yarn start:memory
+# 시작 로그의 localStorage 한 줄을 브라우저 콘솔에 붙여넣으면 개발용 계정으로 로그인된다
+```
+
 **개별 실행**:
 
 ```bash
@@ -802,6 +747,20 @@ yarn build          # → frontend/build/
 ---
 
 ## 변경 이력
+
+### v5.0 (2026-10-24) — 리뉴얼
+
+- ✅ feat: 간격 복습(`word_review`, 1·3·7·14·30·60일) — 처음 "알아요"에 등록, 오늘의 복습 화면(`/review`)
+- ✅ feat: 기록 화면(`/stats`) — 익힌 단어·장기 기억·복습 대기·연속 학습일·오늘 학습량, `GET /me/stats` 재설계
+- ✅ feat: 오늘 할 일 중심 홈 + 비로그인 소개 화면, 학습 시작 화면 통합(`/start`), 하루 목표 설정
+- ✅ feat: 학습 카드 재설계(StudyCard) — 응답 강조, 키보드 단축키, 발음 듣기, 범위 진행, 모바일 한자 시트
+- ✅ feat: 북마크 학습 회차 반복, 앱 셸(상단 바·모바일 하단 탭), 디자인 토큰·포커스 표시
+- ✅ fix: 카카오 OAuth state 검증(연동 CSRF), 404 오류 화면, 북마크 한도 안내, 북마크 최근 순 정렬
+- ✅ fix: 서브 루프 축소, 새 윈도우 플래그 리셋, 연속 학습일(한국 시간·로그인 무관), 에러 클래스 판별, 세션 고유 인덱스
+- ✅ perf: 한자 풀이는 누를 때만 조회 + 서버·브라우저 캐시(로그인 필요), 세션 카드는 요약 API로
+- ✅ test: 메모리 MongoDB 통합 테스트, 백엔드 테스트 41초 → 3초, E2E 27개
+- ✅ chore: 로컬 개발 서버(`yarn start:memory`), 백필 스크립트(`yarn backfill:reviews`)
+- ✅ refactor: GET `/me/progress/:type`, 옛 레벨 선택·대시보드·통계 화면과 미사용 의존성 삭제
 
 ### v4.5 (2026-07-04)
 
