@@ -72,6 +72,18 @@ wordReviewSchema.statics.enroll = async function (
   }
 };
 
+// 아직 기한이 안 된 복습 중 가장 이른 시각 — "다음 복습은 언제"
+wordReviewSchema.statics.findNextDueAt = async function (
+  userId: mongoose.Types.ObjectId,
+  now: Date = new Date()
+): Promise<Date | null> {
+  const next = await this.findOne({ user_id: userId, next_review_at: { $gt: now } })
+    .sort({ next_review_at: 1 })
+    .select('next_review_at')
+    .lean();
+  return next?.next_review_at ?? null;
+};
+
 wordReviewSchema.statics.countDue = function (userId: mongoose.Types.ObjectId, now: Date = new Date()): Promise<number> {
   return this.countDocuments({ user_id: userId, next_review_at: { $lte: now } });
 };

@@ -140,6 +140,18 @@ export interface DeckWord extends Word {
   isBookmarked: boolean;
 }
 
+// 오늘의 복습 단어 (GET /reviews/due)
+export interface ReviewWord extends Word {
+  stage: number; // 0 = 다시 익히는 중, 1~6 = 간격 단계
+  isBookmarked: boolean;
+}
+
+export interface DueReviews {
+  words: ReviewWord[];
+  dueCount: number;
+  nextDueAt: string | null;
+}
+
 // 단어 완료 요청
 export interface CompleteWordRequest {
   wordId: string;

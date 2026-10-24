@@ -1,5 +1,5 @@
 const mockWordModel = { aggregate: jest.fn() };
-const mockWordReview = { aggregate: jest.fn(), countDue: jest.fn(), findOne: jest.fn() };
+const mockWordReview = { aggregate: jest.fn(), countDue: jest.fn(), findNextDueAt: jest.fn() };
 
 jest.mock('../models/word', () => ({ __esModule: true, default: mockWordModel }));
 jest.mock('../models/wordReview', () => ({ __esModule: true, default: mockWordReview, LONG_TERM_STAGE: 4 }));
@@ -40,10 +40,7 @@ describe('getUserStats', () => {
     ]);
     mockWordReview.aggregate.mockResolvedValue([{ _id: 'N5', learned: 40, longTerm: 10 }]);
     mockWordReview.countDue.mockResolvedValue(6);
-    const nextDue = new Date('2026-10-25T15:00:00Z');
-    mockWordReview.findOne.mockReturnValue({
-      sort: () => ({ select: () => ({ lean: () => Promise.resolve({ next_review_at: nextDue }) }) }),
-    });
+    mockWordReview.findNextDueAt.mockResolvedValue(new Date('2026-10-25T15:00:00Z'));
   });
 
   it('사용자 없음 → NotFoundError (next 호출, statusCode 404)', async () => {

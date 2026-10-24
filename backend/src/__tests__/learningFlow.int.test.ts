@@ -225,7 +225,9 @@ describe('간격 복습', () => {
     // 등록 직후에는 오늘 복습할 단어가 없다 (내일 한국 자정부터)
     const due = await request('GET', '/api/users/me/reviews/due');
     expect(due.status).toBe(200);
-    expect(due.body.data).toEqual({ words: [], dueCount: 0 });
+    expect(due.body.data).toEqual(expect.objectContaining({ words: [], dueCount: 0 }));
+    // 다음 복습은 내일 한국 자정
+    expect(new Date(due.body.data.nextDueAt).getTime()).toBeGreaterThan(Date.now());
   });
 
   it('기한이 된 단어를 알아요 → 다음 간격, 재전송은 반영하지 않음 / 몰라요 → 바로 다시', async () => {

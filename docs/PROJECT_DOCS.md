@@ -471,7 +471,7 @@ backend/src/
 
 | 메서드 | 경로 | 용도 |
 |---|---|---|
-| GET | `/due?limit=N` | 기한이 지난 순서로 N개(기본 50, 최대 100)를 섞어서 반환 + 전체 `dueCount` |
+| GET | `/due?limit=N` | 기한이 지난 순서로 N개(기본 50, 최대 100)를 섞어서 반환 + 전체 `dueCount`, 다음 복습 시각 `nextDueAt` |
 | POST | `/answer` | `{ wordId, isCorrect, timeSpent? }` → `{ applied, stage, nextReviewAt }`. 기한 전이면 `applied: false`(재전송 무시), 복습에 없는 단어는 404 |
 
 검증: `wordReviewModel.test.ts`(간격·재전송), `learningFlow.int.test.ts` → `describe('간격 복습')`

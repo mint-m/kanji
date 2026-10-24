@@ -18,6 +18,7 @@ export interface WordReviewDocument extends Document {
 export interface WordReviewModel extends Model<WordReviewDocument> {
   enroll(userId: mongoose.Types.ObjectId, wordId: mongoose.Types.ObjectId, now?: Date): Promise<void>;
   countDue(userId: mongoose.Types.ObjectId, now?: Date): Promise<number>;
+  findNextDueAt(userId: mongoose.Types.ObjectId, now?: Date): Promise<Date | null>;
 }
 
 export default WordReviewModel;

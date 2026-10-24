@@ -18,9 +18,10 @@ export const getDueReviews = async (req: AuthenticatedRequest, res: Response, ne
     const limit = Number(req.query.limit) || 50;
     const now = new Date();
 
-    const [reviews, dueCount] = await Promise.all([
+    const [reviews, dueCount, nextDueAt] = await Promise.all([
       WordReview.find({ user_id: userId, next_review_at: { $lte: now } }).sort({ next_review_at: 1 }).limit(limit).lean(),
       WordReview.countDue(userId, now),
+      WordReview.findNextDueAt(userId, now),
     ]);
 
     const wordIds = reviews.map((review) => review.word_id);
@@ -37,7 +38,7 @@ export const getDueReviews = async (req: AuthenticatedRequest, res: Response, ne
       return word ? [{ ...word, stage: review.stage, isBookmarked: bookmarkedSet.has(String(review.word_id)) }] : [];
     });
 
-    res.json({ success: true, data: { words: shuffleArray(items), dueCount } });
+    res.json({ success: true, data: { words: shuffleArray(items), dueCount, nextDueAt } });
   } catch (error) {
     console.error('Get due reviews error:', error);
     next(new InternalServerError('Failed to load reviews'));

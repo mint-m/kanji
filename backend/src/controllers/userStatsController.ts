@@ -17,7 +17,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     }
 
     const now = new Date();
-    const [wordCountByLevel, learnedByLevel, dueCount, nextReview] = await Promise.all([
+    const [wordCountByLevel, learnedByLevel, dueCount, nextDueAt] = await Promise.all([
       Word.aggregate<{ _id: string; count: number }>([{ $group: { _id: '$level', count: { $sum: 1 } } }]),
       WordReview.aggregate<{ _id: string; learned: number; longTerm: number }>([
         { $match: { user_id: userId } },
@@ -32,10 +32,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
         },
       ]),
       WordReview.countDue(userId, now),
-      WordReview.findOne({ user_id: userId, next_review_at: { $gt: now } })
-        .sort({ next_review_at: 1 })
-        .select('next_review_at')
-        .lean(),
+      WordReview.findNextDueAt(userId, now),
     ]);
 
     const levels = LEARNING_LEVELS.map((level) => {
@@ -56,7 +53,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
           longTerm: levels.reduce((sum, row) => sum + row.longTerm, 0),
         },
         levels,
-        review: { due: dueCount, nextDueAt: nextReview?.next_review_at ?? null },
+        review: { due: dueCount, nextDueAt },
         streak: {
           current: user.getCurrentStreak(now),
           longest: user.statistics.longestStreak,
