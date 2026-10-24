@@ -55,15 +55,12 @@ export interface WordProgress {
   updated_at: string;
 }
 
-// 세션 통계
+// 세션 통계 (현재 패스 기준)
 export interface SessionStats {
   totalWords: number;
   completedWords: number;
   remainingWords: number;
   progressPercentage: number;
-  averageWordsPerStep: number;
-  currentStep: number;
-  totalSteps: number;
 }
 
 // 덱 생성 옵션

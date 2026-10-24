@@ -102,23 +102,16 @@ userCheckpointSchema.methods.resetProgress = function (this: UserCheckpointDocum
   this.current_index = 0;
 };
 
+// 현재 패스 기준 진행 — 순환 윈도우(9-1)는 start > end라 스텝 수로 나누는 계산을 두지 않는다
 userCheckpointSchema.methods.getSessionStats = function (this: UserCheckpointDocument): SessionStats {
   const totalWords = this.shuffled_order.length;
-  const completedWords = this.current_index;
-  const remainingWords = totalWords - completedWords;
-  const progressPercentage = totalWords > 0 ? (completedWords / totalWords) * 100 : 0;
-  const totalSteps = this.steps.end - this.steps.start + 1;
-  const averageWordsPerStep = totalSteps > 0 ? totalWords / totalSteps : 0;
-  const currentStep = Math.floor(this.current_index / averageWordsPerStep) + this.steps.start;
+  const completedWords = Math.min(this.current_index, totalWords);
 
   return {
     totalWords,
     completedWords,
-    remainingWords,
-    progressPercentage,
-    averageWordsPerStep,
-    currentStep: Math.min(currentStep, this.steps.end),
-    totalSteps,
+    remainingWords: totalWords - completedWords,
+    progressPercentage: totalWords > 0 ? (completedWords / totalWords) * 100 : 0,
   };
 };
 

@@ -71,8 +71,7 @@ const makeMockProgress = (overrides: any = {}) => ({
   isWindowCompleted: jest.fn().mockResolvedValue(false),
   canMoveToNextWindow: jest.fn().mockResolvedValue(false),
   getSessionStats: jest.fn().mockReturnValue({
-    totalWords: 0, completedWords: 0, remainingWords: 0,
-    progressPercentage: 0, averageWordsPerStep: 5, currentStep: 1, totalSteps: 3,
+    totalWords: 0, completedWords: 0, remainingWords: 0, progressPercentage: 0,
   }),
   moveToNext: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),

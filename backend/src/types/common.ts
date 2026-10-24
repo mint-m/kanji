@@ -36,16 +36,13 @@ export interface StepRange {
 // ============================================================================
 
 /**
- * Learning session statistics
+ * Learning session statistics (현재 패스 기준)
  */
 export interface SessionStats {
   totalWords: number;
   completedWords: number;
   remainingWords: number;
   progressPercentage: number;
-  averageWordsPerStep: number;
-  currentStep: number;
-  totalSteps: number;
 }
 
 // ============================================================================
