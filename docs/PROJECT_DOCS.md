@@ -504,7 +504,7 @@ GET /health                                           # DB 연결 확인 — 200
 
 ### 구현 참고
 
-- `ApiError` 클래스(`services/authService.ts`)가 409 응답의 `code` 필드를 보존 — `apiClient`가 4xx를 모두 throw로 변환하기 때문에 필요.
+- 409 응답의 `code`는 `getErrorCode`(`services/apiClient.ts`)로 읽는다 — `apiClient`는 4xx를 `AxiosError`로 던진다.
 - `BookmarkStudyPage`는 로딩 시 `progress_type`을 `Map<wordId, ProgressType>`으로 캐싱하여 토글에 전달.
 - `BookmarkPage` 필터 변경 시 generation 카운터로 stale 응답을 무시. 삭제 후에는 `fetchBookmarks(targetPage)` 재호출로 서버 상태와 동기화.
 - `FlashCardContainer` 북마크 초기 상태는 덱 응답의 `isBookmarked` 필드에서 직접 초기화.

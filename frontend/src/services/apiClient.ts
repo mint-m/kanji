@@ -54,6 +54,13 @@ export const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+// 서버가 4xx 본문에 담은 code (예: BOOKMARK_LIMIT_EXCEEDED). apiClient 호출은 AxiosError로,
+// 인증 호출(authService)은 ApiError로 실패하므로 둘 다 읽는다 — AxiosError 자체의 code(ERR_BAD_REQUEST 등)와 혼동하지 않는다
+export const getErrorCode = (error: unknown): string | undefined => {
+  if (axios.isAxiosError(error)) return (error.response?.data as { code?: string } | undefined)?.code;
+  return error instanceof Error ? (error as Error & { code?: string }).code : undefined;
+};
+
 export const api = {
   get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     const response = await apiClient.get<T>(url, config);

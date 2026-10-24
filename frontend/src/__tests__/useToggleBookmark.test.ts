@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useToggleBookmark } from '../hooks/useToggleBookmark';
 import bookmarkService from '../services/bookmarkService';
-import { ApiError } from '../services/authService';
+import { AxiosError } from 'axios';
 
 jest.mock('../services/bookmarkService', () => ({
   __esModule: true,
@@ -65,8 +65,11 @@ describe('useToggleBookmark', () => {
     expect(onWarning).toHaveBeenCalledWith(expect.stringContaining('12개'));
   });
 
+  // 실제 bookmarkService(apiClient)는 4xx를 AxiosError로 던진다 — ApiError로 mock하면 이 경로를 확인하지 못한다
   it('BOOKMARK_LIMIT_EXCEEDED 실패 → 롤백 + onLimitError 호출', async () => {
-    mockToggle.mockRejectedValue(new ApiError('limit', 'BOOKMARK_LIMIT_EXCEEDED'));
+    mockToggle.mockRejectedValue(new AxiosError('Request failed with status code 409', 'ERR_BAD_REQUEST', undefined, undefined, {
+      status: 409, data: { success: false, code: 'BOOKMARK_LIMIT_EXCEEDED' },
+    } as any));
     const { setBookmarkedIds, onLimitError, options } = makeOptions();
     const { result } = renderHook(() => useToggleBookmark(options));
 
@@ -78,7 +81,7 @@ describe('useToggleBookmark', () => {
   });
 
   it('기타 에러 → 롤백만, onLimitError 호출 안 함', async () => {
-    mockToggle.mockRejectedValue(new ApiError('network fail'));
+    mockToggle.mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
     const { setBookmarkedIds, onLimitError, options } = makeOptions();
     const { result } = renderHook(() => useToggleBookmark(options));
 

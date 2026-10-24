@@ -62,7 +62,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - 연속 학습일은 `statistics.lastStudyDate`(한국 시간 날짜)로 센다. 로그인·토큰 갱신이 `profile.lastActiveAt`을 바꾸므로 그 값으로 판단하면 로그인한 날의 학습이 빠진다 (`userModel.test.ts`).
 - 완료 화면에서 `complete-deck` 없이 이탈하면 세션이 `currentIndex = 덱 길이`로 남는다 — 재진입 시 `FlashCardPage`가 `deckStatus`로 완료 화면을 복원한다 (E2E `완료 화면 재진입` 참조).
 - 북마크 조회 `limit` 상한은 `BOOKMARK_LIMIT`(150)과 같아야 한다 — 복습 페이지가 전체를 한 번에 조회한다 (`bookmarkRoutes.test.ts` 참조).
-- `ApiError`(`services/authService.ts`)가 409 응답의 `code`를 보존한다 — `apiClient`가 4xx를 throw로 변환하기 때문. 에러 처리 수정 시 유지 필수.
+- 4xx 응답의 `code`(예: `BOOKMARK_LIMIT_EXCEEDED`)는 `getErrorCode`(`services/apiClient.ts`)로 읽는다 — `apiClient` 호출은 `AxiosError`, 인증 호출(`authService`)은 `ApiError`로 실패한다. `instanceof ApiError`로 판별하면 실제 요청의 코드는 무시된다 (`useToggleBookmark.test.ts`는 실제와 같은 `AxiosError`로 검증).
 - 프론트에서 상대 경로 API 호출 금지 — Vercel/Render 분리 배포에서 405 발생 (커밋 84d8bf8 참조). 항상 `API_URL` 기반으로 호출.
 - 프론트 CI 빌드는 CRA 기준으로 엄격함 — cleanup 함수에서 ref 직접 참조 등 lint 위반 시 빌드 실패 (커밋 37ebbfc 참조).
 - `backend/src/scripts/`는 일회성 데이터 관리 스크립트 — 프로덕션 빌드(`tsconfig.build.json`)에서 제외됨.
