@@ -48,6 +48,7 @@ async function main() {
   const port = Number(process.env.PORT) || 8000;
   app.listen(port, () => {
     console.log(`\n메모리 MongoDB로 API 실행 중: http://localhost:${port} (샘플 단어 ${SAMPLE_WORDS.length}개 — N5 1~10스텝, daily 1~3스텝)`);
+    console.log(`MongoDB(Compass 등으로 조회 가능): ${process.env.MONGO_URI}`);
     console.log('개발용 로그인 — http://localhost:4200 의 브라우저 콘솔에 붙여넣기:\n');
     console.log(`${login}\n`);
   });
