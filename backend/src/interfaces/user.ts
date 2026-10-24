@@ -1,15 +1,6 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { UserAuthType, LearningLevel, Theme, Language } from '../types/common';
-
-// Legacy learning checkpoint interface (for migration)
-export interface LearningCheckpoint {
-  level: LearningLevel;
-  step: {
-    start: number;
-    end: number;
-  };
-}
+import { UserAuthType, Theme, Language } from '../types/common';
 
 // User preferences interface
 export interface UserPreferences {

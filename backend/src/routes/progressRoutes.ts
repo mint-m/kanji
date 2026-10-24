@@ -6,7 +6,6 @@ import { validateProgressRequest, validateDeckRequest } from '../middleware/vali
 const router = Router();
 
 router.get('/', progressController.getAllSessions);
-router.get('/:type', validateProgressRequest.getProgress, progressController.getUserProgress);
 
 router.delete('/:type', validateProgressRequest.getProgress, progressController.deleteSession);
 

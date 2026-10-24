@@ -3,38 +3,6 @@ import UserCheckpoint from '../models/userCheckpoint';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ProgressType } from '../types';
 
-export const getUserProgress = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  try {
-    const { type } = req.params as { type: ProgressType };
-    const userId = req.user!._id;
-
-    if (!['main', 'sub'].includes(type)) {
-      res.status(400).json({ success: false, message: 'Invalid progress type. Must be "main" or "sub"' });
-      return;
-    }
-
-    const progress = await UserCheckpoint.findByUserAndType(userId, type);
-    if (!progress) {
-      res.status(404).json({ success: false, message: `No ${type} progress found. Create a new session first.` });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        progress,
-        sessionStats: progress.getSessionStats(),
-        currentWord: progress.getCurrentWord(),
-        remainingWords: progress.getRemainingWords().length,
-        canMoveToNextWindow: await progress.canMoveToNextWindow(userId, type),
-      },
-    });
-  } catch (error) {
-    console.error('Get user progress error:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve user progress' });
-  }
-};
-
 export const deleteSession = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { type } = req.params as { type: ProgressType };
@@ -87,7 +55,6 @@ export const getAllSessions = async (req: AuthenticatedRequest, res: Response): 
 };
 
 export default {
-  getUserProgress,
   deleteSession,
   getAllSessions,
 };

@@ -98,20 +98,12 @@ userCheckpointSchema.methods.isAtWord = function (
   return index === this.current_index && !!this.getCurrentWord()?.equals(wordId);
 };
 
-userCheckpointSchema.methods.getRemainingWords = function (this: UserCheckpointDocument): mongoose.Types.ObjectId[] {
-  return this.shuffled_order.slice(this.current_index);
-};
-
 userCheckpointSchema.methods.moveToNext = function (this: UserCheckpointDocument): boolean {
   if (!this.isCompleted()) {
     this.current_index++;
     return true;
   }
   return false;
-};
-
-userCheckpointSchema.methods.resetProgress = function (this: UserCheckpointDocument): void {
-  this.current_index = 0;
 };
 
 // 현재 패스 기준 진행 — 순환 윈도우(9-1)는 start > end라 스텝 수로 나누는 계산을 두지 않는다
@@ -174,16 +166,6 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   this.shuffled_order = shuffleArray(unknownIds);
   this.current_index = 0;
   return this.shuffled_order.length;
-};
-
-userCheckpointSchema.methods.canMoveToNextWindow = async function (
-  this: UserCheckpointDocument,
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType
-): Promise<boolean> {
-  const allKnown = await this.isWindowCompleted(userId, progressType);
-  if (!allKnown) return false;
-  return await SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
 };
 
 userCheckpointSchema.methods.generateNextSlidingWindow = async function (

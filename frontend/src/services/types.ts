@@ -26,35 +26,6 @@ export interface Word {
   parts: string[]; // 품사
 }
 
-export interface UserProgress {
-  _id: string;
-  user_id: string;
-  progress_type: ProgressType;
-  current_level: LearningLevel;
-  steps: StepRange;
-  shuffled_order: string[]; // Word ID 배열
-  current_index: number;
-  created_at: string;
-  updated_at: string;
-}
-
-// 단어 진행 상황 (WordProgress)
-export interface WordProgress {
-  _id: string;
-  user_id: string;
-  word_id: string;
-  progress_type: ProgressType;
-  is_window_completed: boolean;
-  is_bookmarked: boolean;
-  try_count: number;
-  correct_count: number;
-  time_spent_total: number;
-  study_streak: number;
-  last_studied_at?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 // 윈도우(범위) 전체 기준 진행 — 패스와 달리 다시 섞어도 줄지 않는다
 export interface WindowProgress {
   total: number;
@@ -90,28 +61,6 @@ export interface SessionStats {
   progressPercentage: number;
 }
 
-// 덱 생성 옵션
-export interface DeckGenerationOptions {
-  excludeCompleted?: boolean;
-  prioritizeBookmarked?: boolean;
-  shuffleOrder?: boolean;
-  maxWords?: number;
-}
-
-// 덱 데이터
-export interface Deck {
-  deckId: string;
-  words: Word[];
-  totalWords: number;
-  level: LearningLevel;
-  steps: StepRange;
-  excludedCompleted: number;
-  prioritizedBookmarks: number;
-  options: DeckGenerationOptions;
-  generatedAt: string;
-  estimatedStudyTime: number; // minutes
-}
-
 // 현재 덱 데이터 (단어별 진행 상황 포함)
 export interface CurrentDeck {
   deckId: string;
@@ -132,7 +81,7 @@ export interface CurrentDeck {
   updatedAt: string;
 }
 
-// 덱 단어 (Word + WordProgress 결합)
+// 덱 단어 (Word + 단어별 진행 상태)
 export interface DeckWord extends Word {
   index: number;
   isCurrent: boolean;

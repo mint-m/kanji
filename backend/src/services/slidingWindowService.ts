@@ -1,10 +1,10 @@
 import Word from '../models/word';
 import { LearningLevel, StepRange, ObjectId } from '../types/common';
-import { WindowConfig, DeckWindow, WindowCheckpoint } from '../types/services/slidingWindow';
+import { WindowConfig, DeckWindow } from '../types/services/slidingWindow';
 import { shuffleArray } from '../utils/shuffle';
 
 // Re-export types for backwards compatibility
-export type { WindowConfig, DeckWindow, WindowCheckpoint };
+export type { WindowConfig, DeckWindow };
 
 export class SlidingWindowService {
   private static readonly DEFAULT_CONFIG: WindowConfig = {

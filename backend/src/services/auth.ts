@@ -22,8 +22,3 @@ export const generateToken = (user: UserDocument): string => {
     { expiresIn: JWT_EXPIRY || DEFAULT_EXPIRY }
   );
 };
-
-// JWT 토큰 검증 (추가 기능으로 사용 가능)
-export const verifyToken = (token: string) => {
-  return jwt.verify(token, JWT_SECRET as Secret);
-};
