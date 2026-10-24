@@ -56,7 +56,7 @@ const FlashCardPage: FC = () => {
     } catch (error: any) {
       console.error('Failed to fetch deck:', error);
       if (error.response?.status === 404 && error.response?.data?.code === 'NO_PROGRESS') {
-        navigate('/level-setup', { replace: true });
+        navigate(`/start?type=${progressType}`, { replace: true });
         return false;
       }
       setError(getErrorMessage(error, '단어장을 불러오는데 실패했습니다.'));
@@ -83,7 +83,7 @@ const FlashCardPage: FC = () => {
         deckCompletedRef.current = true;
         // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 완료 안내와 함께 레벨 선택으로 이동
         if (response.data && !response.data.isSubLoop && !response.data.canGenerateNext) {
-          navigate('/level-setup', { replace: true, state: { finishedLevel: level } });
+          navigate('/start?type=main', { replace: true, state: { finishedLevel: level } });
           return true;
         }
       } catch (e) {

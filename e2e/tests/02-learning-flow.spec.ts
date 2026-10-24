@@ -385,7 +385,7 @@ test.describe('서버 콜드 스타트', () => {
 });
 
 test.describe('레벨 끝', () => {
-  test('마지막 윈도우 완료 → 레벨 선택 화면에 완료 안내, 다음 레벨 선택, 초기화 동의 없이 시작 가능', async ({ page }) => {
+  test('마지막 범위 완료 → 학습 시작 화면에 완료 안내, 다음 레벨 선택, 바꾸기 동의 없이 시작 가능', async ({ page }) => {
     await injectMockAuth(page);
     let completeCount = 0;
 
@@ -399,12 +399,24 @@ test.describe('레벨 끝', () => {
     await page.route('**/api/users/me/progress/main/complete-deck', (route) => {
       route.fulfill({ json: { success: true, data: { nextWindow: null, canGenerateNext: false, isSubLoop: false } } });
     });
-    // 레벨 선택 화면이 조회하는 기존 세션 (모두 익힌 상태)
-    await page.route('**/api/users/me/progress/main', (route) => {
+    // 학습 시작 화면이 조회하는 기존 세션(모두 익힌 상태)과 레벨 스텝 구성
+    await page.route('**/api/users/me/progress', (route) => {
       route.fulfill({
         json: {
           success: true,
-          data: { progress: { current_level: 'N5', steps: { start: 10, end: 2 }, current_index: 1, shuffled_order: ['word0'] } },
+          data: {
+            sessions: [{ type: 'main', level: 'N5', steps: { start: 10, end: 2 }, window: { known: 1, total: 1 }, isPassCompleted: true }],
+            totalSessions: 1,
+          },
+        },
+      });
+    });
+    await page.route('**/api/words/level/*/steps', (route) => {
+      route.fulfill({
+        json: {
+          level: 'N4', totalWords: 100, totalSteps: 10,
+          stepDistribution: Array.from({ length: 10 }, (_, i) => ({ _id: i + 1, wordCount: 10 })),
+          availableSteps: Array.from({ length: 10 }, (_, i) => i + 1),
         },
       });
     });
@@ -415,11 +427,13 @@ test.describe('레벨 끝', () => {
 
     await page.getByRole('button', { name: '다음 범위로' }).click();
 
-    await expect(page).toHaveURL(/\/level-setup/);
+    await expect(page).toHaveURL(/\/start/);
     await expect(page.getByText(/마지막 범위까지 모두 익혔어요/)).toBeVisible();
-    await expect(page.getByText('N4 · 초급').first()).toBeVisible();
-    await expect(page.getByText(/진행 중인 학습이 있습니다/)).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '학습 시작' }).first()).toBeEnabled();
+    // 다음 레벨(N4)이 미리 골라져 있다
+    await expect(page.getByRole('radio', { name: /N4 · 초급/ })).toHaveAttribute('aria-checked', 'true');
+    // 다 마친 진도는 잃을 것이 없으므로 바꾸기 동의를 묻지 않는다
+    await expect(page.getByText(/이 설정으로 바뀌어요/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '학습 시작' })).toBeEnabled();
     expect(completeCount).toBe(1);
   });
 });

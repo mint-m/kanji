@@ -15,12 +15,11 @@ import type { RootState } from 'store';
 const Main = lazy(() => import('pages/Main'));
 const NotFound = lazy(() => import('pages/NotFound'));
 const Login = lazy(() => import('pages/Login'));
-const SelectLevel = lazy(() => import('pages/LevelSelectionPage'));
 const FlashCard = lazy(() => import('pages/FlashCardPage'));
 const UserProfile = lazy(() => import('pages/UserProfilePage'));
 const Bookmark = lazy(() => import('pages/BookmarkPage'));
 const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
-const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
+const Start = lazy(() => import('pages/StartPage'));
 const Stats = lazy(() => import('pages/StatsPage'));
 const Review = lazy(() => import('pages/ReviewPage'));
 
@@ -99,17 +98,15 @@ const AppContent = () => {
                 </ProtectedRoute>
               } />
 
-              <Route path='/select-level' element={
-                <ProtectedRoute>
-                  <SelectLevel />
-                </ProtectedRoute>
-              } />
 
-              <Route path='/level-setup' element={
+              <Route path='/start' element={
                 <ProtectedRoute>
-                  <LevelSetup />
+                  <Start />
                 </ProtectedRoute>
               } />
+              {/* 진도(/level-setup)·집중(/select-level) 시작 화면은 /start 하나로 합쳤다 */}
+              <Route path='/level-setup' element={<Navigate to='/start?type=main' replace />} />
+              <Route path='/select-level' element={<Navigate to='/start' replace />} />
 
               <Route path='/flash-cards' element={
                 <ProtectedRoute>
