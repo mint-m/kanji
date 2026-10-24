@@ -64,6 +64,9 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
   }
 );
 
+// 사용자당 세션 타입별로 하나 — 동시 생성 요청이 중복 세션을 만들지 못하게 한다
+userCheckpointSchema.index({ user_id: 1, progress_type: 1 }, { unique: true });
+
 // Instance methods
 userCheckpointSchema.methods.isCompleted = function (this: UserCheckpointDocument): boolean {
   return this.current_index >= this.shuffled_order.length;

@@ -38,6 +38,11 @@ export const updateActiveProgressType = async (req: Request, res: Response, next
     const userId = req.user!._id;
     const { activeProgressType } = req.body;
 
+    // findByIdAndUpdate는 스키마 enum 검증을 돌리지 않는다
+    if (!['main', 'sub', null].includes(activeProgressType)) {
+      return next(new BadRequestError('activeProgressType must be "main", "sub" or null'));
+    }
+
     const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
 
     if (!user) {
@@ -100,7 +105,11 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         );
       } catch (err) {
         if (err instanceof InvalidStepRangeError) {
-          return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
+          return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다.`));
+        }
+        // (user_id, progress_type) 고유 인덱스 — 동시에 들어온 생성 요청 중 하나만 성공한다
+        if ((err as { code?: number }).code === 11000) {
+          return next(new ConflictError('이미 진행 중인 세션이 있습니다. 세션을 삭제한 뒤 다시 시작해주세요.'));
         }
         return next(err);
       }
