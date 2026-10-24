@@ -45,8 +45,12 @@
     "globals": {
       "ts-jest": {
         "tsconfig": "./tsconfig.test.json",
-        "diagnostics": false
+        "diagnostics": false,
+        "isolatedModules": true
       }
+    },
+    "moduleNameMapper": {
+      "^axios$": "<rootDir>/node_modules/axios/dist/node/axios.cjs"
     },
     "testMatch": [
       "**/__tests__/**/*.test.ts"
