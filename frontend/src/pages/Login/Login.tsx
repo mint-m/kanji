@@ -1,32 +1,15 @@
 import { useSelector } from 'react-redux';
-import { useLocation } from 'react-router-dom';
-import GoogleLoginButton from 'components/LoginButton/GoogleLoginButton';
-import KakaoLoginButton from 'components/LoginButton/KakaoLoginButton';
-import LogoutButton from 'components/LoginButton/LogoutButton';
-import CenterDiv from 'components/CommonStyled/CenterDiv';
+import { Navigate, useLocation } from 'react-router-dom';
 import type { RootState } from 'store';
-import * as styles from './Login.css';
+import Landing from 'pages/Main/Landing';
 
+// 로그인 화면은 서비스 소개와 같은 화면 — 로그인 중이면 홈으로
 const Login = () => {
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
-  const location = useLocation();
-  const errorMessage = (location.state as any)?.error;
+  const errorMessage = (useLocation().state as { error?: string } | null)?.error;
 
-  return (
-    <CenterDiv>
-      {isLoggedIn ? (
-        <LogoutButton />
-      ) : (
-        <div className={styles.loginButtons}>
-          {errorMessage && (
-            <p className={styles.errorText}>{errorMessage}</p>
-          )}
-          <GoogleLoginButton />
-          <KakaoLoginButton />
-        </div>
-      )}
-    </CenterDiv>
-  );
+  if (isLoggedIn) return <Navigate to="/" replace />;
+  return <Landing error={errorMessage} />;
 };
 
 export default Login;
