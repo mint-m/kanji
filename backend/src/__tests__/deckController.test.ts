@@ -75,6 +75,7 @@ const makeMockProgress = (overrides: any = {}) => ({
   updated_at: new Date(),
   isCompleted: jest.fn().mockReturnValue(false),
   isWindowCompleted: jest.fn().mockResolvedValue(false),
+  getWindowProgress: jest.fn().mockResolvedValue({ total: 30, known: 12 }),
   canMoveToNextWindow: jest.fn().mockResolvedValue(false),
   getSessionStats: jest.fn().mockReturnValue({
     totalWords: 0, completedWords: 0, remainingWords: 0, progressPercentage: 0,
@@ -133,6 +134,8 @@ describe('getCurrentDeck', () => {
     expect(data).toHaveProperty('deckId');
     expect(data).toHaveProperty('words');
     expect(data.level).toBe('N5');
+    // 패스가 아닌 윈도우 전체 기준 진행
+    expect(data.window).toEqual({ total: 30, known: 12 });
   });
 });
 

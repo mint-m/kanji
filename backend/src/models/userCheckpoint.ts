@@ -127,6 +127,20 @@ userCheckpointSchema.methods.getSessionStats = function (this: UserCheckpointDoc
   };
 };
 
+// 이번 윈도우(패스가 아닌 범위 전체)에서 몇 개를 익혔는지 — 화면의 "익힘 n / 전체"
+userCheckpointSchema.methods.getWindowProgress = async function (
+  this: UserCheckpointDocument
+): Promise<{ total: number; known: number }> {
+  const wordIds = await SlidingWindowService.getWindowWordIds(this.current_level, this.steps);
+  const known = await wordProgressModel().countDocuments({
+    user_id: this.user_id,
+    word_id: { $in: wordIds },
+    progress_type: this.progress_type,
+    is_window_completed: true,
+  });
+  return { total: wordIds.length, known };
+};
+
 userCheckpointSchema.methods.isWindowCompleted = async function (
   this: UserCheckpointDocument,
   userId: mongoose.Types.ObjectId,

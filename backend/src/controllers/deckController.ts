@@ -70,7 +70,10 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     });
 
     const sessionStats = progress.getSessionStats();
-    const isWindowComplete = await progress.isWindowCompleted(userId, progressType);
+    const [isWindowComplete, windowProgress] = await Promise.all([
+      progress.isWindowCompleted(userId, progressType),
+      progress.getWindowProgress(),
+    ]);
     const canMoveToNext = isWindowComplete
       && await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
 
@@ -84,6 +87,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         words: deckWords,
         currentIndex: progress.current_index,
         sessionStats,
+        window: windowProgress,
         deckStatus: {
           isPassComplete: progress.isCompleted(),
           isWindowComplete,

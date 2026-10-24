@@ -62,15 +62,19 @@ export const getAllSessions = async (req: AuthenticatedRequest, res: Response): 
     const userId = req.user!._id;
     const sessions = await UserCheckpoint.getActiveProgressForUser(userId);
 
-    const sessionData = sessions.map((session) => ({
-      type: session.progress_type,
-      level: session.current_level,
-      steps: session.steps,
-      sessionStats: session.getSessionStats(),
-      isPassCompleted: session.isCompleted(),
-      createdAt: session.created_at,
-      updatedAt: session.updated_at,
-    }));
+    // 홈·기록 화면의 세션 카드용 요약 — 단어 목록이 든 덱(/:type/current)을 부르지 않아도 된다
+    const sessionData = await Promise.all(
+      sessions.map(async (session) => ({
+        type: session.progress_type,
+        level: session.current_level,
+        steps: session.steps,
+        sessionStats: session.getSessionStats(),
+        window: await session.getWindowProgress(),
+        isPassCompleted: session.isCompleted(),
+        createdAt: session.created_at,
+        updatedAt: session.updated_at,
+      }))
+    );
 
     res.status(200).json({
       success: true,

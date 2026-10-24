@@ -32,6 +32,7 @@ const makeMockProgress = (overrides: any = {}) => ({
   getCurrentWord: jest.fn().mockReturnValue(null),
   getRemainingWords: jest.fn().mockReturnValue([]),
   canMoveToNextWindow: jest.fn().mockResolvedValue(false),
+  getWindowProgress: jest.fn().mockResolvedValue({ total: 30, known: 7 }),
   isCompleted: jest.fn().mockReturnValue(false),
   save: jest.fn().mockResolvedValue(undefined),
   resetProgress: jest.fn(),
@@ -77,5 +78,20 @@ describe('deleteSession', () => {
     const res = makeRes();
     await progressController.deleteSession(makeReq({ params: { type: 'main' } }), res);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+});
+
+describe('getAllSessions', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('세션 카드용 요약에 윈도우 진행(익힘/전체)을 담는다', async () => {
+    (UserCheckpoint.getActiveProgressForUser as jest.Mock).mockResolvedValue([makeMockProgress()]);
+    const res = makeRes();
+    await progressController.getAllSessions(makeReq(), res);
+    const { data } = (res.json as jest.Mock).mock.calls[0][0];
+    expect(data.totalSessions).toBe(1);
+    expect(data.sessions[0]).toEqual(expect.objectContaining({
+      type: 'main', level: 'N5', steps: { start: 1, end: 3 }, window: { total: 30, known: 7 },
+    }));
   });
 });

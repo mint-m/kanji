@@ -55,6 +55,12 @@ export interface WordProgress {
   updated_at: string;
 }
 
+// 윈도우(범위) 전체 기준 진행 — 패스와 달리 다시 섞어도 줄지 않는다
+export interface WindowProgress {
+  total: number;
+  known: number;
+}
+
 // 세션 통계 (현재 패스 기준)
 export interface SessionStats {
   totalWords: number;
@@ -94,6 +100,7 @@ export interface CurrentDeck {
   words: DeckWord[];
   currentIndex: number;
   sessionStats: SessionStats;
+  window: WindowProgress;
   deckStatus: {
     isPassComplete: boolean;
     isWindowComplete: boolean;

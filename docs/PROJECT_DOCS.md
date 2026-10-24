@@ -419,7 +419,7 @@ backend/src/
 
 | 메서드 | 경로 | 용도 | 검증 |
 |---|---|---|---|
-| GET | `/` | 세션 목록 | `progressController.test.ts` |
+| GET | `/` | 세션 목록 — 카드용 요약(레벨·스텝·패스 진행·윈도우 진행 `window: { known, total }`) | `progressController.test.ts`, `learningFlow.int.test.ts` |
 | GET | `/:type` | 세션 + `sessionStats` 조회 | `progressController.test.ts` — 잘못된 type 400, 없으면 404 |
 | DELETE | `/:type` | 세션 삭제 | `progressController.test.ts` |
 
@@ -431,7 +431,7 @@ backend/src/
 
 #### 현재 덱 조회 — `GET /current`
 
-응답 구조는 `CurrentDeck` 타입이 단일 출처다.
+응답 구조는 `CurrentDeck` 타입이 단일 출처다. `window`는 패스가 아닌 윈도우 전체 기준 진행(익힘/전체)이다.
 동작 검증은 `deckController.test.ts` → `describe('getCurrentDeck')`:
 진행 중인 세션이 없으면 404 + `code: "NO_PROGRESS"`, 잘못된 `progressType`은 400.
 완료 화면에서 이탈한 세션은 `currentIndex = 덱 길이`로 응답하며, 프론트는 `deckStatus`로 완료 화면을 복원한다.

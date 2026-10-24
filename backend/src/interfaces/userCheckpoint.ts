@@ -22,6 +22,7 @@ export interface UserCheckpointDocument extends Document {
   moveToNext(): boolean;
   resetProgress(): void;
   getSessionStats(): SessionStats;
+  getWindowProgress(): Promise<{ total: number; known: number }>;
   canMoveToNextWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
   reshuffleUnknownWords(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<number>;
   generateNextSlidingWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;

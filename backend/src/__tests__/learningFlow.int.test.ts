@@ -126,6 +126,18 @@ describe('메인 세션 — 윈도우·패스', () => {
     expect(deck.currentIndex).toBe(0);
   });
 
+  it('덱과 세션 요약이 윈도우 전체 기준 진행(익힘/전체)을 알려준다', async () => {
+    await startSession('main', 'N5', { start: 1, end: 3 });
+    const deck = await getDeck('main');
+    for (let index = 0; index < 5; index++) {
+      await request('POST', '/api/users/me/progress/main/complete-word', { wordId: deck.words[index]._id, isCorrect: index !== 0, index });
+    }
+    expect((await getDeck('main')).window).toEqual({ total: 30, known: 4 });
+
+    const summary = await request('GET', '/api/users/me/progress');
+    expect(summary.body.data.sessions[0]).toEqual(expect.objectContaining({ type: 'main', window: { total: 30, known: 4 } }));
+  });
+
   it('위치가 어긋난 응답은 409이고 아무것도 기록하지 않는다', async () => {
     await startSession('main', 'N5', { start: 1, end: 3 });
     const deck = await getDeck('main');
