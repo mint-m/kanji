@@ -205,3 +205,22 @@ describe('updateCheckpoint', () => {
     expect(UserCheckpoint.createNewSession).not.toHaveBeenCalled();
   });
 });
+
+describe('updatePreferences', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it.each([0, 101, 2.5, '20', undefined])('하루 목표 %p → 400, 저장하지 않음', async (dailyGoal) => {
+    const next = makeNext();
+    await userController.updatePreferences(makeReq({ body: { dailyGoal } }), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('성공 → 저장된 하루 목표 반환', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30 } });
+    const res = makeRes();
+    await userController.updatePreferences(makeReq({ body: { dailyGoal: 30 } }), res, makeNext());
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { 'preferences.dailyGoal': 30 }, { new: true });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30 } });
+  });
+});

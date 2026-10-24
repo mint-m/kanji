@@ -66,6 +66,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       studyDaysCount: { type: Number, default: 0, min: 0 },
       favoriteStudyTime: { type: String },
       lastStudyDate: { type: String }, // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
+      todayCount: { type: Number, default: 0, min: 0 }, // lastStudyDate 하루 동안의 응답 수
     },
     isActive: {
       type: Boolean,
@@ -107,6 +108,7 @@ UserSchema.methods.recordStudy = function (this: UserDocument, timeSpent: number
 
   stats.totalWordsStudied += 1;
   stats.totalTimeSpent += timeSpent;
+  stats.todayCount = stats.lastStudyDate === today ? stats.todayCount + 1 : 1;
   this.profile.lastActiveAt = new Date();
 
   if (stats.lastStudyDate === today) return;

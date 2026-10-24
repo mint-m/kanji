@@ -31,6 +31,28 @@ export const updateUserName = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+// 학습 설정 — 하루 목표 단어 수
+export const updatePreferences = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!._id;
+    const { dailyGoal } = req.body;
+
+    if (!Number.isInteger(dailyGoal) || dailyGoal < 1 || dailyGoal > 100) {
+      return next(new BadRequestError('하루 목표는 1~100 사이의 정수로 입력해주세요'));
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { 'preferences.dailyGoal': dailyGoal }, { new: true });
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({ success: true, data: { dailyGoal: user.preferences.dailyGoal } });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    next(new InternalServerError('Failed to update preferences'));
+  }
+};
+
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {

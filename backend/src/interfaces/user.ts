@@ -32,6 +32,7 @@ export interface UserStats {
   studyDaysCount: number;
   favoriteStudyTime?: string; // Most common study hour
   lastStudyDate?: string; // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
+  todayCount: number; // lastStudyDate 하루 동안의 응답 수
 }
 
 // User profile interface

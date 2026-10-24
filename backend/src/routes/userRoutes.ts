@@ -15,6 +15,9 @@ const router = Router();
 // 내 닉네임 변경
 router.patch('/me', authenticateUser, userController.updateUserName);
 
+// 내 학습 설정(하루 목표) 업데이트
+router.patch('/me/preferences', authenticateUser, userController.updatePreferences);
+
 // 내 활성 세션 타입 업데이트
 router.patch('/me/active-progress-type', authenticateUser, userController.updateActiveProgressType);
 
