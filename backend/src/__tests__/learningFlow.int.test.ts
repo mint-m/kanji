@@ -277,3 +277,15 @@ describe('학습 기록', () => {
     expect(data.streak.current).toBe(1);
   });
 });
+
+describe('한자 조회', () => {
+  it('로그인하지 않은 요청은 외부 사전을 부르기 전에 401', async () => {
+    const res = await new Promise<number>((resolve, reject) => {
+      http.get(`${baseUrl}/api/words/kanjiSearch?kanji=${encodeURIComponent('学')}`, (r) => {
+        r.resume();
+        resolve(r.statusCode ?? 0);
+      }).on('error', reject);
+    });
+    expect(res).toBe(401);
+  });
+});

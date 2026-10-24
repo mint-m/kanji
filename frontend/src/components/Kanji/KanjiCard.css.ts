@@ -3,11 +3,10 @@ import { vars } from 'styles/vars.css';
 
 export const card = style({
   position: 'relative',
-  marginLeft: 'auto',
-  marginRight: 'auto',
   marginTop: vars.space.sm,
   marginBottom: vars.space.sm,
-  width: '90%',
+  width: '100%',
+  backgroundColor: vars.color.bg,
   display: 'flex',
   flexDirection: 'column',
   padding: vars.space.sm,
@@ -16,12 +15,6 @@ export const card = style({
   overflow: 'hidden',
   transition: 'max-height 0.3s ease-in-out, transform 0.3s ease-in-out',
 
-  selectors: {
-    '&:focus-visible': {
-      outline: `2px solid #4527a0`,
-      outlineOffset: '2px',
-    },
-  },
 });
 
 export const cardCollapsed = style({

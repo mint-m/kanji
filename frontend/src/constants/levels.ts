@@ -13,3 +13,10 @@ export const LEVEL_INFO: Record<LearningLevel, { name: string; label: string; de
 };
 
 export const levelName = (level: string) => LEVEL_INFO[level as LearningLevel]?.name ?? level;
+
+// 화면에 보이는 범위 이름 — 진도 학습은 3스텝 윈도우(레벨 끝에서는 1스텝으로 돌아온다), 집중 학습은 한 스텝
+export const formatSteps = (steps: { start: number; end: number }, type: 'main' | 'sub'): string => {
+  if (type === 'sub' || steps.start === steps.end) return `스텝 ${steps.start}`;
+  if (steps.start < steps.end) return `스텝 ${steps.start}–${steps.end}`;
+  return `스텝 ${steps.start}–끝, 1${steps.end > 1 ? `–${steps.end}` : ''}`;
+};

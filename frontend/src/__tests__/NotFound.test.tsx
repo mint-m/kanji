@@ -13,5 +13,5 @@ test('404 화면이 오류 없이 렌더링된다', () => {
       </MemoryRouter>
     </Provider>
   );
-  expect(screen.getByText('요청하신 페이지를 찾을 수 없습니다.')).toBeInTheDocument();
+  expect(screen.getByText('요청하신 페이지를 찾을 수 없어요.')).toBeInTheDocument();
 });

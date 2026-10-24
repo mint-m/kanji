@@ -1,14 +1,11 @@
 import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import bookmarkService, { Bookmark } from 'services/bookmarkService';
 import { DeckWord, LearningLevel, ProgressType } from 'services/types';
 import { getErrorMessage } from 'services/apiClient';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
-import FlashCard, { ShowType } from 'components/FlashCard';
-import ControlPanel from 'components/ControlPanel';
+import StudyCard from 'components/StudyCard';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
-import * as kanjiActions from 'store/modules/kanji';
 import * as styles from './BookmarkStudyPage.css';
 
 interface LocationState {
@@ -18,7 +15,6 @@ interface LocationState {
 
 const BookmarkStudyPage: FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { state } = useLocation();
   const { level, sortBy } = (state as LocationState) || {};
 
@@ -26,8 +22,6 @@ const BookmarkStudyPage: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [wordIndex, setWordIndex] = useState(0);
-  const [showMean, setShowMean] = useState(false);
-  const [showHiragana, setShowHiragana] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
   const [learningCount, setLearningCount] = useState(0);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
@@ -68,13 +62,6 @@ const BookmarkStudyPage: FC = () => {
   const handleKnowClick = useCallback((know: boolean) => {
     know ? setMasteredCount(p => p + 1) : setLearningCount(p => p + 1);
     setWordIndex(p => p + 1);
-    dispatch(kanjiActions.reset());
-    setShowMean(false);
-    setShowHiragana(false);
-  }, [dispatch]);
-
-  const handleShowClick = useCallback((type: ShowType['type']) => {
-    type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
   }, []);
 
   const currentWordId = deck?.[wordIndex]?._id;
@@ -141,18 +128,11 @@ const BookmarkStudyPage: FC = () => {
             🔖 {bookmarkWarning}
           </div>
         )}
-        <FlashCard
+        <StudyCard
           word={deck[wordIndex]}
-          showMean={showMean}
-          showHiragana={showHiragana}
+          onAnswer={handleKnowClick}
           isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
           onBookmark={handleBookmark}
-        />
-        <ControlPanel
-          onShowClick={handleShowClick}
-          onKnowClick={handleKnowClick}
-          showMean={showMean}
-          showHiragana={showHiragana}
         />
       </div>
     </div>

@@ -508,7 +508,7 @@ PUT  /:wordId      # 북마크 메모 수정
 
 ```
 GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 (minStep, maxStep)
-GET /api/words/kanjiSearch?kanji=한자                  # 한자 상세 검색 (네이버 API)
+GET /api/words/kanjiSearch?kanji=한자                  # 한자 풀이 (로그인 필요, 네이버 사전 → DB 순, 찾은 결과는 서버 메모리 캐시)
 ```
 
 ### 운영 (Health)

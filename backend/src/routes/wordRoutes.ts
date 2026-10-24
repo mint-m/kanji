@@ -3,6 +3,7 @@ import { Router } from 'express';
 import * as wordController from '../controllers/wordController';
 import * as kanjiController from '../controllers/kanjiController';
 import { handleValidationErrors } from '../middleware/validation';
+import { authenticateUser } from '../middleware/auth';
 import { param, query } from 'express-validator';
 import { LEARNING_LEVELS } from '../types/common';
 
@@ -18,10 +19,11 @@ router.get(
   wordController.getStepsForLevel
 );
 
-// 한자 검색 (네이버 API 활용)
+// 한자 검색 (네이버 API 활용) — 로그인 사용자만: 외부 사전을 대신 불러 주는 공개 프록시가 되지 않도록
 router.get(
   '/kanjiSearch',
   [
+    authenticateUser,
     query('kanji')
       .isString().withMessage('kanji must be a single string, not an array')
       .trim()

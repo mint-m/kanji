@@ -23,7 +23,8 @@ test.describe('로그인 페이지', () => {
           data: {
             deckId: 'deck1', level: 'N5', steps: { start: 1, end: 3 }, progressType: 'main',
             words: [], currentIndex: 0,
-            sessionStats: { totalWords: 0, completedWords: 0, remainingWords: 0, progressPercentage: 0, averageWordsPerStep: 0, currentStep: 1, totalSteps: 3 },
+            sessionStats: { totalWords: 0, completedWords: 0, remainingWords: 0, progressPercentage: 0 },
+            window: { total: 0, known: 0 },
             deckStatus: { isPassComplete: false, isWindowComplete: false, canMoveToNext: false, completionPercentage: 0 },
             createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
           },

@@ -28,7 +28,9 @@ const kanjiSlice = createSlice({
   initialState,
   reducers: {
     addKanji: (state, action: PayloadAction<KanjiDataType>) => {
-      state.kanjis.push(action.payload);
+      if (!state.kanjis.some((item) => item.kanji === action.payload.kanji)) {
+        state.kanjis.push(action.payload);
+      }
     },
     reset: () => initialState,
   },

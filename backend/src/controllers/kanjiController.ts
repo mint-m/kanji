@@ -50,10 +50,26 @@ const fetchFromDB = async (kanji: string): Promise<object | null> => {
   };
 };
 
+// 한자 풀이는 바뀌지 않으므로 찾은 결과를 기억해 같은 한자로 외부 사전을 다시 부르지 않는다
+const CACHE_LIMIT = 2000;
+const cache = new Map<string, object>();
+
+const remember = (kanji: string, result: object) => {
+  if (cache.size >= CACHE_LIMIT) cache.delete(cache.keys().next().value as string);
+  cache.set(kanji, result);
+};
+
 export const searchKanji = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const kanji = req.query.kanji as string;
+    const cached = cache.get(kanji);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
     const result = await fetchFromNaver(kanji) ?? await fetchFromDB(kanji);
+    // 못 찾은 결과는 일시적인 외부 장애일 수 있어 기억하지 않는다
+    if (result) remember(kanji, result);
     res.json(result ?? { searchResult: [] });
   } catch (error) {
     next(new InternalServerError('Failed to search kanji'));

@@ -55,7 +55,7 @@
         "files": [
           "**/services/apiClient.ts",
           "**/services/authService.ts",
-          "**/OriginWord/kanjiDataFilter.ts"
+          "**/__tests__/**"
         ],
         "rules": {
           "no-restricted-imports": "off"

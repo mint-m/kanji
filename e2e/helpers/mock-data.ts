@@ -29,10 +29,8 @@ export const makeDeck = (wordIds: string[], words?: ReturnType<typeof makeDeckWo
       completedWords: 0,
       remainingWords: wordIds.length,
       progressPercentage: 0,
-      averageWordsPerStep: 5,
-      currentStep: 1,
-      totalSteps: 3,
     },
+    window: { total: wordIds.length, known: 0 },
     deckStatus: {
       isPassComplete: false,
       isWindowComplete: false,

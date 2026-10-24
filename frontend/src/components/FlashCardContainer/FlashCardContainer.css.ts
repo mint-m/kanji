@@ -40,8 +40,8 @@ export const warningText = style({
 });
 
 export const completedCard = style({
-  width: '85vw',
-  aspectRatio: '3 / 4',
+  width: '100%',
+  minHeight: 'min(28rem, 58vh)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -51,15 +51,6 @@ export const completedCard = style({
   borderRadius: vars.radius.lg,
   textAlign: 'center',
   boxShadow: vars.shadow.inner,
-  overflowY: 'auto',
-
-  '@media': {
-    'screen and (min-width: 768px)': {
-      width: '35rem',
-      height: '28rem',
-      aspectRatio: 'auto',
-    },
-  },
 });
 
 export const completedTitle = style({

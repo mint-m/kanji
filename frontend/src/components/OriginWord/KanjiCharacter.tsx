@@ -1,8 +1,8 @@
-import { FC, useCallback, useEffect, useState } from 'react';
+import { FC, MouseEvent, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { clsx } from 'clsx';
 import * as kanjiActions from 'store/modules/kanji';
-import { useDispatch, useSelector } from 'react-redux';
-import kanjiDataFilter from './kanjiDataFilter';
-import { RootState } from 'store';
+import { lookupKanji } from './kanjiDataFilter';
 import * as styles from './OriginWord.css';
 
 interface KanjiCharacterProps {
@@ -11,52 +11,32 @@ interface KanjiCharacterProps {
 
 const KanjiCharacter: FC<KanjiCharacterProps> = ({ kanji }) => {
   const dispatch = useDispatch();
-  const kanjis = useSelector((state: RootState) => state.kanji.kanjis);
-  const [kanjiData, setKanjiData] = useState<kanjiActions.KanjiDataType | null>(null);
-  const [lookupDone, setLookupDone] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'missing'>('idle');
 
-  const isKanjiIncluded = useCallback((k: string): boolean => {
-    return kanjis?.map((item) => item.kanji).includes(k) ?? false;
-  }, [kanjis]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLookupDone(false);
-    // 글자가 바뀌면 이전 조회 결과를 즉시 비운다 — 새 fetch 완료 전 클릭 시 이전 한자가 추가되는 것 방지
-    setKanjiData(null);
-
-    kanjiDataFilter(kanji, controller.signal)
-      .then((data) => {
-        setKanjiData(data);
-        setLookupDone(true);
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted) console.log(err);
-      });
-
-    return () => controller.abort();
-  }, [kanji]);
-
-  const handleOnClick = useCallback(() => {
-    if (kanjiData && !isKanjiIncluded(kanjiData.kanji)) {
-      dispatch(kanjiActions.addKanji(kanjiData));
+  const handleClick = async (event: MouseEvent) => {
+    // 카드를 눌러 읽기·뜻을 여는 동작과 구분한다
+    event.stopPropagation();
+    setStatus('loading');
+    const data = await lookupKanji(kanji);
+    if (data) {
+      dispatch(kanjiActions.addKanji(data));
+      setStatus('idle');
+    } else {
+      setStatus('missing');
     }
-  }, [dispatch, kanjiData, isKanjiIncluded]);
-
-  const charClass = kanjiData
-    ? styles.kanjiChar
-    : lookupDone
-      ? styles.notFoundChar
-      : styles.plainChar;
+  };
 
   return (
-    <div
-      className={charClass}
-      onClick={handleOnClick}
-      title={lookupDone && !kanjiData ? '한자 정보 없음' : undefined}
+    <button
+      type="button"
+      className={clsx(styles.kanjiChar, status === 'missing' && styles.notFoundChar)}
+      onClick={handleClick}
+      disabled={status === 'loading'}
+      aria-label={status === 'missing' ? `${kanji} (한자 풀이 없음)` : `${kanji} 한자 풀이 보기`}
+      title={status === 'missing' ? '한자 풀이를 찾지 못했어요' : '한자 풀이 보기'}
     >
       {kanji}
-    </div>
+    </button>
   );
 };
 

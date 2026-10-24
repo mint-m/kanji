@@ -44,6 +44,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `backend/src/controllers/deckController.ts` — 학습 플로우 API (`complete-word`, `complete-deck`)
 - `backend/src/models/wordReview.ts` — 간격 복습 일정(등록·응답 반영)
 - `frontend/src/pages/FlashCardPage/` + `components/FlashCardContainer/` — 학습 UI 상태 머신
+- `frontend/src/components/StudyCard/` — 진도 학습·오늘의 복습·북마크 학습이 함께 쓰는 단어 카드(공개·응답·단축키·발음·한자 풀이)
 - `frontend/src/services/` — 모든 API 호출 (아키텍처 규칙 참조)
 
 ## Architecture Rules

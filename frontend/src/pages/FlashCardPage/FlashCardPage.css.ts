@@ -8,56 +8,37 @@ const shimmer = keyframes({
 
 const shimmerBg = `linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)`;
 
+// 카드 한 장에 집중하는 가운데 열 — 한자 풀이는 넓은 화면에서 이 열의 왼쪽에, 좁은 화면에서는 아래 시트로 뜬다
 export const page = style({
-  display: 'grid',
-  height: `calc(100vh - ${vars.layout.header})`,
-  gridTemplateColumns: '1fr auto 1fr',
-  gridTemplateRows: '1fr 1fr',
-  placeItems: 'center',
-});
-
-export const flashCardArea = style({
-  gridRow: 'span 2',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-  width: 'fit-content',
+  width: '100%',
+  maxWidth: '560px',
+  margin: '0 auto',
+  padding: `${vars.space.lg} ${vars.space.md} ${vars.space.xl}`,
 });
 
 export const skeletonCard = style({
-  width: '85vw',
-  aspectRatio: '3 / 4',
+  width: '100%',
+  height: 'min(28rem, 58vh)',
   background: shimmerBg,
   backgroundSize: '200% 100%',
   animation: `${shimmer} 1.5s infinite`,
   borderRadius: vars.radius.md,
-
-  '@media': {
-    'screen and (min-width: 768px)': {
-      width: '35rem',
-      height: '28rem',
-      aspectRatio: 'auto',
-    },
-  },
 });
 
 export const skeletonBtn = style({
-  width: '200px',
-  height: '40px',
+  width: '100%',
+  height: '96px',
   background: shimmerBg,
   backgroundSize: '200% 100%',
   animation: `${shimmer} 1.5s infinite`,
-  borderRadius: vars.radius.pill,
-  margin: '0 auto',
+  borderRadius: vars.radius.md,
 });
 
 export const skeletonWrapper = style({
   width: '100%',
   display: 'flex',
   flexDirection: 'column',
-  gap: vars.space.lg,
+  gap: vars.space.md,
 });
 
 export const slowHint = style({
