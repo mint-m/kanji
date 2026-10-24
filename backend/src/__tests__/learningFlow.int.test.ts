@@ -14,6 +14,7 @@ import WordProgress from '../models/wordProgress';
 import WordReview from '../models/wordReview';
 import { generateToken } from '../services/auth';
 import { SAMPLE_WORDS } from '../scripts/sampleWords';
+import { backfillReviews } from '../scripts/backfillReviews';
 
 jest.setTimeout(60_000);
 
@@ -289,5 +290,34 @@ describe('한자 조회', () => {
       }).on('error', reject);
     });
     expect(res).toBe(401);
+  });
+});
+
+describe('리뉴얼 전 학습 기록 백필', () => {
+  it('맞힌 적 있는 단어를 사용자·단어당 하나로 등록하고, 여러 번 실행해도 같다', async () => {
+    const [user] = await User.find({});
+    const words = await Word.find({ level: 'N5', step: 1 }).limit(3);
+    // 리뉴얼 전 기록: 같은 단어가 main·sub에 따로 있고, 하나는 맞힌 적이 없다
+    await WordProgress.insertMany([
+      { user_id: user._id, word_id: words[0]._id, progress_type: 'main', try_count: 3, correct_count: 2 },
+      { user_id: user._id, word_id: words[0]._id, progress_type: 'sub', try_count: 3, correct_count: 3 },
+      { user_id: user._id, word_id: words[1]._id, progress_type: 'main', try_count: 1, correct_count: 1 },
+      { user_id: user._id, word_id: words[2]._id, progress_type: 'main', try_count: 2, correct_count: 0 },
+    ]);
+
+    const now = new Date();
+    expect(await backfillReviews(now, false)).toEqual({ candidates: 2, created: 0 });
+    expect(await WordReview.countDocuments({})).toBe(0);
+
+    expect(await backfillReviews(now, true)).toEqual({ candidates: 2, created: 2 });
+    const first = await WordReview.findOne({ word_id: words[0]._id });
+    const second = await WordReview.findOne({ word_id: words[1]._id });
+    expect(first!.stage).toBe(3); // 맞힌 횟수 5 → 최대 3단계
+    expect(second!.stage).toBe(1);
+    // 첫 복습은 내일 이후로 나눠서
+    expect(first!.next_review_at.getTime()).toBeGreaterThan(now.getTime());
+
+    expect(await backfillReviews(now, true)).toEqual({ candidates: 2, created: 0 });
+    expect(await WordReview.countDocuments({})).toBe(2);
   });
 });

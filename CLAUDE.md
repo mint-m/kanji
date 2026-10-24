@@ -4,8 +4,8 @@
 
 ## Project
 
-kanji — JLPT 일본어 단어 학습 앱 (슬라이딩 윈도우 덱 시스템).
-**유지보수·종결 단계**: 신규 기능 추가보다 안정성·완성도·코드 축소를 우선한다.
+kanji — JLPT 일본어 단어 학습 앱. "윈도우로 익히고, 간격 복습으로 굳힌다" — 3스텝 슬라이딩 윈도우 덱 + 단어별 간격 복습.
+**v5 리뉴얼(2026-10, `feat/service-renewal`)**: 간격 복습·홈·학습 카드·기록 화면을 새로 짰다. 안정성·완성도·코드 축소를 우선하는 원칙은 그대로다.
 
 ## Stack
 
@@ -19,6 +19,7 @@ yarn start                  # frontend + backend
 yarn start:memory           # frontend + backend on in-memory MongoDB with sample words (no Atlas)
 cd frontend && yarn start   # frontend only (http://localhost:4200)
 cd backend && yarn dev      # backend only (http://localhost:8000)
+cd backend && yarn dev:memory  # backend only, in-memory MongoDB + sample words (prints a dev login line)
 cd backend && yarn build    # production build (tsc → dist/)
 yarn test                   # tests (run in frontend/ or backend/)
 yarn test:e2e               # playwright e2e (mock 데이터 기반, e2e/helpers/)
@@ -32,7 +33,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 
 - **Window**: 3-step 학습 단위. `1-3 → 2-4 → …` 순으로 슬라이딩, 레벨 끝에서 순환(`9-1`, `10-2`, 레벨 내에서만).
 - **Pass**: 덱 1회 순회. 완료 시 "모름" 단어만 재셔플해 새 패스 시작 → 전부 "알았음"이면 Window 완료.
-- **Session**: `main`(슬라이딩 윈도우 진행) / `sub`(단일 스텝 반복 루프). `UserCheckpoint` 레코드로 각각 독립 관리.
+- **Session**: `main`(화면 이름 "진도 학습", 슬라이딩 윈도우 진행) / `sub`("집중 학습", 단일 스텝 반복 루프). `UserCheckpoint` 레코드로 각각 독립 관리. 화면 용어만 바꿨고 코드·DB·API는 `main`/`sub` 그대로다.
 - **WordProgress**: 단어별 상태. `is_window_completed`는 윈도우 이동 시 리셋되는 임시 플래그, `try_count`/`correct_count`/`is_bookmarked`는 영구 보존.
 - **Bookmark**: 세션 간 공유 개념(최대 150개, 초과 시 409 `BOOKMARK_LIMIT_EXCEEDED`). 단, 레코드는 `progress_type`별로 분리되어 있어 토글 시 원래 세션의 `progressType`을 전달해야 한다.
 - **Review**: 단어별 간격 복습 상태(`word_review`, 사용자·단어당 1건, 세션과 독립). 진도·집중 학습에서 처음 "알아요"를 누르면 다음 날 한국 자정부터 1단계로 나오고, 복습에서 맞힐 때마다 1·3·7·14·30·60일 간격으로 늘어난다. 몰라요는 0단계(바로 다시). "익힌 단어" = 복습에 등록된 단어, "장기 기억" = 4단계(14일) 이상.
@@ -45,6 +46,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `backend/src/models/wordReview.ts` — 간격 복습 일정(등록·응답 반영)
 - `frontend/src/pages/FlashCardPage/` + `components/FlashCardContainer/` — 학습 UI 상태 머신
 - `frontend/src/components/StudyCard/` — 진도 학습·오늘의 복습·북마크 학습이 함께 쓰는 단어 카드(공개·응답·단축키·발음·한자 풀이)
+- `frontend/src/pages/` — 홈(`Main`: 로그인 전 랜딩 / 후 오늘 할 일), 학습 시작(`StartPage`), 오늘의 복습(`ReviewPage`), 기록(`StatsPage`)
 - `frontend/src/services/` — 모든 API 호출 (아키텍처 규칙 참조)
 
 ## Architecture Rules
@@ -121,4 +123,6 @@ Format: `<type>: <description in Korean>` — no scope `()`, no trailing period
 
 인지하고 있는 한계 (재발견 방지용):
 
-- 없음 (윈도우 이동 시 부분 리셋 문제는 새 덱 단어를 리셋하도록 고쳤다)
+- 진도·집중 학습 중 이미 복습 기한이 된 단어를 "알아요"로 넘겨도 복습 일정은 그대로다 — 두 흐름이 서로의 일정을 흔들지 않도록 한 설계다 (복습은 오늘의 복습에서만 진행).
+- 간격 복습은 리뉴얼 이후의 "알아요"부터 쌓인다. 기존 사용자의 과거 기록은 배포 후 1회 `cd backend && yarn backfill:reviews --apply`로 옮긴다 (`--apply` 없이 실행하면 미리 보기, 여러 번 실행해도 같은 결과).
+- 프론트 빌드 도구는 CRA(react-scripts 5, 지원 종료) 그대로다 — Vite 전환은 배포 설정(Vercel)과 함께 할 별도 작업.

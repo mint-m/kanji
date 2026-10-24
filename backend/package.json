@@ -33,6 +33,7 @@
     "dev:memory": "ts-node --transpile-only src/scripts/devServer.ts",
     "test": "jest",
     "seed:kanji": "ts-node src/scripts/seedKanji.ts",
+    "backfill:reviews": "ts-node --transpile-only src/scripts/backfillReviews.ts",
     "augment:frequency": "node --max-old-space-size=4096 -r ts-node/register src/scripts/augmentFrequency.ts",
     "clean:words": "ts-node src/scripts/cleanWords.ts",
     "clean:words:dry": "ts-node src/scripts/cleanWords.ts --dry-run",
