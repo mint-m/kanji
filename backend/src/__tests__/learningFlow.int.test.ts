@@ -94,7 +94,13 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await Promise.all([UserCheckpoint.deleteMany({}), WordProgress.deleteMany({}), WordReview.deleteMany({})]);
+  await Promise.all([
+    UserCheckpoint.deleteMany({}),
+    WordProgress.deleteMany({}),
+    WordReview.deleteMany({}),
+    // 사용자 문서는 테스트 사이에 남으므로 학습 기록만 처음 상태로 돌린다
+    User.updateMany({}, { $set: { 'statistics.todayCount': 0, 'statistics.currentStreak': 0 }, $unset: { 'statistics.lastStudyDate': 1, 'profile.lastActiveAt': 1 } }),
+  ]);
 });
 
 describe('메인 세션 — 윈도우·패스', () => {
@@ -249,5 +255,25 @@ describe('간격 복습', () => {
     const word = await Word.findOne({});
     const res = await request('POST', '/api/users/me/reviews/answer', { wordId: word!._id, isCorrect: true });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('학습 기록', () => {
+  it('익힌 단어·장기 기억·복습 대기·오늘 학습량이 실제 기록과 맞는다', async () => {
+    await startSession('main', 'N5', { start: 1, end: 3 });
+    await answerPass('main', (w) => w.entry !== 'みず');
+    // 3개를 장기 기억(4단계)으로, 2개를 기한 지남으로 만든다
+    const reviews = await WordReview.find({}).limit(5);
+    await WordReview.updateMany({ _id: { $in: reviews.slice(0, 3).map((r) => r._id) } }, { stage: 4 });
+    await WordReview.updateMany({ _id: { $in: reviews.slice(3).map((r) => r._id) } }, { next_review_at: new Date(Date.now() - 1000) });
+
+    const res = await request('GET', '/api/users/me/stats');
+    expect(res.status).toBe(200);
+    const { data } = res.body;
+    expect(data.learned).toEqual({ total: 29, longTerm: 3 });
+    expect(data.levels.find((l: any) => l.level === 'N5')).toEqual({ level: 'N5', total: 100, learned: 29, longTerm: 3 });
+    expect(data.review.due).toBe(2);
+    expect(data.today.count).toBe(30);
+    expect(data.streak.current).toBe(1);
   });
 });

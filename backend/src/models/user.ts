@@ -125,6 +125,19 @@ UserSchema.methods.recordStudy = function (this: UserDocument, timeSpent: number
   stats.lastStudyDate = today;
 };
 
+// 표시용 연속 학습일 — 어제까지 이어졌어야 살아 있다 (저장값은 다음 학습 때에야 리셋된다)
+UserSchema.methods.getCurrentStreak = function (this: UserDocument, now: Date = new Date()): number {
+  const stats = this.statistics;
+  const last = stats.lastStudyDate ?? (this.profile.lastActiveAt && toKstDate(this.profile.lastActiveAt));
+  if (!last) return 0;
+  return daysBetween(last, toKstDate(now)) <= 1 ? stats.currentStreak : 0;
+};
+
+// 오늘(한국 날짜) 응답 수
+UserSchema.methods.getTodayCount = function (this: UserDocument, now: Date = new Date()): number {
+  return this.statistics.lastStudyDate === toKstDate(now) ? this.statistics.todayCount : 0;
+};
+
 UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | 'intermediate' | 'advanced' {
   const wordsStudied = this.statistics.totalWordsStudied;
 

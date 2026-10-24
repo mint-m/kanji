@@ -71,6 +71,8 @@ export interface UserDocument extends Document {
   getDisplayName(): string;
   updateLastActive(): void;
   recordStudy(timeSpent: number): void;
+  getCurrentStreak(now?: Date): number;
+  getTodayCount(now?: Date): number;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
   canReceiveReminders(): boolean;
   isNewUser(): boolean;

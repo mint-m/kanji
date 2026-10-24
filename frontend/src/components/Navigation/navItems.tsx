@@ -29,9 +29,9 @@ export const NAV_ITEMS: NavItem[] = [
     icon: <Icon><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></Icon>,
   },
   {
-    to: '/dashboard',
+    to: '/stats',
     label: '기록',
-    match: ['/dashboard', '/profile/stats'],
+    match: ['/stats'],
     icon: <Icon><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></Icon>,
   },
 ];

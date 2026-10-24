@@ -410,9 +410,9 @@ backend/src/
 | PATCH | `/me/preferences` | 하루 목표 단어 수 변경 `{ dailyGoal }` (1~100) |
 | PATCH | `/me/active-progress-type` | 활성 세션 타입 변경 (`main`\|`sub`\|`null`, 그 외 400) |
 | PATCH | `/me/checkpoint` | 세션 생성 — **같은 타입 세션이 있으면 409** (교체는 `DELETE /me/progress/:type` 후 생성) |
-| GET | `/me/stats` | 학습 통계 |
+| GET | `/me/stats` | 학습 기록 — 익힌 단어·장기 기억(레벨별), 복습 대기·다음 복습, 연속 학습일(어제까지 이어진 경우만), 오늘 학습량·하루 목표 (`UserStats` 타입) |
 
-검증: `userController.test.ts`, `userStatsController.test.ts`
+검증: `userController.test.ts`, `userStatsController.test.ts`, `learningFlow.int.test.ts` → `describe('학습 기록')`
 
 ---
 

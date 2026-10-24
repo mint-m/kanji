@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { AppHeader, TabBar } from 'components/Navigation';
@@ -21,8 +21,7 @@ const UserProfile = lazy(() => import('pages/UserProfilePage'));
 const Bookmark = lazy(() => import('pages/BookmarkPage'));
 const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
 const LevelSetup = lazy(() => import('pages/LevelSetupPage'));
-const Dashboard = lazy(() => import('pages/DashboardPage'));
-const UserStats = lazy(() => import('pages/UserStatsPage'));
+const Stats = lazy(() => import('pages/StatsPage'));
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -72,11 +71,14 @@ const AppContent = () => {
                 </ProtectedRoute>
               } />
 
-              <Route path='/profile/stats' element={
+              <Route path='/stats' element={
                 <ProtectedRoute>
-                  <UserStats />
+                  <Stats />
                 </ProtectedRoute>
               } />
+              {/* 진도·학습 통계는 기록(/stats)으로 합쳤다 */}
+              <Route path='/profile/stats' element={<Navigate to='/stats' replace />} />
+              <Route path='/dashboard' element={<Navigate to='/stats' replace />} />
 
               <Route path='/bookmark' element={
                 <ProtectedRoute>
@@ -93,12 +95,6 @@ const AppContent = () => {
               <Route path='/select-level' element={
                 <ProtectedRoute>
                   <SelectLevel />
-                </ProtectedRoute>
-              } />
-
-              <Route path='/dashboard' element={
-                <ProtectedRoute>
-                  <Dashboard />
                 </ProtectedRoute>
               } />
 

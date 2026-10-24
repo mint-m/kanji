@@ -4,13 +4,13 @@ import { setUser } from 'store/modules/user';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getProfile, getStats, updateName } from 'services/userService';
-import deckService from 'services/deckService';
-import { CurrentDeck } from 'services/types';
+import { getProfile, getStats, updateDailyGoal, updateName } from 'services/userService';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally, updateLocalUser } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
 import { startKakaoAuth } from 'services/kakaoOAuth';
 import * as styles from './UserProfilePage.css';
+
+const GOAL_OPTIONS = [10, 20, 30, 50, 100];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
@@ -28,9 +28,10 @@ const UserProfilePage: FC = () => {
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  // 간단한 통계
-  const [progress, setProgress] = useState<number | null>(null);
-  const [currentDeck, setCurrentDeck] = useState<CurrentDeck | null>(null);
+  // 하루 목표
+  const [dailyGoal, setDailyGoal] = useState<number | null>(null);
+  const [goalSaving, setGoalSaving] = useState(false);
+  const [goalError, setGoalError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -53,21 +54,13 @@ const UserProfilePage: FC = () => {
     fetchUserData();
   }, []);
 
-  // 최근 학습 위치 + 진도
   useEffect(() => {
-    if (!userData) return;
     let active = true;
     getStats()
-      .then((s) => { if (active) setProgress(s.overall.progressPercentage); })
+      .then((stats) => { if (active) setDailyGoal(stats.today.goal); })
       .catch(() => {});
-    const type = userData.activeProgressType;
-    if (type) {
-      deckService.getCurrentDeck(type)
-        .then((res) => { if (active && res.success && res.data) setCurrentDeck(res.data); })
-        .catch(() => {});
-    }
     return () => { active = false; };
-  }, [userData]);
+  }, []);
 
   const startEditName = () => {
     setNameInput(userData.name || '');
@@ -91,6 +84,19 @@ const UserProfilePage: FC = () => {
       setNameError('닉네임 변경에 실패했습니다.');
     } finally {
       setNameSaving(false);
+    }
+  };
+
+  const saveGoal = async (goal: number) => {
+    if (goal === dailyGoal || goalSaving) return;
+    setGoalSaving(true);
+    setGoalError(null);
+    try {
+      setDailyGoal(await updateDailyGoal(goal));
+    } catch {
+      setGoalError('하루 목표를 저장하지 못했어요. 다시 시도해주세요.');
+    } finally {
+      setGoalSaving(false);
     }
   };
 
@@ -137,10 +143,6 @@ const UserProfilePage: FC = () => {
     );
   }
 
-  const levelText = currentDeck?.level ?? '—';
-  const stepText = currentDeck?.steps ? `${currentDeck.steps.start}–${currentDeck.steps.end}` : '—';
-  const progressText = progress !== null ? `${progress}%` : '—';
-
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>프로필</h1>
@@ -158,6 +160,7 @@ const UserProfilePage: FC = () => {
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setIsEditingName(false); }}
                     maxLength={20}
+                    aria-label="닉네임"
                     autoFocus
                   />
                   <button className={styles.nameSaveBtn} onClick={saveName} disabled={nameSaving}>
@@ -177,25 +180,29 @@ const UserProfilePage: FC = () => {
           </div>
           <button className={styles.logoutBtn} onClick={() => { logout(true); navigate('/'); }}>로그아웃</button>
         </div>
-
-        <div className={styles.statsGroup}>
-          <div className={styles.miniStats}>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>레벨</span>
-              <span className={styles.miniValue}>{levelText}</span>
-            </span>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>스텝</span>
-              <span className={styles.miniValue}>{stepText}</span>
-            </span>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>진도</span>
-              <span className={styles.miniValue}>{progressText}</span>
-            </span>
-          </div>
-          <button className={styles.statsBtn} onClick={() => navigate('/profile/stats')}>학습 통계</button>
-        </div>
       </div>
+
+      {/* 하루 목표 */}
+      <section className={styles.card}>
+        <h2 className={styles.sectionTitle}>하루 목표</h2>
+        <div className={styles.goalOptions} role="radiogroup" aria-label="하루 목표 단어 수">
+          {GOAL_OPTIONS.map((goal) => (
+            <button
+              key={goal}
+              type="button"
+              role="radio"
+              aria-checked={dailyGoal === goal}
+              className={styles.goalOption}
+              onClick={() => saveGoal(goal)}
+              disabled={dailyGoal === null || goalSaving}
+            >
+              {goal}개
+            </button>
+          ))}
+        </div>
+        <p className={styles.goalHint}>진도·집중 학습과 복습에서 답한 카드 수로 셉니다. 홈과 기록에서 오늘 얼마나 했는지 보여 드려요.</p>
+        {goalError && <p className={styles.fieldError}>{goalError}</p>}
+      </section>
 
       {/* 계정 연동 */}
       <section className={styles.card}>

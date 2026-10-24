@@ -61,6 +61,27 @@ export interface WindowProgress {
   known: number;
 }
 
+// 세션 카드용 요약 (GET /progress)
+export interface SessionSummary {
+  type: ProgressType;
+  level: LearningLevel;
+  steps: StepRange;
+  sessionStats: SessionStats;
+  window: WindowProgress;
+  isPassCompleted: boolean;
+  updatedAt: string;
+}
+
+// 학습 기록 (GET /me/stats) — 익힌 단어 = 복습에 등록된 단어, 장기 기억 = 14일 간격 이상
+export interface UserStats {
+  learned: { total: number; longTerm: number };
+  levels: { level: LearningLevel; total: number; learned: number; longTerm: number }[];
+  review: { due: number; nextDueAt: string | null };
+  streak: { current: number; longest: number; studyDays: number };
+  today: { count: number; goal: number };
+  totalAnswers: number;
+}
+
 // 세션 통계 (현재 패스 기준)
 export interface SessionStats {
   totalWords: number;

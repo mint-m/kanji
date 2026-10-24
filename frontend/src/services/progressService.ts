@@ -8,6 +8,7 @@ import {
   StepRange,
   UserProgress,
   SessionStats,
+  SessionSummary,
 } from './types';
 
 export interface GetProgressResponse {
@@ -27,7 +28,7 @@ export interface CheckpointUpdateData {
 }
 
 const progressService = {
-  async getAllSessions(): Promise<ApiResponse<{ sessions: any[]; totalSessions: number }>> {
+  async getAllSessions(): Promise<ApiResponse<{ sessions: SessionSummary[]; totalSessions: number }>> {
     return api.get('/api/users/me/progress');
   },
 

@@ -92,3 +92,20 @@ describe('recordStudy', () => {
     expect(doc.statistics).toEqual(expect.objectContaining({ currentStreak: 4, studyDaysCount: 4, lastStudyDate: '2026-10-24' }));
   });
 });
+
+describe('getCurrentStreak · getTodayCount', () => {
+  const getCurrentStreak = (User as any).schema.methods.getCurrentStreak as Function;
+  const getTodayCount = (User as any).schema.methods.getTodayCount as Function;
+
+  it('어제까지 학습했으면 연속 일수가 살아 있고, 그 전이면 0', () => {
+    expect(getCurrentStreak.call(makeDoc({ lastStudyDate: '2026-10-23', currentStreak: 5 }), NOW)).toBe(5);
+    expect(getCurrentStreak.call(makeDoc({ lastStudyDate: '2026-10-24', currentStreak: 5 }), NOW)).toBe(5);
+    expect(getCurrentStreak.call(makeDoc({ lastStudyDate: '2026-10-21', currentStreak: 5 }), NOW)).toBe(0);
+    expect(getCurrentStreak.call(makeDoc(), NOW)).toBe(0);
+  });
+
+  it('오늘 응답 수는 마지막 학습일이 오늘일 때만', () => {
+    expect(getTodayCount.call(makeDoc({ lastStudyDate: '2026-10-24', todayCount: 9 }), NOW)).toBe(9);
+    expect(getTodayCount.call(makeDoc({ lastStudyDate: '2026-10-23', todayCount: 9 }), NOW)).toBe(0);
+  });
+});

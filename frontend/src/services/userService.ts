@@ -1,4 +1,5 @@
 import { api } from './apiClient';
+import { ApiResponse, UserStats } from './types';
 
 /**
  * 사용자 프로필 조회
@@ -8,10 +9,19 @@ export const getProfile = async (): Promise<any> => {
 };
 
 /**
- * 사용자 통계 조회
+ * 학습 기록 조회
  */
-export const getStats = async (): Promise<any> => {
-  return api.get('/api/users/me/stats');
+export const getStats = async (): Promise<UserStats> => {
+  const res = await api.get<ApiResponse<UserStats>>('/api/users/me/stats');
+  return res.data!;
+};
+
+/**
+ * 하루 목표 단어 수 변경
+ */
+export const updateDailyGoal = async (dailyGoal: number): Promise<number> => {
+  const res = await api.patch<ApiResponse<{ dailyGoal: number }>>('/api/users/me/preferences', { dailyGoal });
+  return res.data!.dailyGoal;
 };
 
 /**
