@@ -22,6 +22,11 @@ jest.mock('../models/wordProgress', () => ({
   },
 }));
 
+jest.mock('../models/wordReview', () => ({
+  __esModule: true,
+  default: { enroll: jest.fn().mockResolvedValue(undefined) },
+}));
+
 jest.mock('../models/word', () => ({
   __esModule: true,
   default: { find: jest.fn() },
@@ -41,6 +46,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
+import WordReview from '../models/wordReview';
 import Word from '../models/word';
 import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
@@ -217,6 +223,8 @@ describe('completeWord', () => {
 
     expect(mockUser.recordStudy).toHaveBeenCalledWith(5);
     expect(mockUser.save).toHaveBeenCalled();
+    // 알아요 → 간격 복습 등록
+    expect(WordReview.enroll).toHaveBeenCalledWith('user-id-123', expect.anything());
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data.passComplete).toBe(false);
     expect(data.windowComplete).toBe(false);
@@ -239,6 +247,8 @@ describe('completeWord', () => {
     );
 
     expect(mockProgress.reshuffleUnknownWords).toHaveBeenCalled();
+    // 몰라요는 복습에 등록하지 않는다
+    expect(WordReview.enroll).not.toHaveBeenCalled();
     const { data } = (res.json as jest.Mock).mock.calls[0][0];
     expect(data.passComplete).toBe(true);
     expect(data.windowComplete).toBe(false);

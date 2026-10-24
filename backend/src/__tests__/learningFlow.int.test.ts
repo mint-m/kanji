@@ -11,6 +11,7 @@ import Word from '../models/word';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
+import WordReview from '../models/wordReview';
 import { generateToken } from '../services/auth';
 import { SAMPLE_WORDS } from '../scripts/sampleWords';
 
@@ -69,7 +70,7 @@ const all = () => true;
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri('kanji-test'));
-  await Promise.all([Word.init(), UserCheckpoint.init(), WordProgress.init()]);
+  await Promise.all([Word.init(), UserCheckpoint.init(), WordProgress.init(), WordReview.init()]);
   await Word.insertMany(SAMPLE_WORDS);
   const user = await User.create({
     type: 'google',
@@ -93,7 +94,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await Promise.all([UserCheckpoint.deleteMany({}), WordProgress.deleteMany({})]);
+  await Promise.all([UserCheckpoint.deleteMany({}), WordProgress.deleteMany({}), WordReview.deleteMany({})]);
 });
 
 describe('메인 세션 — 윈도우·패스', () => {
@@ -191,5 +192,50 @@ describe('북마크', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.bookmarks).toHaveLength(1);
     expect(res.body.data.bookmarks[0].word.entry).toBe(deck.words[0].entry);
+  });
+});
+
+describe('간격 복습', () => {
+  // 시간이 지난 것처럼 모든 복습 기한을 과거로 당긴다
+  const makeAllDue = () => WordReview.updateMany({}, { next_review_at: new Date(Date.now() - 1000) });
+
+  it('처음 알아요를 누른 단어만 내일부터 복습에 등록된다', async () => {
+    await startSession('main', 'N5', { start: 1, end: 3 });
+    await answerPass('main', (w) => w.entry !== 'みず');
+
+    expect(await WordReview.countDocuments({})).toBe(29);
+    // 등록 직후에는 오늘 복습할 단어가 없다 (내일 한국 자정부터)
+    const due = await request('GET', '/api/users/me/reviews/due');
+    expect(due.status).toBe(200);
+    expect(due.body.data).toEqual({ words: [], dueCount: 0 });
+  });
+
+  it('기한이 된 단어를 알아요 → 다음 간격, 재전송은 반영하지 않음 / 몰라요 → 바로 다시', async () => {
+    await startSession('sub', 'N5', { start: 4, end: 4 });
+    await answerPass('sub', all);
+    await makeAllDue();
+
+    const due = await request('GET', '/api/users/me/reviews/due?limit=5');
+    expect(due.body.data.dueCount).toBe(10);
+    expect(due.body.data.words).toHaveLength(5);
+    const [first, second] = due.body.data.words;
+    expect(first).toEqual(expect.objectContaining({ entry: expect.any(String), means: expect.any(Array), stage: 1 }));
+
+    const known = await request('POST', '/api/users/me/reviews/answer', { wordId: first._id, isCorrect: true });
+    expect(known.body.data).toEqual(expect.objectContaining({ applied: true, stage: 2 }));
+    expect(new Date(known.body.data.nextReviewAt).getTime()).toBeGreaterThan(Date.now());
+
+    const retry = await request('POST', '/api/users/me/reviews/answer', { wordId: first._id, isCorrect: true });
+    expect(retry.body.data).toEqual(expect.objectContaining({ applied: false, stage: 2 }));
+
+    const forgot = await request('POST', '/api/users/me/reviews/answer', { wordId: second._id, isCorrect: false });
+    expect(forgot.body.data).toEqual(expect.objectContaining({ applied: true, stage: 0 }));
+    expect((await request('GET', '/api/users/me/reviews/due')).body.data.dueCount).toBe(9);
+  });
+
+  it('복습에 없는 단어에 답하면 404', async () => {
+    const word = await Word.findOne({});
+    const res = await request('POST', '/api/users/me/reviews/answer', { wordId: word!._id, isCorrect: true });
+    expect(res.status).toBe(404);
   });
 });

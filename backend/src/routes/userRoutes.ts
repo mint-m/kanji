@@ -4,6 +4,7 @@ import * as userStatsController from '../controllers/userStatsController';
 import { authenticateUser } from '../middleware/auth';
 import progressRoutes from './progressRoutes';
 import bookmarkRoutes from './bookmarkRoutes';
+import reviewRoutes from './reviewRoutes';
 
 const router = Router();
 
@@ -28,5 +29,8 @@ router.use('/me/progress', authenticateUser, progressRoutes);
 
 // 내 북마크 관리 - /api/users/me/bookmarks/*
 router.use('/me/bookmarks', authenticateUser, bookmarkRoutes);
+
+// 간격 복습 - /api/users/me/reviews/*
+router.use('/me/reviews', authenticateUser, reviewRoutes);
 
 export default router;

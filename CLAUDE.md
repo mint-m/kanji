@@ -35,12 +35,14 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - **Session**: `main`(슬라이딩 윈도우 진행) / `sub`(단일 스텝 반복 루프). `UserCheckpoint` 레코드로 각각 독립 관리.
 - **WordProgress**: 단어별 상태. `is_window_completed`는 윈도우 이동 시 리셋되는 임시 플래그, `try_count`/`correct_count`/`is_bookmarked`는 영구 보존.
 - **Bookmark**: 세션 간 공유 개념(최대 150개, 초과 시 409 `BOOKMARK_LIMIT_EXCEEDED`). 단, 레코드는 `progress_type`별로 분리되어 있어 토글 시 원래 세션의 `progressType`을 전달해야 한다.
+- **Review**: 단어별 간격 복습 상태(`word_review`, 사용자·단어당 1건, 세션과 독립). 진도·집중 학습에서 처음 "알아요"를 누르면 다음 날 한국 자정부터 1단계로 나오고, 복습에서 맞힐 때마다 1·3·7·14·30·60일 간격으로 늘어난다. 몰라요는 0단계(바로 다시). "익힌 단어" = 복습에 등록된 단어, "장기 기억" = 4단계(14일) 이상.
 
 ## Key Files
 
 - `backend/src/models/userCheckpoint.ts` — 세션 상태 + 패스/윈도우 판정 (핵심 비즈니스 로직)
 - `backend/src/services/slidingWindowService.ts` — 윈도우 계산·덱 생성·셔플
 - `backend/src/controllers/deckController.ts` — 학습 플로우 API (`complete-word`, `complete-deck`)
+- `backend/src/models/wordReview.ts` — 간격 복습 일정(등록·응답 반영)
 - `frontend/src/pages/FlashCardPage/` + `components/FlashCardContainer/` — 학습 UI 상태 머신
 - `frontend/src/services/` — 모든 API 호출 (아키텍처 규칙 참조)
 
@@ -50,7 +52,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - Business logic in Mongoose model methods, not controllers
 - All API calls through `services/apiClient.ts`, never direct axios in components
 - API 응답은 `{ success, data, message? }` 봉투 형식 유지
-- Mongo 컬렉션 이름은 명시 지정됨: `word`, `user_checkpoints`, `word_progress` — 북마크 aggregation의 `$lookup from: 'word'`가 이에 의존하므로 변경 금지
+- Mongo 컬렉션 이름은 명시 지정됨: `word`, `user_checkpoints`, `word_progress`, `word_review` — 북마크 aggregation의 `$lookup from: 'word'`가 이에 의존하므로 변경 금지
 
 ## Invariants & Gotchas
 
@@ -60,6 +62,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `windowComplete: true` 응답 후 프론트가 `complete-deck`을 호출해야 다음 윈도우가 생성된다. `complete-deck` 중복 호출은 400 — `FlashCardPage`의 `deckCompletedRef`가 방어.
 - Sub 세션의 `complete-deck`은 다음 윈도우 대신 같은 스텝의 단어 **전체**로 새 덱을 만든다(`restartWindow`, `isSubLoop: true`) — "다시 학습하기" UI로 분기. 마지막 패스의 단어만 섞으면 루프가 점점 줄어든다 (`deckController.test.ts` "서브").
 - 새 윈도우를 만들 때(`createNewSession`·`generateNextSlidingWindow`·`restartWindow`) 새 덱 단어의 `is_window_completed`를 리셋한다 — 겹치는 스텝의 단어가 이전 윈도우의 '알았음'을 들고 오지 않는다.
+- 복습 응답은 기한이 된 단어에만 반영된다(`applyAnswer`가 아니면 `applied: false`) — 재전송·중복 클릭이 단계를 두 번 올리지 않는다. 진도·집중 학습의 응답은 복습 일정을 바꾸지 않고 처음 "알아요"일 때 등록만 한다 (`wordReviewModel.test.ts`, `learningFlow.int.test.ts` "간격 복습").
 - 연속 학습일은 `statistics.lastStudyDate`(한국 시간 날짜)로 센다. 로그인·토큰 갱신이 `profile.lastActiveAt`을 바꾸므로 그 값으로 판단하면 로그인한 날의 학습이 빠진다 (`userModel.test.ts`).
 - 완료 화면에서 `complete-deck` 없이 이탈하면 세션이 `currentIndex = 덱 길이`로 남는다 — 재진입 시 `FlashCardPage`가 `deckStatus`로 완료 화면을 복원한다 (E2E `완료 화면 재진입` 참조).
 - 북마크 조회 `limit` 상한은 `BOOKMARK_LIMIT`(150)과 같아야 한다 — 복습 페이지가 전체를 한 번에 조회한다 (`bookmarkRoutes.test.ts` 참조).

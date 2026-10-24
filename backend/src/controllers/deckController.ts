@@ -2,6 +2,7 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
+import WordReview from '../models/wordReview';
 import Word from '../models/word';
 import User from '../models/user';
 import SlidingWindowService from '../services/slidingWindowService';
@@ -164,6 +165,11 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     await wordProgress.save();
+
+    // 처음 "알아요"를 누른 단어는 내일부터 간격 복습에 나온다 (이미 등록된 단어는 그대로)
+    if (isCorrect) {
+      await WordReview.enroll(userId, wordObjectId);
+    }
 
     // Update user statistics
     const user = await User.findById(userId);

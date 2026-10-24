@@ -12,3 +12,7 @@ export const toKstDate = (date: Date = new Date()): string => kstDateFormat.form
 /** 두 'YYYY-MM-DD' 날짜 사이의 일수 (to - from) */
 export const daysBetween = (from: string, to: string): number =>
   Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
+
+/** date가 속한 한국 날짜에서 days일 뒤의 자정(한국 시간) — "하루 뒤 복습"은 내일 아침부터 보이게 한다 */
+export const kstMidnightAfter = (date: Date, days: number): Date =>
+  new Date(Date.parse(`${toKstDate(date)}T00:00:00+09:00`) + days * 86_400_000);

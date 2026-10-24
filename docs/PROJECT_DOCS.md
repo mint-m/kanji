@@ -295,6 +295,32 @@ backend/src/
 
 ---
 
+#### 5. WordReview
+
+단어별 간격 복습 일정 — **컬렉션 이름**: `word_review`
+
+```typescript
+{
+  _id: ObjectId,
+  user_id: ObjectId,          // ref: User
+  word_id: ObjectId,          // ref: Word
+  stage: number,              // 0 = 다시 익히는 중, 1~6 = 간격 단계 (1·3·7·14·30·60일)
+  next_review_at: Date,       // 이 시각부터 오늘의 복습에 나온다 (간격은 한국 자정 기준)
+  review_count: number,       // 복습 응답 수
+  lapse_count: number,        // 잊은 횟수 (1단계 이상에서 몰라요)
+  last_reviewed_at?: Date,
+  learned_at: Date            // 등록 시각 = 처음 "알아요"를 누른 시각
+}
+```
+
+**인덱스**: `{ user_id: 1, word_id: 1 }` (unique), `{ user_id: 1, next_review_at: 1 }`
+
+- 진도·집중 학습에서 처음 "알아요"를 누르면 1단계로 등록된다(다음 날 한국 자정부터 복습). 세션(main/sub)과 무관하게 단어당 하나다
+- 복습에서 알아요 → 다음 단계, 몰라요 → 0단계(바로 다시). 기한 전 응답은 반영하지 않는다
+- "익힌 단어" = 등록된 단어, "장기 기억" = 4단계(14일 간격) 이상
+
+---
+
 #### 4. WordProgress
 
 단어별 완료 상태 추적
@@ -437,6 +463,17 @@ backend/src/
 | 메인 + 다음 윈도우 있음 | `nextWindow`, `canGenerateNext: true` | "메인 + 다음 윈도우 있음" |
 | 메인 + 레벨의 마지막 윈도우 | `nextWindow: null`, `canGenerateNext: false` → 프론트는 완료 안내와 함께 레벨 선택으로 이동 | "메인 + 레벨의 마지막 윈도우" |
 | 서브 | 같은 스텝의 단어 전체로 새 덱(`restartWindow`, 완료 표시 리셋), `isSubLoop: true` → "다시 학습하기" UI | "서브" |
+
+---
+
+### 복습 (`/api/users/me/reviews`)
+
+| 메서드 | 경로 | 용도 |
+|---|---|---|
+| GET | `/due?limit=N` | 기한이 지난 순서로 N개(기본 50, 최대 100)를 섞어서 반환 + 전체 `dueCount` |
+| POST | `/answer` | `{ wordId, isCorrect, timeSpent? }` → `{ applied, stage, nextReviewAt }`. 기한 전이면 `applied: false`(재전송 무시), 복습에 없는 단어는 404 |
+
+검증: `wordReviewModel.test.ts`(간격·재전송), `learningFlow.int.test.ts` → `describe('간격 복습')`
 
 ---
 
