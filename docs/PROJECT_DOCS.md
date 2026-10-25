@@ -481,7 +481,7 @@ PUT  /:wordId      # 북마크 메모 수정
 
 ```
 GET /api/words/level/:level/steps                     # 레벨별 스텝 정보 (minStep, maxStep)
-GET /api/words/kanjiSearch?kanji=한자                  # 한자 풀이 (로그인 필요, 네이버 사전 → DB 순, 찾은 결과는 서버 메모리 캐시)
+GET /api/words/kanjiSearch?kanji=한자                  # 한자 풀이 (로그인 필요, 네이버 사전 → 실패 시 DB(KANJIDIC2, 한국 한자음만), 네이버 결과만 서버 메모리 캐시)
 ```
 
 ### 운영 (Health)
@@ -757,6 +757,7 @@ yarn build          # → frontend/build/
 - ✅ feat: 북마크 학습 회차 반복, 앱 셸(상단 바·모바일 하단 탭), 디자인 토큰·포커스 표시
 - ✅ fix: 카카오 OAuth state 검증(연동 CSRF), 404 오류 화면, 북마크 한도 안내, 북마크 최근 순 정렬
 - ✅ fix: 서브 루프 축소, 새 윈도우 플래그 리셋, 연속 학습일(한국 시간·로그인 무관), 에러 클래스 판별, 세션 고유 인덱스
+- ✅ fix: 한자 풀이 대체 경로(KANJIDIC2)가 그 한자가 든 다른 단어의 뜻을 훈으로 붙이던 문제, 대체 결과는 서버 캐시에서 제외
 - ✅ perf: 한자 풀이는 누를 때만 조회 + 서버·브라우저 캐시(로그인 필요), 세션 카드는 요약 API로
 - ✅ test: 메모리 MongoDB 통합 테스트, 백엔드 테스트 41초 → 3초, E2E 27개
 - ✅ chore: 로컬 개발 서버(`yarn start:memory`), 백필 스크립트(`yarn backfill:reviews`)

@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import Kanji from '../models/kanji';
-import Word from '../models/word';
 import { InternalServerError } from '../utils/errors';
-import { escapeRegex } from '../utils/regex';
 
 const NAVER_KANJI_URL = 'https://ja.dict.naver.com/api3/jako/search/hanja';
 
@@ -34,16 +32,14 @@ const fetchFromDB = async (kanji: string): Promise<object | null> => {
   if (!doc) return null;
 
   const levelNum = doc.jlptLevel?.replace('N', '') ?? '';
-  const wordWithKanji = await Word.findOne({ pron: { $regex: escapeRegex(kanji) } });
-  const koreanMeaning = wordWithKanji?.means[0] ?? '';
-  const expKoreanPron = [koreanMeaning, doc.koreanPron].filter(Boolean).join(' ');
 
   return {
     searchResult: [{
       handleEntry: doc.character,
       expAudioRead: toHiragana(doc.onRead ?? ''),
       expMeaningRead: doc.kunRead ?? '',
-      expKoreanPron,
+      // KANJIDIC2에는 한국어 훈이 없어 한국 한자음만 보낸다 — 이 한자가 든 단어의 뜻을 붙이면 훈이 틀린다(学 → '대학 학')
+      expKoreanPron: doc.koreanPron ?? '',
       frequencyAdd: levelNum ? `JLPT ${levelNum}^` : '',
       meansCollector: [{ means: (doc.meanings ?? []).map((m) => ({ value: m, exampleOri: null, exampleTrans: null })) }],
     }],
@@ -67,10 +63,10 @@ export const searchKanji = async (req: Request, res: Response, next: NextFunctio
       res.json(cached);
       return;
     }
-    const result = await fetchFromNaver(kanji) ?? await fetchFromDB(kanji);
-    // 못 찾은 결과는 일시적인 외부 장애일 수 있어 기억하지 않는다
-    if (result) remember(kanji, result);
-    res.json(result ?? { searchResult: [] });
+    const fromNaver = await fetchFromNaver(kanji);
+    // 외부 사전 결과만 기억한다 — DB 대체 결과는 외부 장애 중에 나오므로 기억하면 회복된 뒤에도 그 풀이가 남는다
+    if (fromNaver) remember(kanji, fromNaver);
+    res.json(fromNaver ?? await fetchFromDB(kanji) ?? { searchResult: [] });
   } catch (error) {
     next(new InternalServerError('Failed to search kanji'));
   }

@@ -74,6 +74,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - 프론트 CI 빌드는 CRA 기준으로 엄격함 — cleanup 함수에서 ref 직접 참조 등 lint 위반 시 빌드 실패 (커밋 37ebbfc 참조).
 - `backend/src/scripts/`는 일회성 데이터 관리 스크립트 — 프로덕션 빌드(`tsconfig.build.json`)에서 제외됨.
 - 카카오 OAuth는 `startKakaoAuth`가 탭(sessionStorage)에 저장한 무작위 `state`를 콜백에서 대조한 뒤에만 코드를 서버로 보낸다(`services/kakaoOAuth.ts`). 대조를 빼면 남이 만든 콜백 링크로 공격자 카카오가 연동돼 계정을 빼앗긴다 (`KakaoOAuthCallback.test.tsx`).
+- 한자 풀이는 네이버 결과만 서버 캐시한다 — DB(KANJIDIC2) 대체 결과는 외부 장애 중에 나오므로 캐시하면 회복된 뒤에도 남는다. KANJIDIC2에는 한국어 훈이 없어 한국 한자음만 보낸다 (`kanjiController.test.ts`).
 
 ## Code Rules
 
