@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 import { vars, MOBILE } from 'styles/vars.css';
 
 export const hero = style({
@@ -126,4 +126,16 @@ export const featureText = style({
 export const error = style({
   color: vars.color.danger,
   fontSize: vars.fontSize.sm,
+});
+
+export const footer = style({
+  marginTop: vars.space.xl,
+  textAlign: 'center',
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+});
+
+globalStyle(`${footer} a`, {
+  color: 'inherit',
+  textDecoration: 'underline',
 });

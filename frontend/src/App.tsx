@@ -22,6 +22,7 @@ const BookmarkStudy = lazy(() => import('pages/BookmarkStudyPage'));
 const Start = lazy(() => import('pages/StartPage'));
 const Stats = lazy(() => import('pages/StatsPage'));
 const Review = lazy(() => import('pages/ReviewPage'));
+const Sources = lazy(() => import('pages/SourcesPage'));
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -63,6 +64,7 @@ const AppContent = () => {
               <Route path='/' element={<Main />} />
               <Route path='/login' element={<Login />} />
               <Route path='/auth/kakao/callback' element={<KakaoOAuthCallback />} />
+              <Route path='/sources' element={<Sources />} />
               <Route path='*' element={<NotFound />} />
 
               <Route path='/profile' element={

@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import { Link } from 'react-router-dom';
 import GoogleLoginButton from 'components/LoginButton/GoogleLoginButton';
 import KakaoLoginButton from 'components/LoginButton/KakaoLoginButton';
 import { vars } from 'styles/vars.css';
@@ -46,6 +47,10 @@ const Landing: FC<{ error?: string }> = ({ error }) => (
         </div>
       ))}
     </section>
+
+    <footer className={styles.footer}>
+      <Link to="/sources">데이터 출처</Link>
+    </footer>
   </div>
 );
 

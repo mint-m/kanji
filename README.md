@@ -295,6 +295,8 @@ yarn test        # 테스트 실행
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](./LICENSE) 파일을 참조하세요.
 
+단어 빈도·일상 레벨 단어와 한자 풀이 일부는 [JMdict/EDICT](https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project)·[KANJIDIC](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) 사전 파일을 씁니다. 이 파일은 [EDRDG](https://www.edrdg.org/)의 소유이며 그룹의 [라이선스](https://www.edrdg.org/edrdg/licence.html)(CC BY-SA 4.0)에 따라 사용합니다 — 앱에서는 `/sources` 화면에 표기합니다.
+
 ---
 
 ## 👨‍💻 개발자

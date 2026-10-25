@@ -56,6 +56,7 @@ const UserMenu = () => {
       {open && (
         <div className={styles.menu} role="menu">
           <button type="button" role="menuitem" className={styles.item} onClick={() => go('/profile')}>프로필</button>
+          <button type="button" role="menuitem" className={styles.item} onClick={() => go('/sources')}>데이터 출처</button>
           <div className={styles.divider} />
           <button type="button" role="menuitem" className={styles.logout} onClick={handleLogout}>로그아웃</button>
         </div>

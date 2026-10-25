@@ -83,6 +83,7 @@ frontend/src/
 │   ├── BookmarkPage.tsx   # /bookmark — 북마크 목록·메모
 │   ├── BookmarkStudyPage/ # /bookmark-study — 북마크 학습(회차 반복)
 │   ├── UserProfilePage.tsx # /profile — 닉네임·하루 목표·계정 연동
+│   ├── SourcesPage/       # /sources — 데이터 출처(JMdict·KANJIDIC2 라이선스 표기, 로그인 불필요)
 │   └── NotFound/
 ├── services/              # 모든 API 호출 (apiClient 경유)
 │   ├── apiClient.ts       # axios 인스턴스, 401 처리, getErrorMessage·getErrorCode
@@ -573,6 +574,7 @@ GET /health                                           # DB 연결 확인 — 200
 | `/bookmark`, `/bookmark-study` | 북마크 목록·메모, 북마크 학습 | `GET /me/bookmarks`, `POST /me/bookmarks/toggle`, `PUT /me/bookmarks/:wordId` |
 | `/stats` | 기록 | `GET /me/stats` |
 | `/profile` | 닉네임, 하루 목표, 계정 연동 | `PATCH /me`, `PATCH /me/preferences`, `/api/auth/link/*` |
+| `/sources` | 데이터 출처 — JMdict·KANJIDIC2(EDRDG, CC BY-SA 4.0) 표기. 사용자 메뉴와 로그인 전 첫 화면 아래에서 연결 | 없음 |
 
 ### 진도·집중 학습
 
@@ -755,6 +757,7 @@ yarn build          # → frontend/build/
 - ✅ feat: 오늘 할 일 중심 홈 + 비로그인 소개 화면, 학습 시작 화면 통합(`/start`), 하루 목표 설정
 - ✅ feat: 학습 카드 재설계(StudyCard) — 응답 강조, 키보드 단축키, 발음 듣기, 범위 진행, 모바일 한자 시트
 - ✅ feat: 북마크 학습 회차 반복, 앱 셸(상단 바·모바일 하단 탭), 디자인 토큰·포커스 표시
+- ✅ feat: 데이터 출처 화면(`/sources`) — JMdict·KANJIDIC2 라이선스(CC BY-SA 4.0)가 요구하는 앱 안 출처 표기
 - ✅ fix: 카카오 OAuth state 검증(연동 CSRF), 404 오류 화면, 북마크 한도 안내, 북마크 최근 순 정렬
 - ✅ fix: 서브 루프 축소, 새 윈도우 플래그 리셋, 연속 학습일(한국 시간·로그인 무관), 에러 클래스 판별, 세션 고유 인덱스
 - ✅ fix: 한자 풀이 대체 경로(KANJIDIC2)가 그 한자가 든 다른 단어의 뜻을 훈으로 붙이던 문제, 대체 결과는 서버 캐시에서 제외
