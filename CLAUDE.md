@@ -26,6 +26,7 @@ yarn test:e2e               # playwright e2e (mock 데이터 기반, e2e/helpers
 ```
 
 Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+Live: https://kanji-red.vercel.app (Vercel) · https://kan-ji.onrender.com (Render 서비스 `kan-ji`) — `kanji.vercel.app`·`kanji-api.onrender.com`은 이 앱이 아님
 
 ## Domain Model
 
