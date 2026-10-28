@@ -16,13 +16,6 @@ globalStyle(`${body} a`, {
   textUnderlineOffset: '2px',
 });
 
-export const list = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.xs,
-  paddingLeft: vars.space.lg,
-});
-
 export const acknowledgement = style({
   color: vars.color.textMuted,
 });

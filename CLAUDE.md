@@ -75,7 +75,7 @@ Deployment: Vercel (frontend) + Render (backend) + MongoDB Atlas — see [docs/D
 - `backend/src/scripts/`는 일회성 데이터 관리 스크립트 — 프로덕션 빌드(`tsconfig.build.json`)에서 제외됨.
 - 카카오 OAuth는 `startKakaoAuth`가 탭(sessionStorage)에 저장한 무작위 `state`를 콜백에서 대조한 뒤에만 코드를 서버로 보낸다(`services/kakaoOAuth.ts`). 대조를 빼면 남이 만든 콜백 링크로 공격자 카카오가 연동돼 계정을 빼앗긴다 (`KakaoOAuthCallback.test.tsx`).
 - 한자 풀이는 네이버 결과만 서버 캐시한다 — DB(KANJIDIC2) 대체 결과는 외부 장애 중에 나오므로 캐시하면 회복된 뒤에도 남는다. KANJIDIC2에는 한국어 훈이 없어 한국 한자음만 보낸다 (`kanjiController.test.ts`).
-- 데이터 출처 화면(`/sources`)은 JMdict·KANJIDIC2(EDRDG, CC BY-SA 4.0)의 사용 조건이다 — 앱 안 별도 화면에 출처·라이선스 링크가 있어야 하므로, 이 데이터를 쓰는 동안 화면과 진입점(사용자 메뉴, 로그인 전 첫 화면 아래)을 지우지 않는다 (`SourcesPage.test.tsx`, E2E `홈`).
+- 데이터 출처 화면(`/sources`)은 EDRDG 데이터(지금은 KANJIDIC2, CC BY-SA 4.0)의 사용 조건이다 — 앱 안 별도 화면에 출처·라이선스 링크가 있어야 하므로, 이 데이터를 쓰는 동안 화면과 진입점(사용자 메뉴, 로그인 전 첫 화면 아래)을 지우지 않는다. JMdict 등 다른 EDRDG 파일을 운영 데이터에 넣으면 이 화면에 함께 적는다 (`SourcesPage.test.tsx`, E2E `홈`).
 
 ## Code Rules
 
