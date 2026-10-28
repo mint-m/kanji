@@ -53,29 +53,29 @@
 
 ## 2. 백엔드 → Render
 
-**목표**: `https://kanji-api.onrender.com` 형태의 API 서버 가동
+**목표**: `https://kan-ji.onrender.com` API 서버 가동 (Render 서비스 이름 `kan-ji`)
 
 1. https://render.com 가입 후 **GitHub 계정 연동** (`mint-m/kanji` 저장소 접근 허용)
 2. 대시보드 > `New > Blueprint` > 이 저장소 선택
-   - 루트의 `render.yaml`을 자동 인식해 `kanji-api` 웹 서비스가 생성됨
+   - 루트의 `render.yaml`을 자동 인식해 `kan-ji` 웹 서비스가 생성됨
    - 빌드/실행 명령은 블루프린트에 이미 정의됨: `yarn install --frozen-lockfile && yarn build` / `yarn start`
 3. **환경변수 입력**: 블루프린트 적용 시 `sync: false` 항목은 값을 물어본다. 아래 표대로 입력:
 
    | 변수 | 값 | 비고 |
    |------|-----|------|
    | `MONGO_URI` | 1단계에서 확보한 Atlas URI | DB명 `kanji` 포함 확인 |
-   | `ALLOWED_ORIGINS` | `https://<프론트 도메인>` | 3단계 후 확정 — 일단 예상 도메인 입력하고 나중에 수정 가능. 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
+   | `ALLOWED_ORIGINS` | `https://kanji-red.vercel.app` | 콤마로 여러 개 등록 가능, **끝에 `/` 붙이지 말 것** |
    | `GOOGLE_CLIENT_ID` | Google Cloud 콘솔 값 | 4단계 참고 |
    | `GOOGLE_CLIENT_SECRET` | Google Cloud 콘솔 값 | |
-   | `GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` | validateEnv 필수값. 실제 구글 교환은 팝업(postmessage) 방식이라 이 값이 구글 콘솔과 일치할 필요는 없음 |
+   | `GOOGLE_REDIRECT_URI` | `https://kanji-red.vercel.app/auth/google/callback` | validateEnv 필수값. 실제 구글 교환은 팝업(postmessage) 방식이라 이 값이 구글 콘솔과 일치할 필요는 없음 |
    | `KAKAO_REST_API_KEY` | Kakao Developers 값 | 4단계 참고 |
 
    - `JWT_SECRET`은 `generateValue: true`로 **자동 생성됨** — 직접 입력 불필요
-   - `NODE_ENV=production`, `JWT_EXPIRY=1d`도 블루프린트에 포함되어 있음
+   - `NODE_ENV=production`, `JWT_EXPIRY=1d`, `NODE_VERSION=22.23.4`도 블루프린트에 포함되어 있음 — Node는 `backend/package.json`의 `engines`(22.23.4 이상 22.x)와 함께 올린다
 4. **배포 확인**:
    - 첫 배포 로그에서 `MongoDB connecting Success!!!` 와 `Server listening on port` 확인
    - 환경변수 누락 시 서버가 목록을 출력하고 즉시 종료하므로 로그로 바로 알 수 있음
-   - 브라우저에서 `https://kanji-api.onrender.com/` 접속 → `API is running...` 응답 확인
+   - 브라우저에서 `https://kan-ji.onrender.com/` 접속 → `API is running...` 응답 확인
 5. 확정된 백엔드 도메인을 메모 (3단계 Vercel 환경변수에 사용)
 
 > **무료 플랜 주의**: 15분간 요청이 없으면 슬립되어 첫 요청이 30초~1분 걸릴 수 있다. 필요하면 UptimeRobot 같은 무료 모니터링으로 주기적 핑을 걸거나 유료 플랜 전환.
@@ -84,9 +84,9 @@
 
 ## 3. 프론트 → Vercel
 
-**목표**: `https://<프로젝트>.vercel.app` 형태의 정적 사이트 가동
+**목표**: `https://kanji-red.vercel.app` 정적 사이트 가동
 
-> 주의: Vercel은 프로젝트 이름으로 도메인을 정하되 이미 쓰인 이름이면 다른 도메인을 발급한다. `kanji.vercel.app`은 이 앱이 아니다(2026-10 확인). 아래 단계의 `<프론트 도메인>`에는 Vercel이 실제로 발급한 도메인을 넣는다.
+> 주의: `kanji.vercel.app`·`kanji-api.onrender.com`은 이 앱이 아니다(2026-10 확인). 예전 문서의 이 주소가 Vercel 환경변수에 들어가 API 요청과 카카오 콜백이 남의 주소로 간 적이 있다.
 
 1. https://vercel.com 가입 후 GitHub 연동 > `Add New > Project` > `kanji` 저장소 Import
 2. **Root Directory를 `frontend`로 지정** — 모노레포라서 이걸 빼먹으면 빌드 실패
@@ -96,14 +96,16 @@
 
    | 변수 | 값 |
    |------|-----|
-   | `REACT_APP_API_URL` | `https://kanji-api.onrender.com` (2단계에서 확정한 도메인, **끝에 `/` 없이**) |
-   | `REACT_APP_GOOGLE_OAUTH_CLIENT_ID` | Google 클라이언트 ID (4단계) |
-   | `REACT_APP_GOOGLE_REDIRECT_URI` | `https://<프론트 도메인>/auth/google/callback` |
-   | `REACT_APP_KAKAO_REST_API_KEY` | Kakao REST API 키 (4단계) |
-   | `REACT_APP_KAKAO_REDIRECT_URI` | `https://<프론트 도메인>/auth/kakao/callback` |
+   | `REACT_APP_API_URL` | `https://kan-ji.onrender.com` (**끝에 `/` 없이**) |
+   | `REACT_APP_GOOGLE_OAUTH_CLIENT_ID` | Google 클라이언트 ID (`….apps.googleusercontent.com`, 4단계) — URL이 아님 |
+   | `REACT_APP_GOOGLE_REDIRECT_URI` | `https://kanji-red.vercel.app/auth/google/callback` |
+   | `REACT_APP_KAKAO_REST_API_KEY` | Kakao REST API 키 (4단계) — Render `KAKAO_REST_API_KEY`와 **같은 값** |
+   | `REACT_APP_KAKAO_REDIRECT_URI` | `https://kanji-red.vercel.app/auth/kakao/callback` |
 
-   > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`)
-4. Deploy 실행 → 발급된 도메인 확인 (`Settings > Domains`의 Production 도메인)
+   > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`, "Use existing Build Cache" 해제). 반영 여부는 배포된 `main.*.js` 해시가 바뀌었는지로 확인한다
+   >
+   > 저장 시 "Remove the public framework prefix…" 경고가 뜨면 접두사를 빼지 말고 **Config**로 둔다 — `REACT_APP_*`는 모두 브라우저용 공개값이다. 비밀값(`*_SECRET`)은 Render에만 둔다
+4. Deploy 실행 → 발급된 도메인 확인 (`https://kanji-red.vercel.app`)
 5. **도메인 확정 후 되돌아가서 갱신**:
    - Render의 `ALLOWED_ORIGINS`, `GOOGLE_REDIRECT_URI`를 실제 프론트 도메인으로 수정 → 백엔드 자동 재배포
    - Vercel의 `REACT_APP_*_REDIRECT_URI`가 실제 도메인과 다르면 수정 후 Redeploy
@@ -121,7 +123,7 @@
 1. https://console.cloud.google.com > 기존 프로젝트 (로컬 개발에 쓰던 것 재사용 가능)
 2. `API 및 서비스 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID` (웹 애플리케이션) 선택
 3. **승인된 자바스크립트 원본**에 추가:
-   - `https://<프론트 도메인>`
+   - `https://kanji-red.vercel.app`
    - 기존 `http://localhost:4200`은 로컬 개발용으로 유지
 4. 승인된 리디렉션 URI는 postmessage 방식에서는 사용되지 않음 — 추가 불필요
 5. **OAuth 동의 화면** 확인 (`API 및 서비스 > OAuth 동의 화면`):
@@ -135,9 +137,9 @@
 
 1. https://developers.kakao.com > 내 애플리케이션 > 기존 앱 선택 (REST API 키가 `KAKAO_REST_API_KEY`)
 2. **플랫폼 등록**: `앱 설정 > 플랫폼 > Web` 에 사이트 도메인 추가:
-   - `https://<프론트 도메인>`
+   - `https://kanji-red.vercel.app`
 3. **Redirect URI 등록**: `제품 설정 > 카카오 로그인 > Redirect URI`:
-   - `https://<프론트 도메인>/auth/kakao/callback`
+   - `https://kanji-red.vercel.app/auth/kakao/callback`
    - 로컬용 `http://localhost:4200/auth/kakao/callback`과 공존 가능 (여러 개 등록 지원)
 4. **카카오 로그인 활성화** 상태(ON) 확인 (`제품 설정 > 카카오 로그인`)
 5. **동의 항목** 확인 (`카카오 로그인 > 동의항목`): 닉네임/프로필 등 앱이 요구하는 항목이 설정되어 있는지 확인
@@ -149,7 +151,7 @@
 
 전부 연결한 뒤 실제 브라우저에서 순서대로 확인:
 
-1. **API 헬스**: `https://<backend>.onrender.com/health` → `{"success":true,"data":{"db":"up"}}` (503이면 DB 연결 문제)
+1. **API 헬스**: `https://kan-ji.onrender.com/health` → `{"success":true,"data":{"db":"up"}}` (503이면 DB 연결 문제)
 2. **프론트 로드**: 프론트 도메인 접속 → 랜딩 페이지 렌더링
 3. **SPA 라우팅**: 임의 경로(예: `/bookmarks`)로 **직접 접속 + 새로고침** → 404 없이 렌더링 (vercel.json rewrite 확인)
 4. **CORS**: 개발자도구 Network 탭에서 API 요청이 CORS 오류 없이 통과하는지 — 오류 시 Render `ALLOWED_ORIGINS` 값과 실제 접속 도메인 비교
@@ -166,6 +168,8 @@
 | CORS 오류 | `ALLOWED_ORIGINS` 오타, 트레일링 슬래시, `http/https` 불일치 |
 | 구글 `origin_mismatch` | JS 원본 미등록 또는 전파 대기 중 |
 | 카카오 `KOE006` | Redirect URI 불일치 (등록값과 `REACT_APP_KAKAO_REDIRECT_URI` 비교) |
+| 카카오 인증 화면은 뜨는데 로그인 후 500 `Kakao login failed` | 백엔드 토큰 교환 실패 — 원인은 Render 로그 `Kakao login error:`의 `KOE…`. Render `KAKAO_REST_API_KEY`와 Vercel `REACT_APP_KAKAO_REST_API_KEY`가 다르면 이렇게 된다(2026-10). 카카오 Client Secret을 켜면 백엔드가 시크릿을 보내지 않아 같은 증상 |
+| API 요청이 10초 뒤 타임아웃 | 번들의 `REACT_APP_API_URL`이 실제 백엔드가 아님 — 배포된 `main.*.js`에서 `onrender.com` 주소 확인 |
 | 첫 요청 최대 1분 지연 | Render 무료 플랜 스핀다운(15분 유휴) — 정상. 학습 화면에 "서버를 깨우는 중" 안내가 뜬다 |
 | 데이터 없음 (빈 덱) | Atlas 시딩 누락 또는 `MONGO_URI`의 DB명이 `kanji`가 아님 |
 | API가 아예 응답하지 않음 | Atlas 무료 클러스터가 30일 무접속으로 일시정지 → 백엔드가 기동 시 DB 연결에 실패해 종료. Atlas에서 Resume 후 Render 재배포 (6절 모니터로 예방) |
@@ -191,7 +195,7 @@
 3. [ ] Render 블루프린트 배포 + 환경변수 입력 → 백엔드 도메인 확정
 4. [ ] Vercel 프로젝트 생성 (Root Directory=`frontend`) + 환경변수 → 프론트 도메인 확정
 5. [ ] Render `ALLOWED_ORIGINS`/`GOOGLE_REDIRECT_URI` 를 확정 프론트 도메인으로 갱신
-6. [ ] Vercel `REACT_APP_*` 확정값 반영 후 Redeploy
+6. [ ] Vercel `REACT_APP_*` 확정값 반영 후 캐시 없이 Redeploy — 카카오 REST 키는 Render와 같은 값
 7. [ ] Google 콘솔: JS 원본 등록 + 동의 화면 게시 상태 확인
 8. [ ] Kakao 콘솔: Web 플랫폼 + Redirect URI 등록 + 로그인 활성화
 9. [ ] 스모크 테스트 8항목 통과
