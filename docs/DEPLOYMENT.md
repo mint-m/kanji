@@ -71,7 +71,7 @@
    | `KAKAO_REST_API_KEY` | Kakao Developers 값 | 4단계 참고 |
 
    - `JWT_SECRET`은 `generateValue: true`로 **자동 생성됨** — 직접 입력 불필요
-   - `NODE_ENV=production`, `JWT_EXPIRY=1d`도 블루프린트에 포함되어 있음
+   - `NODE_ENV=production`, `JWT_EXPIRY=1d`, `NODE_VERSION=22.23.4`도 블루프린트에 포함되어 있음 — Node는 `backend/package.json`의 `engines`(22.23.4 이상 22.x)와 함께 올린다
 4. **배포 확인**:
    - 첫 배포 로그에서 `MongoDB connecting Success!!!` 와 `Server listening on port` 확인
    - 환경변수 누락 시 서버가 목록을 출력하고 즉시 종료하므로 로그로 바로 알 수 있음
