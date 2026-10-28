@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import deckService from 'services/deckService';
 import { DeckWord } from 'services/types';
+import { getErrorMessage } from 'services/apiClient';
 import Kanji from 'components/Kanji';
 import HeaderSection from 'components/HeaderSection';
 import FlashCardContainer from 'components/FlashCardContainer';
@@ -56,11 +57,7 @@ const FlashCardPage: FC = () => {
         navigate('/level-setup', { replace: true });
         return false;
       }
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        setError('요청 시간이 초과되었습니다. 네트워크 연결을 확인해주세요.');
-      } else {
-        setError(error.response?.data?.message || '단어장을 불러오는데 실패했습니다.');
-      }
+      setError(getErrorMessage(error, '단어장을 불러오는데 실패했습니다.'));
       return false;
     } finally {
       setIsLoading(false);
@@ -82,9 +79,9 @@ const FlashCardPage: FC = () => {
       try {
         const response = await deckService.completeDeck(activeProgressType || 'main');
         deckCompletedRef.current = true;
-        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 레벨 선택으로 이동
+        // 레벨의 마지막 윈도우면 다음 윈도우가 없다 → 완료 안내와 함께 레벨 선택으로 이동
         if (response.data && !response.data.isSubLoop && !response.data.canGenerateNext) {
-          navigate('/level-setup', { replace: true });
+          navigate('/level-setup', { replace: true, state: { finishedLevel: level } });
           return true;
         }
       } catch (e) {
@@ -98,7 +95,7 @@ const FlashCardPage: FC = () => {
     deckCompletedRef.current = false;
     setDeckKey(k => k + 1);
     return true;
-  }, [activeProgressType, fetchDeck, navigate]);
+  }, [activeProgressType, fetchDeck, navigate, level]);
 
   const handleGoHome = useCallback(() => navigate('/'), [navigate]);
 

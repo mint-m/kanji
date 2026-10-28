@@ -78,16 +78,10 @@ router.post(
   authController.linkKakao,
 );
 
-// 토큰 검증
-router.get('/verify', authenticateUser, authController.verifyToken);
-
 // 토큰 새로고침
 router.post('/refresh', authenticateUser, authController.refreshToken);
 
 // 사용자 프로필 조회
 router.get('/profile', authenticateUser, authController.getProfile);
-
-// 로그아웃
-router.post('/logout', authenticateUser, authController.logout);
 
 export default router;

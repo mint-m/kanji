@@ -1,7 +1,7 @@
 # 배포 가이드
 
 권장 구성: **프론트 = Vercel · 백엔드 = Render · DB = MongoDB Atlas**
-(OAuth 세션 쿠키가 `secure` + `sameSite=none` 이라 양쪽 모두 HTTPS 필수 → 세 서비스 모두 HTTPS 자동 제공)
+(인증은 `Authorization` 헤더의 JWT로 하며 쿠키는 쓰지 않는다. OAuth 콘솔에 HTTPS 도메인을 등록해야 하므로 세 서비스가 기본 제공하는 HTTPS를 쓴다)
 
 ```
 브라우저 ──HTTPS──> Vercel(정적 React)
@@ -151,7 +151,7 @@
 
 전부 연결한 뒤 실제 브라우저에서 순서대로 확인:
 
-1. **API 헬스**: `https://kan-ji.onrender.com/` → `API is running...`
+1. **API 헬스**: `https://kan-ji.onrender.com/health` → `{"success":true,"data":{"db":"up"}}` (503이면 DB 연결 문제)
 2. **프론트 로드**: 프론트 도메인 접속 → 랜딩 페이지 렌더링
 3. **SPA 라우팅**: 임의 경로(예: `/bookmarks`)로 **직접 접속 + 새로고침** → 404 없이 렌더링 (vercel.json rewrite 확인)
 4. **CORS**: 개발자도구 Network 탭에서 API 요청이 CORS 오류 없이 통과하는지 — 오류 시 Render `ALLOWED_ORIGINS` 값과 실제 접속 도메인 비교
@@ -170,8 +170,9 @@
 | 카카오 `KOE006` | Redirect URI 불일치 (등록값과 `REACT_APP_KAKAO_REDIRECT_URI` 비교) |
 | 카카오 인증 화면은 뜨는데 로그인 후 500 `Kakao login failed` | 백엔드 토큰 교환 실패 — 원인은 Render 로그 `Kakao login error:`의 `KOE…`. Render `KAKAO_REST_API_KEY`와 Vercel `REACT_APP_KAKAO_REST_API_KEY`가 다르면 이렇게 된다(2026-10). 카카오 Client Secret을 켜면 백엔드가 시크릿을 보내지 않아 같은 증상 |
 | API 요청이 10초 뒤 타임아웃 | 번들의 `REACT_APP_API_URL`이 실제 백엔드가 아님 — 배포된 `main.*.js`에서 `onrender.com` 주소 확인 |
-| 첫 요청 30초+ 지연 | Render 무료 플랜 슬립 — 정상 동작 |
+| 첫 요청 최대 1분 지연 | Render 무료 플랜 스핀다운(15분 유휴) — 정상. 학습 화면에 "서버를 깨우는 중" 안내가 뜬다 |
 | 데이터 없음 (빈 덱) | Atlas 시딩 누락 또는 `MONGO_URI`의 DB명이 `kanji`가 아님 |
+| API가 아예 응답하지 않음 | Atlas 무료 클러스터가 30일 무접속으로 일시정지 → 백엔드가 기동 시 DB 연결에 실패해 종료. Atlas에서 Resume 후 Render 재배포 (6절 모니터로 예방) |
 
 ---
 
@@ -200,4 +201,4 @@
 9. [ ] 스모크 테스트 8항목 통과
 10. [ ] `HEALTHCHECK_URL` 변수 등록 후 `Uptime` 워크플로 수동 실행 성공
 
-> 참고: 백엔드는 프록시 뒤에서 `secure` 쿠키를 사용하므로 `app.set("trust proxy", 1)` 이 설정되어 있다.
+> 참고: Render 프록시 뒤에서 클라이언트 IP(`req.ip`)가 올바르게 잡히도록 `app.set("trust proxy", 1)`이 설정되어 있다 — 인증 레이트 리밋이 이 값에 의존한다.

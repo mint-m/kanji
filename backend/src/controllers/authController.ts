@@ -85,6 +85,10 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     if (!userInfo.email || !userInfo.id) {
       return next(new UnauthorizedError('Failed to retrieve user info'));
     }
+    // 같은 이메일의 기존 계정에 자동 연동되므로 인증되지 않은 이메일은 받지 않는다 (카카오와 같은 기준)
+    if (userInfo.verified_email !== true) {
+      return next(new UnauthorizedError('Google account email is not verified'));
+    }
 
     const user = await User.findOrCreateFromOAuth({
       type: 'google',
@@ -114,6 +118,9 @@ export const googleOneTap = async (req: Request, res: Response, next: NextFuncti
 
     if (!payload?.email) {
       return next(new UnauthorizedError('Failed to retrieve user email from credential'));
+    }
+    if (payload.email_verified !== true) {
+      return next(new UnauthorizedError('Google account email is not verified'));
     }
 
     const user = await User.findOrCreateFromOAuth({
@@ -197,57 +204,6 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
   } catch (error) {
     console.error('Get profile error:', error);
     next(new InternalServerError('Failed to fetch user profile'));
-  }
-};
-
-export const logout = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    if (req.user?._id) {
-      const user = await User.findById(req.user._id);
-      if (user) {
-        user.updateLastActive();
-        await user.save();
-      }
-    }
-
-    res.json({ success: true, message: 'Successfully logged out' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    next(new InternalServerError('Logout failed'));
-  }
-};
-
-export const verifyToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user?._id) {
-      return next(new UnauthorizedError('Invalid token'));
-    }
-
-    const user = await User.findById(req.user._id)
-      .select('_id email name type isActive emailVerified updatedAt')
-      .lean();
-
-    if (!user || !user.isActive) {
-      return next(new UnauthorizedError('User account is inactive'));
-    }
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          _id: user._id,
-          email: user.email,
-          name: user.name,
-          type: user.type,
-          isVerified: user.emailVerified,
-          lastActive: user.updatedAt,
-        },
-        tokenValid: true,
-      },
-    });
-  } catch (error) {
-    console.error('Token verification error:', error);
-    next(new InternalServerError('Token verification failed'));
   }
 };
 

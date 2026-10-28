@@ -8,17 +8,6 @@ export interface StudyResult {
   studiedAt: Date;
 }
 
-export interface WordStudyStats {
-  totalAttempts: number;
-  correctAttempts: number;
-  incorrectAttempts: number;
-  successRate: number;
-  averageTimeSpent: number;
-  lastStudied?: Date;
-  firstStudied?: Date;
-  studyStreak: number;
-}
-
 export interface BookmarkInfo {
   isBookmarked: boolean;
   bookmarkedAt?: Date;
@@ -47,11 +36,7 @@ export interface WordProgressDocument extends Document {
   markIncomplete(): void;
   recordStudyAttempt(result: StudyResult): void;
   toggleBookmark(reason?: string, tags?: string[]): boolean;
-  getStudyStats(): WordStudyStats;
   getBookmarkInfo(): BookmarkInfo;
-  calculateMasteryLevel(): 'beginner' | 'intermediate' | 'advanced' | 'mastered';
-  getRecommendedAction(): 'continue' | 'review' | 'skip';
-  getDaysSinceLastStudy(): number;
 }
 
 export interface WordProgressModel extends Model<WordProgressDocument> {

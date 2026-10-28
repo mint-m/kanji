@@ -28,7 +28,6 @@ export interface UserStats {
   totalTimeSpent: number; // milliseconds
   currentStreak: number;
   longestStreak: number;
-  levelsCompleted: LearningLevel[];
   averageSessionTime: number;
   studyDaysCount: number;
   favoriteStudyTime?: string; // Most common study hour

@@ -113,13 +113,6 @@ export interface DeckWord extends Word {
   isCurrent: boolean;
   isWindowCompleted: boolean;
   isBookmarked: boolean;
-  studyStats?: {
-    tryCount: number;
-    correctCount: number;
-    successRate: number;
-    timeSpent: number;
-  };
-  recommendedAction?: 'continue' | 'review' | 'intensive_practice' | 'skip';
 }
 
 // 단어 완료 요청
@@ -132,22 +125,6 @@ export interface CompleteWordRequest {
 
 // 단어 완료 응답
 export interface CompleteWordResponse {
-  completion: {
-    wordId: string;
-    isCorrect: boolean;
-    timeSpent?: number;
-    previousAttempts: number;
-    newMasteryLevel?: string;
-    shouldRepeat: boolean;
-  };
-  wordProgress: {
-    totalAttempts: number;
-    successRate: number;
-    studyStreak: number;
-    masteryLevel: string;
-    recommendedAction: string;
-    isBookmarked: boolean;
-  };
   currentIndex: number;
   passComplete: boolean;
   windowComplete: boolean;

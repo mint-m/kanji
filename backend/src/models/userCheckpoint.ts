@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ProgressType, LearningLevel, LEARNING_LEVELS, StepRange, SessionStats, DeckGenerationOptions } from '../types/common';
+import { ProgressType, LearningLevel, LEARNING_LEVELS, StepRange, SessionStats } from '../types/common';
 import {
   UserCheckpointDocument,
   UserCheckpointModel,
@@ -213,19 +213,8 @@ userCheckpointSchema.statics.createNewSession = async function (
   // Generate deck using SlidingWindowService
   const deckWindow = await SlidingWindowService.generateDeck(level, steps, true);
 
-  // Filter deck based on user progress (include all words for new session)
-  const filteredWordIds = await (this as UserCheckpointModel).filterDeckByUserProgress(
-    deckWindow.wordIds,
-    userId,
-    type,
-    {
-      excludeCompleted: false,
-      prioritizeBookmarked: false,
-    }
-  );
-
   // Reset window completion state for all words in this new session
-  await wordProgressModel().resetWindowCompletionForWords(userId, filteredWordIds, type);
+  await wordProgressModel().resetWindowCompletionForWords(userId, deckWindow.wordIds, type);
 
   // Create new session
   const session = new this({
@@ -233,104 +222,11 @@ userCheckpointSchema.statics.createNewSession = async function (
     progress_type: type,
     current_level: level,
     steps,
-    shuffled_order: filteredWordIds,
+    shuffled_order: deckWindow.wordIds,
     current_index: 0,
   });
 
   return await session.save();
-};
-
-userCheckpointSchema.statics.filterDeckByUserProgress = async function (
-  wordIds: mongoose.Types.ObjectId[],
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType,
-  options: DeckGenerationOptions = {}
-): Promise<mongoose.Types.ObjectId[]> {
-  const { excludeCompleted = true, prioritizeBookmarked = false, maxWords } = options;
-
-  let filteredWordIds = [...wordIds];
-
-  // Filter out window-completed words if requested
-  if (excludeCompleted) {
-    const completedWordIds = await wordProgressModel().distinct('word_id', {
-      user_id: userId,
-      word_id: { $in: filteredWordIds },
-      progress_type: progressType,
-      is_window_completed: true,
-    });
-    const completedSet = new Set(completedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
-
-    filteredWordIds = filteredWordIds.filter((wordId) => !completedSet.has(wordId.toString()));
-  }
-
-  // Enhanced bookmark prioritization with intelligent placement
-  if (prioritizeBookmarked) {
-    const bookmarkedWordIds = await wordProgressModel().distinct('word_id', {
-      user_id: userId,
-      word_id: { $in: filteredWordIds },
-      is_bookmarked: true, // Bookmarks are cross-session
-    });
-    const bookmarkedSet = new Set(bookmarkedWordIds.map((id: mongoose.Types.ObjectId) => id.toString()));
-
-    // Separate bookmarked and non-bookmarked words
-    const bookmarkedWords = filteredWordIds.filter((wordId) => bookmarkedSet.has(wordId.toString()));
-    const nonBookmarkedWords = filteredWordIds.filter((wordId) => !bookmarkedSet.has(wordId.toString()));
-
-    // Shuffle both arrays independently for variety
-    const shuffledBookmarks = shuffleArray(bookmarkedWords);
-    const shuffledNonBookmarks = shuffleArray(nonBookmarkedWords);
-
-    // Strategy: Distribute bookmarks in the first 40% of the deck
-    // This ensures focused review while maintaining deck flow
-    const totalWords = filteredWordIds.length;
-    const bookmarkZoneSize = Math.ceil(totalWords * 0.4);
-
-    // Calculate how many bookmarks can fit in the priority zone
-    const bookmarksInZone = Math.min(shuffledBookmarks.length, bookmarkZoneSize);
-
-    // Split bookmarks: priority zone vs. remaining
-    const priorityBookmarks = shuffledBookmarks.slice(0, bookmarksInZone);
-    const remainingBookmarks = shuffledBookmarks.slice(bookmarksInZone);
-
-    // Interleave bookmarks with some non-bookmarked words in priority zone
-    // This prevents monotony and maintains engagement
-    const priorityZone: mongoose.Types.ObjectId[] = [];
-    let bookmarkIndex = 0;
-    let nonBookmarkIndex = 0;
-
-    // Fill priority zone with weighted distribution (2 bookmarks : 1 regular)
-    while (
-      priorityZone.length < bookmarkZoneSize &&
-      (bookmarkIndex < priorityBookmarks.length || nonBookmarkIndex < shuffledNonBookmarks.length)
-    ) {
-      // Add bookmarks (2 at a time if available)
-      for (
-        let i = 0;
-        i < 2 && bookmarkIndex < priorityBookmarks.length && priorityZone.length < bookmarkZoneSize;
-        i++
-      ) {
-        priorityZone.push(priorityBookmarks[bookmarkIndex++]);
-      }
-
-      // Add 1 non-bookmark for variety
-      if (nonBookmarkIndex < shuffledNonBookmarks.length && priorityZone.length < bookmarkZoneSize) {
-        priorityZone.push(shuffledNonBookmarks[nonBookmarkIndex++]);
-      }
-    }
-
-    // Combine remaining words for the rest of the deck
-    const remainingZone = [...remainingBookmarks, ...shuffledNonBookmarks.slice(nonBookmarkIndex)];
-
-    // Final deck: priority zone + remaining zone
-    filteredWordIds = [...priorityZone, ...shuffleArray(remainingZone)];
-  }
-
-  // Limit words if maxWords is specified
-  if (maxWords && filteredWordIds.length > maxWords) {
-    filteredWordIds = filteredWordIds.slice(0, maxWords);
-  }
-
-  return filteredWordIds;
 };
 
 // Create and export model

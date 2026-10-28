@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
@@ -29,9 +29,14 @@ interface ExistingSession {
 
 const LevelSetupPage: FC = () => {
   const navigate = useNavigate();
+  // 레벨의 마지막 윈도우를 마치고 넘어온 경우 (FlashCardPage가 state로 전달)
+  const finishedLevel = (useLocation().state as { finishedLevel?: LearningLevel } | null)?.finishedLevel;
   const activeProgressType = useSelector((state: RootState) => state.user.activeProgressType);
   const progressType = activeProgressType || 'main';
-  const [selected, setSelected] = useState<LearningLevel>('N5');
+  const [selected, setSelected] = useState<LearningLevel>(() => {
+    const next = finishedLevel ? LEVELS[LEVELS.indexOf(finishedLevel) + 1] : undefined;
+    return next ?? 'N5';
+  });
   const [existingSession, setExistingSession] = useState<ExistingSession | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
@@ -64,8 +69,11 @@ const LevelSetupPage: FC = () => {
     setConfirmed(false);
   };
 
+  // 다 끝낸 세션은 잃을 진행이 없으므로 초기화 동의를 묻지 않는다
+  const needsConfirm = !!existingSession && !finishedLevel;
+
   const handleStart = async () => {
-    if (existingSession && !confirmed) return;
+    if (needsConfirm && !confirmed) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -81,14 +89,14 @@ const LevelSetupPage: FC = () => {
     }
   };
 
-  const canStart = (!existingSession || confirmed) && !error;
+  const canStart = (!needsConfirm || confirmed) && !error;
   const info = LEVEL_INFO[selected];
 
   if (isCheckingSession) {
     return <CenterDiv><p>로딩 중...</p></CenterDiv>;
   }
 
-  const warningBlock = existingSession && (
+  const warningBlock = needsConfirm && existingSession && (
     <div className={styles.warningBox}>
       <p className={styles.warningTitle}>⚠️ 진행 중인 학습이 있습니다</p>
       <p className={styles.warningDetail}>
@@ -109,12 +117,12 @@ const LevelSetupPage: FC = () => {
 
   const bottomBlock = (
     <>
-      {existingSession && !confirmed && (
+      {needsConfirm && !confirmed && (
         <p className={styles.changeWarning}>학습을 시작하려면 위 체크박스에 동의해야 합니다</p>
       )}
       {error && <p className={styles.errorText}>{error}</p>}
       <DefaultButton onClick={handleStart} disabled={!canStart || isLoading}>
-        {isLoading ? '시작 중...' : existingSession ? '초기화 후 시작' : '학습 시작'}
+        {isLoading ? '시작 중...' : needsConfirm ? '초기화 후 시작' : '학습 시작'}
       </DefaultButton>
     </>
   );
@@ -124,6 +132,11 @@ const LevelSetupPage: FC = () => {
       <div className={styles.page}>
         <h1 className={styles.title}>학습 레벨 선택</h1>
         <p className={styles.subtitle}>시작할 JLPT 레벨을 선택하세요</p>
+        {finishedLevel && (
+          <p className={styles.doneBox}>
+            🎉 <strong>{finishedLevel}</strong> 레벨의 마지막 범위까지 모두 익혔어요. 다음 레벨을 고르거나 다시 복습해 보세요.
+          </p>
+        )}
 
         {/* PC 레이아웃 */}
         <div className={styles.pcLayout}>

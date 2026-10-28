@@ -13,14 +13,11 @@
     "@types/react-dom": "^18.2.5",
     "@types/react-redux": "^7.1.25",
     "@vanilla-extract/css": "^1.20.1",
-    "@vanilla-extract/dynamic": "^2.1.5",
     "axios": "^1.4.0",
     "http-proxy-middleware": "2.0.6",
-    "lodash": "^4.17.21",
     "rc-slider": "10.2.1",
     "rc-tooltip": "^6.0.1",
     "react": "^18.2.0",
-    "react-awesome-slider": "^4.1.0",
     "react-dom": "^18.2.0",
     "react-page-scroller": "^3.0.1",
     "react-redux": "^8.1.1",
@@ -58,9 +55,7 @@
         "files": [
           "**/services/apiClient.ts",
           "**/services/authService.ts",
-          "**/LoginButton/GoogleLoginButton/GoogleLoginButton.tsx",
-          "**/OriginWord/kanjiDataFilter.ts",
-          "**/pages/LevelSelectionPage/LevelSelectionPage.tsx"
+          "**/OriginWord/kanjiDataFilter.ts"
         ],
         "rules": {
           "no-restricted-imports": "off"
@@ -84,7 +79,6 @@
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@craco/craco": "^7.1.0",
     "@reduxjs/toolkit": "^1.9.5",
-    "@types/lodash": "^4.14.195",
     "@vanilla-extract/babel-plugin": "^1.2.0",
     "@vanilla-extract/jest-transform": "^1.1.22",
     "@vanilla-extract/webpack-plugin": "^2.3.27",

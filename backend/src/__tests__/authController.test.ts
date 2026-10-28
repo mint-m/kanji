@@ -2,6 +2,8 @@ import { Response, NextFunction } from 'express';
 
 // 기본은 이 앱(GOOGLE_CLIENT_ID)이 발급한 토큰
 const mockGetTokenInfo = jest.fn();
+const mockUserinfoGet = jest.fn();
+const mockVerifyIdToken = jest.fn();
 
 // --- 모든 외부 모듈을 factory로 명시적 mock ---
 jest.mock('../config', () => ({
@@ -34,17 +36,14 @@ jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn().mockImplementation(() => ({
     setCredentials: jest.fn(),
     getTokenInfo: mockGetTokenInfo,
+    verifyIdToken: mockVerifyIdToken,
   })),
 }));
 
 jest.mock('googleapis', () => ({
   google: {
     oauth2: jest.fn().mockReturnValue({
-      userinfo: {
-        get: jest.fn().mockResolvedValue({
-          data: { email: 'test@gmail.com', id: 'google-id-456' },
-        }),
-      },
+      userinfo: { get: mockUserinfoGet },
     }),
   },
 }));
@@ -62,6 +61,13 @@ const makeReq = (overrides = {}) =>
 
 beforeEach(() => {
   mockGetTokenInfo.mockResolvedValue({ aud: 'test-google-client-id' });
+  mockUserinfoGet.mockResolvedValue({ data: { email: 'test@gmail.com', id: 'google-id-456', verified_email: true } });
+});
+
+const makeLoginUser = () => ({
+  _id: 'user-id-123', email: 'test@gmail.com', name: 'tester', type: 'google', isActive: true,
+  authProviders: [{ provider: 'google', providerId: 'google-id-456' }],
+  profile: {}, getDisplayName: () => 'tester', isNewUser: () => false,
 });
 
 // --- googleLogin ---
@@ -78,16 +84,48 @@ describe('googleLogin', () => {
   });
 
   it('이 앱이 발급한 access token → 로그인 응답', async () => {
-    (User.findOrCreateFromOAuth as jest.Mock).mockResolvedValue({
-      _id: 'user-id-123', email: 'test@gmail.com', name: 'tester', type: 'google', isActive: true,
-      authProviders: [{ provider: 'google', providerId: 'google-id-456' }],
-      profile: {}, getDisplayName: () => 'tester', isNewUser: () => false,
-    });
+    (User.findOrCreateFromOAuth as jest.Mock).mockResolvedValue(makeLoginUser());
     const res = makeRes();
     await authController.googleLogin(makeReq({ body: { accessToken: 'valid-token' } }), res, makeNext());
 
     expect(User.findOrCreateFromOAuth).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'google-id-456' }));
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, token: 'mocked-jwt' }));
+  });
+});
+
+// --- 이메일 인증 여부 (같은 이메일 계정에 자동 연동되므로) ---
+describe('Google 이메일 인증 확인', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('googleLogin: 인증되지 않은 이메일 → UnauthorizedError, 계정 조회·생성 안 함', async () => {
+    mockUserinfoGet.mockResolvedValue({ data: { email: 'test@example.com', id: 'google-id-456', verified_email: false } });
+    const next = makeNext();
+    await authController.googleLogin(makeReq({ body: { accessToken: 'valid-token' } }), makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    expect(User.findOrCreateFromOAuth).not.toHaveBeenCalled();
+  });
+
+  it('googleOneTap: 인증되지 않은 이메일 → UnauthorizedError', async () => {
+    mockVerifyIdToken.mockResolvedValue({
+      getPayload: () => ({ sub: 'google-id-456', email: 'test@example.com', email_verified: false }),
+    });
+    const next = makeNext();
+    await authController.googleOneTap(makeReq({ body: { credential: 'id-token' } }), makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    expect(User.findOrCreateFromOAuth).not.toHaveBeenCalled();
+  });
+
+  it('googleOneTap: 인증된 이메일 → 로그인 응답', async () => {
+    mockVerifyIdToken.mockResolvedValue({
+      getPayload: () => ({ sub: 'google-id-456', email: 'test@gmail.com', email_verified: true }),
+    });
+    (User.findOrCreateFromOAuth as jest.Mock).mockResolvedValue(makeLoginUser());
+    const res = makeRes();
+    await authController.googleOneTap(makeReq({ body: { credential: 'id-token' } }), res, makeNext());
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 });
 
