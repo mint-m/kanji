@@ -99,10 +99,12 @@
    | `REACT_APP_API_URL` | `https://kan-ji.onrender.com` (**끝에 `/` 없이**) |
    | `REACT_APP_GOOGLE_OAUTH_CLIENT_ID` | Google 클라이언트 ID (`….apps.googleusercontent.com`, 4단계) — URL이 아님 |
    | `REACT_APP_GOOGLE_REDIRECT_URI` | `https://kanji-red.vercel.app/auth/google/callback` |
-   | `REACT_APP_KAKAO_REST_API_KEY` | Kakao REST API 키 (4단계) |
+   | `REACT_APP_KAKAO_REST_API_KEY` | Kakao REST API 키 (4단계) — Render `KAKAO_REST_API_KEY`와 **같은 값** |
    | `REACT_APP_KAKAO_REDIRECT_URI` | `https://kanji-red.vercel.app/auth/kakao/callback` |
 
-   > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`)
+   > CRA는 환경변수를 **빌드 시점에 번들에 박아넣는다** — 값을 바꾸면 반드시 **Redeploy** 필요 (`Deployments > ⋯ > Redeploy`, "Use existing Build Cache" 해제). 반영 여부는 배포된 `main.*.js` 해시가 바뀌었는지로 확인한다
+   >
+   > 저장 시 "Remove the public framework prefix…" 경고가 뜨면 접두사를 빼지 말고 **Config**로 둔다 — `REACT_APP_*`는 모두 브라우저용 공개값이다. 비밀값(`*_SECRET`)은 Render에만 둔다
 4. Deploy 실행 → 발급된 도메인 확인 (`https://kanji-red.vercel.app`)
 5. **도메인 확정 후 되돌아가서 갱신**:
    - Render의 `ALLOWED_ORIGINS`, `GOOGLE_REDIRECT_URI`를 실제 프론트 도메인으로 수정 → 백엔드 자동 재배포
@@ -166,6 +168,8 @@
 | CORS 오류 | `ALLOWED_ORIGINS` 오타, 트레일링 슬래시, `http/https` 불일치 |
 | 구글 `origin_mismatch` | JS 원본 미등록 또는 전파 대기 중 |
 | 카카오 `KOE006` | Redirect URI 불일치 (등록값과 `REACT_APP_KAKAO_REDIRECT_URI` 비교) |
+| 카카오 인증 화면은 뜨는데 로그인 후 500 `Kakao login failed` | 백엔드 토큰 교환 실패 — 원인은 Render 로그 `Kakao login error:`의 `KOE…`. Render `KAKAO_REST_API_KEY`와 Vercel `REACT_APP_KAKAO_REST_API_KEY`가 다르면 이렇게 된다(2026-10). 카카오 Client Secret을 켜면 백엔드가 시크릿을 보내지 않아 같은 증상 |
+| API 요청이 10초 뒤 타임아웃 | 번들의 `REACT_APP_API_URL`이 실제 백엔드가 아님 — 배포된 `main.*.js`에서 `onrender.com` 주소 확인 |
 | 첫 요청 30초+ 지연 | Render 무료 플랜 슬립 — 정상 동작 |
 | 데이터 없음 (빈 덱) | Atlas 시딩 누락 또는 `MONGO_URI`의 DB명이 `kanji`가 아님 |
 
@@ -178,7 +182,7 @@
 3. [ ] Render 블루프린트 배포 + 환경변수 입력 → 백엔드 도메인 확정
 4. [ ] Vercel 프로젝트 생성 (Root Directory=`frontend`) + 환경변수 → 프론트 도메인 확정
 5. [ ] Render `ALLOWED_ORIGINS`/`GOOGLE_REDIRECT_URI` 를 확정 프론트 도메인으로 갱신
-6. [ ] Vercel `REACT_APP_*` 확정값 반영 후 Redeploy
+6. [ ] Vercel `REACT_APP_*` 확정값 반영 후 캐시 없이 Redeploy — 카카오 REST 키는 Render와 같은 값
 7. [ ] Google 콘솔: JS 원본 등록 + 동의 화면 게시 상태 확인
 8. [ ] Kakao 콘솔: Web 플랫폼 + Redirect URI 등록 + 로그인 활성화
 9. [ ] 스모크 테스트 8항목 통과
