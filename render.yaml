@@ -3,7 +3,7 @@
 # 시크릿(sync:false)은 커밋하지 않고 대시보드에서 직접 입력한다.
 services:
   - type: web
-    name: kanji-api
+    name: kan-ji
     runtime: node
     plan: free
     rootDir: backend
@@ -12,6 +12,9 @@ services:
     healthCheckPath: /
     autoDeploy: true
     envVars:
+      # 2026-10-21 Node 보안 릴리스(TLS 호스트명 검증 우회·Brotli RCE, eMudhra 인증서 대응) 이상
+      - key: NODE_VERSION
+        value: 22.23.4
       - key: NODE_ENV
         value: production
       - key: MONGO_URI
