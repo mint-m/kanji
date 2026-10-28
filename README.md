@@ -248,24 +248,6 @@ yarn build       # TypeScript 컴파일
 yarn test        # 테스트 실행
 ```
 
-### 브랜치 전략
-
-- `main` - 프로덕션 브랜치
-- `feat/*` - 기능 개발
-- `fix/*` - 버그 수정
-
-### 커밋 컨벤션
-
-```
-feat: 새로운 기능
-fix: 버그 수정
-docs: 문서 변경
-style: 코드 스타일 변경
-refactor: 리팩토링
-test: 테스트 추가/수정
-chore: 빌드 설정 등
-```
-
 ---
 
 ## 📝 문서
@@ -318,13 +300,7 @@ chore: 빌드 설정 등
 
 ## 🤝 기여하기
 
-기여를 환영합니다! 다음 절차를 따라주세요:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'feat: Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+브랜치·커밋·PR·이슈 규칙은 [CLAUDE.md](./CLAUDE.md#commit-convention)가 단일 출처입니다. PR과 이슈는 GitHub에서 템플릿이 자동으로 채워집니다.
 
 ---
 
