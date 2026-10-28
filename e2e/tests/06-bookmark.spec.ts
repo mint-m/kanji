@@ -24,9 +24,9 @@ test.describe('북마크', () => {
     });
 
     await page.goto('/bookmarks');
-    // daily 레벨도 이름(일상)으로 보이고 필터에 있다
+    // 예전 daily 북마크도 이름(일상)으로 보인다 — 단어가 없는 daily는 레벨 필터에서 뺐다
     await expect(page.getByText('일상·1')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByLabel('레벨').locator('option', { hasText: '일상' })).toHaveCount(1);
+    await expect(page.getByLabel('레벨').locator('option', { hasText: '일상' })).toHaveCount(0);
 
     await page.getByRole('button', { name: '북마크 학습' }).click();
     await expect(page).toHaveURL(/\/bookmarks\/study$/);

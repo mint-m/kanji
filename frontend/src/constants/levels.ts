@@ -1,7 +1,7 @@
 import { LearningLevel } from 'services/types';
 
-// 화면에 보여 주는 순서 — 시험과 무관한 생활 어휘(daily)를 맨 앞에
-export const LEVELS: LearningLevel[] = ['daily', 'N5', 'N4', 'N3', 'N2', 'N1'];
+// 화면에 보여 주는 레벨 — daily(생활 어휘)는 운영 데이터가 0개라 단어를 채울 때까지 뺀다(LEVEL_INFO의 이름은 남긴다)
+export const LEVELS: LearningLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
 
 export const LEVEL_INFO: Record<LearningLevel, { name: string; label: string; description: string }> = {
   daily: { name: '일상', label: '생활 필수', description: '인사말·기초회화·고빈도 일상어처럼 시험과 무관하지만 실생활에 꼭 필요한 표현.' },

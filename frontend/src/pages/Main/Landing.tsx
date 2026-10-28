@@ -17,7 +17,7 @@ const Landing: FC<{ error?: string }> = ({ error }) => (
   <div className={layout.page}>
     <section className={styles.hero}>
       <div>
-        <p className={styles.eyebrow}>JLPT N5–N1 · 생활 어휘</p>
+        <p className={styles.eyebrow}>JLPT N5–N1</p>
         <h1 className={styles.title}>외운 단어를<br />오래 기억하는 일본어 단어장</h1>
         <p className={styles.lead}>
           3스텝씩 밀어 가는 범위 학습으로 익히고, 1·3·7일 간격 복습으로 굳혀요.
