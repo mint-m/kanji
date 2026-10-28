@@ -240,3 +240,61 @@ test.describe('윈도우 완료 흐름', () => {
     await expect(page.getByText('일본')).toBeVisible();
   });
 });
+
+test.describe('완료 화면 재진입', () => {
+  // 완료 화면에서 이탈하면 complete-deck 없이 세션이 남는다 → 서버는 currentIndex = 덱 길이로 응답한다
+  const makeCompletedDeck = (progressType: 'main' | 'sub') => {
+    const deck = makeDeck(['word0', 'word1']);
+    deck.data.progressType = progressType;
+    deck.data.currentIndex = 2;
+    deck.data.deckStatus = {
+      isPassComplete: true,
+      isWindowComplete: true,
+      canMoveToNext: progressType === 'main',
+      completionPercentage: 100,
+    };
+    return deck;
+  };
+
+  test('메인: "다음 윈도우로" 버튼이 보이고 누르면 complete-deck 호출', async ({ page }) => {
+    await injectMockAuth(page);
+    let completeDeckCalled = false;
+
+    await page.route('**/api/users/me/progress/main/current', (route) => {
+      route.fulfill({ json: makeCompletedDeck('main') });
+    });
+    await page.route('**/api/users/me/progress/main/complete-deck', (route) => {
+      completeDeckCalled = true;
+      route.fulfill({
+        json: {
+          success: true,
+          data: { nextWindow: { level: 'N5', steps: { start: 2, end: 4 }, deckSize: 2 }, canGenerateNext: true, isSubLoop: false },
+        },
+      });
+    });
+
+    await page.goto('/flash-cards');
+
+    await expect(page.getByText(/윈도우 완료/)).toBeVisible({ timeout: 10_000 });
+    // 이번 화면에서 답한 기록이 없으므로 0/0 통계는 표시하지 않는다
+    await expect(page.getByRole('button', { name: /알았음/ })).toHaveCount(0);
+
+    await page.getByRole('button', { name: '다음 윈도우로' }).click();
+    await expect.poll(() => completeDeckCalled).toBe(true);
+  });
+
+  test('서브: "다시 학습하기"와 "홈으로" 버튼 표시', async ({ page }) => {
+    await injectMockAuth(page, { activeProgressType: 'sub' });
+
+    await page.route('**/api/users/me/progress/sub/current', (route) => {
+      route.fulfill({ json: makeCompletedDeck('sub') });
+    });
+
+    await page.goto('/flash-cards');
+
+    await expect(page.getByText(/스텝 마스터/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: '다시 학습하기' })).toBeVisible();
+    // 상단 브랜드 버튼도 aria-label이 '홈으로'라 텍스트로 구분한다
+    await expect(page.getByRole('button').getByText('홈으로', { exact: true })).toBeVisible();
+  });
+});

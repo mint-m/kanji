@@ -15,12 +15,12 @@ export const MOCK_USER = {
 };
 
 /** localStorage에 mock 인증 상태를 주입하는 init 스크립트 */
-export async function injectMockAuth(page: Page) {
+export async function injectMockAuth(page: Page, userOverrides: Partial<typeof MOCK_USER> = {}) {
   await page.addInitScript(
     ({ token, user }: { token: string; user: object }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     },
-    { token: MOCK_TOKEN, user: MOCK_USER },
+    { token: MOCK_TOKEN, user: { ...MOCK_USER, ...userOverrides } },
   );
 }

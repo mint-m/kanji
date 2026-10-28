@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import bookmarkController from '../controllers/bookmarkController';
+import bookmarkController, { BOOKMARK_LIMIT } from '../controllers/bookmarkController';
 import { validateWordProgressRequest, handleValidationErrors } from '../middleware/validation';
 import { body, query, param } from 'express-validator';
 import { LEARNING_LEVELS } from '../types/common';
@@ -51,10 +51,11 @@ router.get(
         throw new Error('Tags must be string or array of strings');
       }),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    // 북마크 복습 페이지가 북마크 전체(최대 BOOKMARK_LIMIT개)를 한 번에 조회하므로 상한을 맞춘다
     query('limit')
       .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage('Limit must be between 1 and 100'),
+      .isInt({ min: 1, max: BOOKMARK_LIMIT })
+      .withMessage(`Limit must be between 1 and ${BOOKMARK_LIMIT}`),
     query('sortBy')
       .optional()
       .isIn(['last_studied_at', 'kanji', 'level', 'step', 'bookmark_reason'])

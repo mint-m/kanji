@@ -3,7 +3,7 @@ import { PipelineStage } from 'mongoose';
 import WordProgress from '../models/wordProgress';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-const BOOKMARK_LIMIT = 150;
+export const BOOKMARK_LIMIT = 150;
 const BOOKMARK_WARNING_THRESHOLD = 10;
 
 /**

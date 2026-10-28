@@ -23,6 +23,8 @@ const FlashCardPage: FC = () => {
   const [level, setLevel] = useState('');
   const [steps, setSteps] = useState<{ start: number; end: number } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  // 완료 화면에서 이탈 후 재진입하면 서버는 currentIndex = 덱 길이로 응답한다 → 완료 상태를 복원해 진행 버튼을 보여준다
+  const [initialPassResult, setInitialPassResult] = useState<{ windowComplete: boolean } | null>(null);
   const [liveIndex, setLiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +39,12 @@ const FlashCardPage: FC = () => {
       const progressType = activeProgressType || 'main';
       const response = await deckService.getCurrentDeck(progressType);
       if (response.success && response.data) {
-        const { words, level: deckLevel, steps: deckSteps, currentIndex: apiCurrentIndex } = response.data;
+        const { words, level: deckLevel, steps: deckSteps, currentIndex: apiCurrentIndex, deckStatus } = response.data;
         setDeck(words);
         setLevel(deckLevel);
         setSteps(deckSteps);
         setCurrentIndex(apiCurrentIndex);
+        setInitialPassResult(deckStatus.isPassComplete ? { windowComplete: deckStatus.isWindowComplete } : null);
         return true;
       }
       setError(response.message || '단어장을 불러오는데 실패했습니다.');
@@ -115,6 +118,7 @@ const FlashCardPage: FC = () => {
             deck={deck}
             progressType={activeProgressType || 'main'}
             initialIndex={currentIndex}
+            initialPassResult={initialPassResult}
             onContinue={handleContinue}
             onAdvance={handleAdvance}
             onGoHome={handleGoHome}

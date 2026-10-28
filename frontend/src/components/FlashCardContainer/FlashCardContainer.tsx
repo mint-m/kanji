@@ -15,6 +15,7 @@ interface FlashCardContainerProps {
   deck: DeckWord[];
   progressType: 'main' | 'sub';
   initialIndex: number;
+  initialPassResult?: { windowComplete: boolean } | null; // 완료 상태로 재진입한 경우 서버 deckStatus에서 복원
   onContinue: () => Promise<boolean>; // 패스 완료: 몰랐던 단어를 다시 섞어 이어가기
   onAdvance: () => Promise<boolean>;  // 윈도우 완료: 다음 윈도우(메인) / 같은 스텝 재학습(서브)
   onGoHome: () => void;               // 서브 세션 완료 후 홈으로
@@ -22,7 +23,7 @@ interface FlashCardContainerProps {
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex, onContinue, onAdvance, onGoHome, onIndexChange }) => {
+  ({ deck, progressType, initialIndex, initialPassResult, onContinue, onAdvance, onGoHome, onIndexChange }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
     const [showMean, setShowMean] = useState(false);
     const [showHiragana, setShowHiragana] = useState(false);
@@ -32,7 +33,9 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const [openList, setOpenList] = useState<'mastered' | 'learning' | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [cardStudyTime, setCardStudyTime] = useState(Date.now());
-    const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(null);
+    const [passResult, setPassResult] = useState<{ windowComplete: boolean; nextPassSize?: number } | null>(
+      initialPassResult ?? null
+    );
     const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(
       () => new Set(deck.filter(w => w.isBookmarked).map(w => w._id))
     );
@@ -128,6 +131,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       const isMain = progressType === 'main';
       const remaining = passResult?.nextPassSize ?? learning.length;
       const listWords = openList === 'mastered' ? mastered : openList === 'learning' ? learning : [];
+      // 완료 상태로 재진입하면 이번 화면에서 답한 기록이 없으므로 0/0 통계는 숨긴다
+      const hasAnswers = mastered.length + learning.length > 0;
 
       const toggleList = (which: 'mastered' | 'learning') =>
         setOpenList(prev => (prev === which ? null : which));
@@ -145,40 +150,44 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                   : '패스 완료'}
             </h3>
 
-            <div className={styles.statsRow}>
-              <button
-                type="button"
-                className={clsx(styles.statItemButton, openList === 'mastered' && styles.statItemActive)}
-                onClick={() => toggleList('mastered')}
-              >
-                <span className={styles.statLabel}>알았음</span>
-                <span className={styles.statValueGreen}>{mastered.length}</span>
-              </button>
-              <button
-                type="button"
-                className={clsx(styles.statItemButton, openList === 'learning' && styles.statItemActive)}
-                onClick={() => toggleList('learning')}
-              >
-                <span className={styles.statLabel}>몰랐음</span>
-                <span className={styles.statValueAmber}>{learning.length}</span>
-              </button>
-            </div>
+            {hasAnswers && (
+              <>
+                <div className={styles.statsRow}>
+                  <button
+                    type="button"
+                    className={clsx(styles.statItemButton, openList === 'mastered' && styles.statItemActive)}
+                    onClick={() => toggleList('mastered')}
+                  >
+                    <span className={styles.statLabel}>알았음</span>
+                    <span className={styles.statValueGreen}>{mastered.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={clsx(styles.statItemButton, openList === 'learning' && styles.statItemActive)}
+                    onClick={() => toggleList('learning')}
+                  >
+                    <span className={styles.statLabel}>몰랐음</span>
+                    <span className={styles.statValueAmber}>{learning.length}</span>
+                  </button>
+                </div>
 
-            {openList ? (
-              <div className={styles.wordList}>
-                {listWords.length === 0 ? (
-                  <div className={styles.wordListEmpty}>해당하는 단어가 없어요</div>
+                {openList ? (
+                  <div className={styles.wordList}>
+                    {listWords.length === 0 ? (
+                      <div className={styles.wordListEmpty}>해당하는 단어가 없어요</div>
+                    ) : (
+                      listWords.map(w => (
+                        <div key={w._id} className={styles.wordItem}>
+                          <span className={styles.wordItemEntry}>{w.pron || w.entry}</span>
+                          <span className={styles.wordItemMean}>{w.means[0] ?? ''}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 ) : (
-                  listWords.map(w => (
-                    <div key={w._id} className={styles.wordItem}>
-                      <span className={styles.wordItemEntry}>{w.pron || w.entry}</span>
-                      <span className={styles.wordItemMean}>{w.means[0] ?? ''}</span>
-                    </div>
-                  ))
+                  <p className={styles.statHint}>숫자를 탭하면 단어 목록을 볼 수 있어요</p>
                 )}
-              </div>
-            ) : (
-              <p className={styles.statHint}>숫자를 탭하면 단어 목록을 볼 수 있어요</p>
+              </>
             )}
 
             {passResult && (
