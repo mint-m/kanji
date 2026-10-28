@@ -18,7 +18,7 @@ test.describe('학습 플로우 - 플래시카드', () => {
       route.fulfill({ json: makeDeck(['word0', 'word1']) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     // 컨트롤 패널 버튼 4개 확인
     await expect(page.getByRole('button', { name: '한글 뜻' })).toBeVisible({ timeout: 10_000 });
@@ -35,7 +35,7 @@ test.describe('학습 플로우 - 플래시카드', () => {
       route.fulfill({ json: makeCompleteWordResponse(false, false) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '한글 뜻' })).toBeVisible({ timeout: 10_000 });
 
     // "한글 뜻" 클릭 → 뜻0 표시
@@ -51,7 +51,7 @@ test.describe('학습 플로우 - 플래시카드', () => {
       route.fulfill({ json: makeCompleteWordResponse(false, false) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '한글 뜻' })).toBeVisible({ timeout: 10_000 });
 
     // 첫 번째 카드: 뜻0
@@ -72,7 +72,7 @@ test.describe('학습 플로우 - 플래시카드', () => {
       route.fulfill({ json: makeCompleteWordResponse(false, false) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '한글 뜻' })).toBeVisible({ timeout: 10_000 });
 
     // 첫 번째 카드 확인
@@ -101,7 +101,7 @@ test.describe('키보드로 학습', () => {
       route.fulfill({ json: makeCompleteWordResponse(false, false) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
     await expect(page.getByText('뜻0')).toBeHidden();
@@ -125,7 +125,7 @@ test.describe('패스 완료 흐름', () => {
 
   test('3단어 덱 - 마지막 단어 후 패스 완료 화면 표시', async ({ page }) => {
     await setupPassCompleteFlow(page);
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     // 컨트롤 버튼 확인 (덱 로드됨)
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
@@ -142,7 +142,7 @@ test.describe('패스 완료 흐름', () => {
 
   test('패스 완료 후 덱 재fetch → 새 패스 시작', async ({ page }) => {
     await setupPassCompleteFlow(page);
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: '알아요' }).click();
@@ -168,7 +168,7 @@ test.describe('패스 완료 흐름', () => {
       route.fulfill({ json: makeCompleteWordResponse(false, false) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: '알아요' }).click(); // 알았음 1
@@ -197,7 +197,7 @@ test.describe('윈도우 완료 흐름', () => {
 
   test('2단어 모두 외우면 윈도우 완료 화면 표시', async ({ page }) => {
     await setupWindowCompleteFlow(page);
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
@@ -253,7 +253,7 @@ test.describe('윈도우 완료 흐름', () => {
       });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
     // 첫 번째 윈도우 완료
@@ -306,7 +306,7 @@ test.describe('완료 화면 재진입', () => {
       });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     await expect(page.getByText(/이 범위를 모두 익혔어요/)).toBeVisible({ timeout: 10_000 });
     // 이번 화면에서 답한 기록이 없으므로 0/0 통계는 표시하지 않는다
@@ -323,7 +323,7 @@ test.describe('완료 화면 재진입', () => {
       route.fulfill({ json: makeCompletedDeck('sub') });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     await expect(page.getByText(/이 스텝을 모두 익혔어요/)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: '다시 학습하기' })).toBeVisible();
@@ -350,7 +350,7 @@ test.describe('진행 저장 실패', () => {
       route.fulfill({ status: 500, json: { success: false, message: 'Failed to complete word' } });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: '알아요' }).click();
@@ -375,7 +375,7 @@ test.describe('서버 콜드 스타트', () => {
       route.fulfill({ json: makeDeck(['word0']) });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
 
     await expect(page.getByText(/서버를 깨우는 중/)).toBeVisible({ timeout: 6_500 });
     // 응답이 오면 안내는 사라지고 카드가 표시된다
@@ -421,7 +421,7 @@ test.describe('레벨 끝', () => {
       });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: '알아요' }).click();
 

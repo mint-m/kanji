@@ -35,7 +35,7 @@ test.describe('학습 시작', () => {
     await expect(page.getByText('N5 · 스텝 4')).toBeVisible();
     await page.getByRole('button', { name: '학습 시작' }).click();
 
-    await expect(page).toHaveURL(/\/flash-cards/);
+    await expect(page).toHaveURL(/\/study/);
     expect(created).toEqual([{ progressType: 'sub', level: 'N5', steps: { start: 4, end: 4 } }]);
     expect(activeType).toBe('sub');
   });
@@ -61,7 +61,7 @@ test.describe('학습 시작', () => {
 
     await page.getByLabel('진도 위치를 바꾸는 데 동의합니다').check();
     await startButton.click();
-    await expect(page).toHaveURL(/\/flash-cards/);
+    await expect(page).toHaveURL(/\/study/);
     expect(deleted).toBe(true);
   });
 });

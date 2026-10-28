@@ -77,11 +77,11 @@ frontend/src/
 │   ├── Main/              # / — 로그인 전 Landing, 로그인 후 Home(오늘의 복습·세션 카드)
 │   ├── Login/             # /login — Landing과 같은 화면
 │   ├── StartPage/         # /start — 학습 방식·레벨·범위 선택 (진도·집중 공통)
-│   ├── FlashCardPage/     # /flash-cards — 진도·집중 학습
+│   ├── FlashCardPage/     # /study — 진도·집중 학습
 │   ├── ReviewPage/        # /review — 오늘의 복습
 │   ├── StatsPage/         # /stats — 기록
-│   ├── BookmarkPage.tsx   # /bookmark — 북마크 목록·메모
-│   ├── BookmarkStudyPage/ # /bookmark-study — 북마크 학습(회차 반복)
+│   ├── BookmarkPage.tsx   # /bookmarks — 북마크 목록·메모
+│   ├── BookmarkStudyPage/ # /bookmarks/study — 북마크 학습(회차 반복)
 │   ├── UserProfilePage.tsx # /profile — 닉네임·하루 목표·계정 연동
 │   ├── SourcesPage/       # /sources — 데이터 출처(JMdict·KANJIDIC2 라이선스 표기, 로그인 불필요)
 │   └── NotFound/
@@ -98,7 +98,7 @@ frontend/src/
 └── utils/                 # speech(발음 듣기), shuffle
 ```
 
-라우트 정리: `/level-setup`·`/select-level` → `/start`, `/dashboard`·`/profile/stats` → `/stats` (리다이렉트).
+옛 주소(`/flash-cards`·`/bookmark`·`/bookmark-study`·`/level-setup`·`/select-level`·`/dashboard`·`/profile/stats`)는 리다이렉트 없이 없앴다 — 실사용자가 없는 단계라 주소를 정리했다(2026-10-29).
 
 ### Backend 구조
 
@@ -569,9 +569,9 @@ GET /health                                           # DB 연결 확인 — 200
 |---|---|---|
 | `/` | 로그인 전: 소개 + 로그인 버튼 / 로그인 후: 인사·연속 학습일·오늘 학습량, 오늘의 복습, 진도·집중 학습 카드 | `GET /me/progress`, `GET /me/stats` |
 | `/start` | 학습 방식 → 레벨 → 범위 → 확인 (진행 중 세션을 바꾸면 무엇이 남는지 안내) | `GET /words/level/:level/steps`, `GET /me/progress`, `DELETE /me/progress/:type`, `PATCH /me/checkpoint`, `PATCH /me/active-progress-type` |
-| `/flash-cards` | 진도·집중 학습 (활성 세션) | `GET /me/progress/:type/current`, `POST complete-word`, `POST complete-deck` |
+| `/study` | 진도·집중 학습 (활성 세션) | `GET /me/progress/:type/current`, `POST complete-word`, `POST complete-deck` |
 | `/review` | 오늘의 복습 | `GET /me/reviews/due`, `POST /me/reviews/answer` |
-| `/bookmark`, `/bookmark-study` | 북마크 목록·메모, 북마크 학습 | `GET /me/bookmarks`, `POST /me/bookmarks/toggle`, `PUT /me/bookmarks/:wordId` |
+| `/bookmarks`, `/bookmarks/study` | 북마크 목록·메모, 북마크 학습 | `GET /me/bookmarks`, `POST /me/bookmarks/toggle`, `PUT /me/bookmarks/:wordId` |
 | `/stats` | 기록 | `GET /me/stats` |
 | `/profile` | 닉네임, 하루 목표, 계정 연동 | `PATCH /me`, `PATCH /me/preferences`, `/api/auth/link/*` |
 | `/sources` | 데이터 출처 — JMdict·KANJIDIC2(EDRDG, CC BY-SA 4.0) 표기. 사용자 메뉴와 로그인 전 첫 화면 아래에서 연결 | 없음 |
@@ -758,6 +758,7 @@ yarn build          # → frontend/build/
 - ✅ feat: 학습 카드 재설계(StudyCard) — 응답 강조, 키보드 단축키, 발음 듣기, 범위 진행, 모바일 한자 시트
 - ✅ feat: 북마크 학습 회차 반복, 앱 셸(상단 바·모바일 하단 탭), 디자인 토큰·포커스 표시
 - ✅ feat: 데이터 출처 화면(`/sources`) — JMdict·KANJIDIC2 라이선스(CC BY-SA 4.0)가 요구하는 앱 안 출처 표기
+- ✅ refactor: 주소 정리 — `/study`, `/bookmarks`, `/bookmarks/study`, 옛 주소 리다이렉트 삭제
 - ✅ fix: 카카오 OAuth state 검증(연동 CSRF), 404 오류 화면, 북마크 한도 안내, 북마크 최근 순 정렬
 - ✅ fix: 서브 루프 축소, 새 윈도우 플래그 리셋, 연속 학습일(한국 시간·로그인 무관), 에러 클래스 판별, 세션 고유 인덱스
 - ✅ fix: 한자 풀이 대체 경로(KANJIDIC2)가 그 한자가 든 다른 단어의 뜻을 훈으로 붙이던 문제, 대체 결과는 서버 캐시에서 제외

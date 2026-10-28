@@ -91,7 +91,7 @@ const BookmarkStudyPage: FC = () => {
   });
 
   const backButton = (
-    <DefaultButton variant="ghost" className={styles.backLink} onClick={() => navigate('/bookmark')}>← 북마크</DefaultButton>
+    <DefaultButton variant="ghost" className={styles.backLink} onClick={() => navigate('/bookmarks')}>← 북마크</DefaultButton>
   );
 
   if (isLoading) return <div className={styles.page}><p className="loading-text">북마크 단어를 불러오는 중...</p></div>;
@@ -102,7 +102,7 @@ const BookmarkStudyPage: FC = () => {
         {backButton}
         <div className={styles.resultCard}>
           <p>{error ?? '북마크한 단어가 없어요. 학습 중 어려운 단어에 ☆를 눌러 모아 보세요.'}</p>
-          <DefaultButton onClick={() => navigate('/bookmark')}>북마크로 돌아가기</DefaultButton>
+          <DefaultButton onClick={() => navigate('/bookmarks')}>북마크로 돌아가기</DefaultButton>
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ const BookmarkStudyPage: FC = () => {
                 몰랐던 {unknown.length}개 다시
               </DefaultButton>
             )}
-            <DefaultButton onClick={() => navigate('/bookmark')}>북마크로 돌아가기</DefaultButton>
+            <DefaultButton onClick={() => navigate('/bookmarks')}>북마크로 돌아가기</DefaultButton>
           </div>
         </div>
       </div>

@@ -64,7 +64,7 @@ describe('Home', () => {
     renderHome('sub');
     fireEvent.click(await screen.findByRole('button', { name: '이어하기' }));
     expect(updateActiveProgressType).toHaveBeenCalledWith('main');
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/flash-cards'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/study'));
   });
 
   it('기록을 불러오지 못해도 학습 카드는 보여 준다', async () => {

@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     to: '/',
     label: '학습',
-    match: ['/', '/flash-cards', '/start'],
+    match: ['/', '/study', '/start'],
     icon: <Icon><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z" /><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z" /></Icon>,
   },
   {
@@ -29,9 +29,9 @@ export const NAV_ITEMS: NavItem[] = [
     icon: <Icon><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></Icon>,
   },
   {
-    to: '/bookmark',
+    to: '/bookmarks',
     label: '북마크',
-    match: ['/bookmark', '/bookmark-study'],
+    match: ['/bookmarks'],
     icon: <Icon><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></Icon>,
   },
   {

@@ -131,7 +131,7 @@ const Home: FC = () => {
       }
       setSwitching(false);
     }
-    navigate('/flash-cards');
+    navigate('/study');
   };
 
   const sessionOf = (type: ProgressType) => sessions?.find((session) => session.type === type);

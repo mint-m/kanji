@@ -29,7 +29,7 @@ const initialLevel = (finishedLevel?: LearningLevel): LearningLevel => {
   return LEVELS[LEVELS.indexOf(finishedLevel) + 1] ?? 'N5';
 };
 
-// 학습 시작·범위 바꾸기를 한 화면에서 — 예전에는 진도(/level-setup)와 집중(/select-level)이 서로 다른 화면·규칙이었다
+// 학습 시작·범위 바꾸기를 한 화면에서 — 진도·집중 학습이 같은 규칙으로 레벨·범위를 고른다
 const StartPage: FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -96,7 +96,7 @@ const StartPage: FC = () => {
         dispatch(setActiveProgressType(type));
         updateLocalUser({ activeProgressType: type });
       }
-      navigate('/flash-cards', { replace: true });
+      navigate('/study', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, '학습을 시작하지 못했어요. 다시 시도해주세요.'));
       setSubmitting(false);

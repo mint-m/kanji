@@ -133,7 +133,7 @@ const BookmarkPage: FC = () => {
         </div>
         <button
           className={styles.studyBtn}
-          onClick={() => navigate('/bookmark-study', { state: { level: selectedLevel, sortBy } })}
+          onClick={() => navigate('/bookmarks/study', { state: { level: selectedLevel, sortBy } })}
           disabled={bookmarks.length === 0}
         >
           북마크 학습

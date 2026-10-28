@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import { AppHeader, TabBar } from 'components/Navigation';
@@ -84,33 +84,26 @@ const AppContent = () => {
                   <Stats />
                 </ProtectedRoute>
               } />
-              {/* 진도·학습 통계는 기록(/stats)으로 합쳤다 */}
-              <Route path='/profile/stats' element={<Navigate to='/stats' replace />} />
-              <Route path='/dashboard' element={<Navigate to='/stats' replace />} />
 
-              <Route path='/bookmark' element={
+              <Route path='/bookmarks' element={
                 <ProtectedRoute>
                   <Bookmark />
                 </ProtectedRoute>
               } />
 
-              <Route path='/bookmark-study' element={
+              <Route path='/bookmarks/study' element={
                 <ProtectedRoute>
                   <BookmarkStudy />
                 </ProtectedRoute>
               } />
-
 
               <Route path='/start' element={
                 <ProtectedRoute>
                   <Start />
                 </ProtectedRoute>
               } />
-              {/* 진도(/level-setup)·집중(/select-level) 시작 화면은 /start 하나로 합쳤다 */}
-              <Route path='/level-setup' element={<Navigate to='/start?type=main' replace />} />
-              <Route path='/select-level' element={<Navigate to='/start' replace />} />
 
-              <Route path='/flash-cards' element={
+              <Route path='/study' element={
                 <ProtectedRoute>
                   <FlashCard />
                 </ProtectedRoute>

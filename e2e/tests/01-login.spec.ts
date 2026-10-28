@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import { injectMockAuth, MOCK_USER } from '../helpers/auth';
 
 test.describe('로그인 페이지', () => {
-  test('비로그인 상태에서 /flash-cards 접근 시 /login으로 리다이렉트', async ({ page }) => {
-    await page.goto('/flash-cards');
+  test('비로그인 상태에서 /study 접근 시 /login으로 리다이렉트', async ({ page }) => {
+    await page.goto('/study');
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -13,7 +13,7 @@ test.describe('로그인 페이지', () => {
     await expect(page.getByRole('button', { name: /카카오/i })).toBeVisible({ timeout: 8_000 });
   });
 
-  test('localStorage에 유효한 토큰이 있으면 /flash-cards 접근 허용', async ({ page }) => {
+  test('localStorage에 유효한 토큰이 있으면 /study 접근 허용', async ({ page }) => {
     await injectMockAuth(page);
 
     await page.route('**/api/users/me/progress/main/current', (route) => {
@@ -32,9 +32,9 @@ test.describe('로그인 페이지', () => {
       });
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page).toHaveURL(/\/flash-cards/);
+    await expect(page).toHaveURL(/\/study/);
   });
 
   test('토큰 없이 localStorage에 user만 있으면 /login으로 리다이렉트', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('로그인 페이지', () => {
       localStorage.setItem('user', JSON.stringify(user));
     }, MOCK_USER);
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -55,7 +55,7 @@ test.describe('로그인 페이지', () => {
       localStorage.setItem('user', JSON.stringify({ _id: 'x', email: 'x@x.com', name: '유저', type: 'google', activeProgressType: 'main' }));
     });
 
-    await page.goto('/flash-cards');
+    await page.goto('/study');
     await expect(page).toHaveURL(/\/login/);
   });
 });
