@@ -218,7 +218,7 @@ backend/src/
 - `{ level: 1, step: 1 }` (복합)
 - `{ level: 1 }`, `{ step: 1 }`
 
-> `daily` 레벨은 JLPT 시험 무관 생활 필수 어휘. `frequency` 기반으로 step이 재정렬되므로 낮은 step일수록 고빈도 단어.
+> `daily` 레벨은 JLPT 시험 무관 생활 필수 어휘로 설계했지만 운영 데이터는 0개다(화면에서 숨김). 운영 단어에는 `frequency` 값이 없어(2026-10 실측) step은 빈도와 무관하게 27~28개씩 나뉘어 있다 — `augment:frequency`·`reorder:frequency`는 고치기 전에 돌리지 않는다(아래 CLAUDE.md "Learning Data").
 
 ---
 

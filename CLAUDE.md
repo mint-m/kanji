@@ -78,6 +78,14 @@ Live: https://kanji-red.vercel.app (Vercel) · https://kan-ji.onrender.com (Rend
 - 한자 풀이는 네이버 결과만 서버 캐시한다 — DB(KANJIDIC2) 대체 결과는 외부 장애 중에 나오므로 캐시하면 회복된 뒤에도 남는다. KANJIDIC2에는 한국어 훈이 없어 한국 한자음만 보낸다 (`kanjiController.test.ts`).
 - 데이터 출처 화면(`/sources`)은 EDRDG 데이터(지금은 KANJIDIC2, CC BY-SA 4.0)의 사용 조건이다 — 앱 안 별도 화면에 출처·라이선스 링크가 있어야 하므로, 이 데이터를 쓰는 동안 화면과 진입점(사용자 메뉴, 로그인 전 첫 화면 아래)을 지우지 않는다. JMdict 등 다른 EDRDG 파일을 운영 데이터에 넣으면 이 화면에 함께 적는다 (`SourcesPage.test.tsx`, E2E `홈`).
 
+## Learning Data
+
+단어·한자 데이터가 학습 품질의 바탕이고, 리뉴얼 다음 최우선 과제다 (한자 원천 교체 → JMdict 기반 단어 재구축).
+
+- 운영 DB가 단어 데이터의 유일한 사본이다 — 수집 스크립트·원본 파일이 저장소에 없다. 운영 DB에 쓰기 전에는 `word`·`kanji`를 EJSON으로 백업한다(Atlas 무료 클러스터는 휴면할 수 있다).
+- 단어 본문은 네이버 일한사전에서 온 것으로 보인다(`origin_entry_id` `JK…`) — 데이터 덤프를 공개 저장소에 커밋하지 않는다.
+- `augment:frequency`는 nf 순위를 지우고(점수 1·24·9999뿐), `create:daily`는 JMdict 영어 뜻을 넣는다 — 고치기 전에 운영에서 돌리지 않는다. `clean:words`는 '→' 참조만 있는 기본 단어(みっつ·キッチン 등)까지 지우므로 그대로 쓰지 않는다.
+
 ## Code Rules
 
 - Write only what is needed now — no future-proofing
