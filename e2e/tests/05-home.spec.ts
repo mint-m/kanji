@@ -8,10 +8,12 @@ test.describe('홈', () => {
     await expect(page.getByRole('button', { name: /google/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /카카오/ })).toBeVisible();
 
-    // 데이터 출처(CC BY-SA 조건)는 로그인 없이 열려야 한다
-    await page.getByRole('link', { name: '데이터 출처' }).click();
+    // 데이터 출처(CC BY-SA 조건)는 첫 화면에서 이어지고 로그인 없이 열려야 한다.
+    // 링크 클릭은 CI의 느린 dev 서버에서 30초를 넘긴 적이 있어 주소 확인 + 직접 열기로 본다
+    await expect(page.getByRole('link', { name: '데이터 출처' })).toHaveAttribute('href', '/sources');
+    await page.goto('/sources');
     await expect(page).toHaveURL(/\/sources$/);
-    await expect(page.getByRole('heading', { name: '데이터 출처' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '데이터 출처' })).toBeVisible({ timeout: 10_000 });
   });
 
   test('로그인: 오늘의 복습에서 복습으로, 진도 학습에서 이어하기', async ({ page }) => {
