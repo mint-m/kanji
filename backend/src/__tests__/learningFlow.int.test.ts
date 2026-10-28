@@ -1,6 +1,11 @@
 // 학습 플로우 통합 테스트 — 메모리 MongoDB + 실제 라우터·모델·집계 쿼리로 확인한다.
 // 컨트롤러 단위 테스트는 모델을 mock해 distinct·updateMany·$lookup과 윈도우 전환 전체를 검증하지 못한다.
-jest.mock('../config');
+// CI에는 .env가 없다 — 토큰 서명 값을 테스트가 직접 준다. 자동 mock은 .env 값을 그대로 가져와 로컬에서만 통과했다
+jest.mock('../config', () => ({
+  __esModule: true,
+  validateEnv: jest.fn(),
+  default: { JWT_SECRET: 'integration-test-secret', JWT_EXPIRY: '1d' },
+}));
 
 import http from 'http';
 import { AddressInfo } from 'net';
