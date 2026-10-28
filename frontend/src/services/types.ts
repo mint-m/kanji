@@ -127,6 +127,7 @@ export interface CompleteWordRequest {
   wordId: string;
   isCorrect: boolean;
   timeSpent?: number;
+  index?: number; // 답한 카드의 덱 내 위치 — 서버 위치와 다르면 409(PROGRESS_OUT_OF_SYNC)
 }
 
 // 단어 완료 응답

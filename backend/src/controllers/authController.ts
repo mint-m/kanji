@@ -38,6 +38,11 @@ const sendLoginResponse = (user: UserDocument, res: Response, next: NextFunction
 
 const getGoogleUserInfo = async (accessToken: string) => {
   const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+  // 다른 앱이 발급받은 같은 사용자의 토큰으로 로그인·연동하지 못하도록 발급 대상(aud)을 확인한다
+  const { aud } = await client.getTokenInfo(accessToken);
+  if (aud !== GOOGLE_CLIENT_ID) {
+    throw new UnauthorizedError('Google access token was not issued for this app');
+  }
   client.setCredentials({ access_token: accessToken });
   const oauth2 = google.oauth2({ auth: client, version: 'v2' });
   return (await oauth2.userinfo.get()).data;
@@ -297,6 +302,7 @@ export const linkGoogle = async (req: AuthenticatedRequest, res: Response, next:
 
     res.json({ success: true, authProviders: user.authProviders.map((p) => p.provider) });
   } catch (error) {
+    if (error instanceof AppError) return next(error);
     console.error('Link Google error:', error);
     next(new InternalServerError('Failed to link Google account'));
   }

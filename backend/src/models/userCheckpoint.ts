@@ -74,6 +74,15 @@ userCheckpointSchema.methods.getCurrentWord = function (this: UserCheckpointDocu
   return this.shuffled_order[this.current_index];
 };
 
+// 클라이언트가 답한 위치가 서버 진행 위치와 같은지 — 재시도·중복 요청이 다른 단어를 기록하지 않도록
+userCheckpointSchema.methods.isAtWord = function (
+  this: UserCheckpointDocument,
+  index: number,
+  wordId: mongoose.Types.ObjectId
+): boolean {
+  return index === this.current_index && !!this.getCurrentWord()?.equals(wordId);
+};
+
 userCheckpointSchema.methods.getRemainingWords = function (this: UserCheckpointDocument): mongoose.Types.ObjectId[] {
   return this.shuffled_order.slice(this.current_index);
 };

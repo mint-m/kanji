@@ -4,7 +4,8 @@ import { triggerAuthBanner } from 'contexts/authBannerBridge';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '',
-  timeout: 10000,
+  // Render 무료 플랜은 15분 유휴 후 재기동에 약 1분이 걸린다 — 첫 요청이 타임아웃으로 실패하지 않도록 여유를 둔다
+  timeout: 75000,
   headers: {
     'Content-Type': 'application/json',
   },

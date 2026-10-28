@@ -19,11 +19,12 @@ interface FlashCardContainerProps {
   onContinue: () => Promise<boolean>; // 패스 완료: 몰랐던 단어를 다시 섞어 이어가기
   onAdvance: () => Promise<boolean>;  // 윈도우 완료: 다음 윈도우(메인) / 같은 스텝 재학습(서브)
   onGoHome: () => void;               // 서브 세션 완료 후 홈으로
+  onResync: () => Promise<boolean>;   // 진행 저장 실패: 서버에 저장된 위치로 덱을 다시 불러오기
   onIndexChange?: (index: number) => void;
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex, initialPassResult, onContinue, onAdvance, onGoHome, onIndexChange }) => {
+  ({ deck, progressType, initialIndex, initialPassResult, onContinue, onAdvance, onGoHome, onResync, onIndexChange }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
     const [showMean, setShowMean] = useState(false);
     const [showHiragana, setShowHiragana] = useState(false);
@@ -40,6 +41,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       () => new Set(deck.filter(w => w.isBookmarked).map(w => w._id))
     );
     const [bookmarkWarning, setBookmarkWarning] = useState<string | null>(null);
+    const [syncFailed, setSyncFailed] = useState(false);
+    const syncFailedRef = useRef(false);
     const lastSubmittedWordIdRef = useRef<string | null>(null);
     const requestQueueRef = useRef<Promise<any>>(Promise.resolve());
     const dispatch = useDispatch();
@@ -73,6 +76,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       lastSubmittedWordIdRef.current = currentWordId;
 
       const wordId = currentWordId;
+      const index = wordIndex;
       const answeredWord = deck[wordIndex];
       const timeSpent = Math.floor((Date.now() - cardStudyTime) / 1000);
 
@@ -82,13 +86,21 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       resetUIState();
 
       requestQueueRef.current = requestQueueRef.current
-        .then(() => progressService.completeWord(progressType, { wordId, isCorrect: know, timeSpent }))
-        .then(res => {
-          if (res.data?.passComplete) {
-            setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
-          }
+        .then(() => {
+          // 앞선 요청이 실패하면 서버 위치가 어긋나므로 더 보내지 않는다 — "다시 불러오기"로 서버 위치에서 이어간다
+          if (syncFailedRef.current) return;
+          return progressService.completeWord(progressType, { wordId, isCorrect: know, timeSpent, index })
+            .then(res => {
+              if (res.data?.passComplete) {
+                setPassResult({ windowComplete: res.data.windowComplete, nextPassSize: res.data.nextPassSize });
+              }
+            });
         })
-        .catch(err => console.warn('⚠️ Progress sync failed', err));
+        .catch(err => {
+          console.warn('⚠️ Progress sync failed', err);
+          syncFailedRef.current = true;
+          setSyncFailed(true);
+        });
     }, [currentWordId, deck, wordIndex, cardStudyTime, progressType, resetUIState]);
 
     const handleShowClick = useCallback((type: ShowType['type']) => {
@@ -111,6 +123,22 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     }, []);
 
     if (deck.length === 0) return null;
+
+    if (syncFailed) {
+      return (
+        <div className={styles.completedCard}>
+          <h3 className={styles.completedTitle}>진행 상황을 저장하지 못했어요</h3>
+          <p className={styles.completeDesc}>
+            네트워크가 불안정하거나 서버가 깨어나는 중일 수 있어요. 다시 불러오면 마지막으로 저장된 단어부터 이어갑니다.
+          </p>
+          <div className={styles.completeActions}>
+            <DefaultButton onClick={() => runAction(onResync)} disabled={isProcessing}>
+              {isProcessing ? '불러오는 중...' : '다시 불러오기'}
+            </DefaultButton>
+          </div>
+        </div>
+      );
+    }
 
     const errorBanner = error && (
       <div className={styles.errorBanner}>

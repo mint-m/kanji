@@ -57,6 +57,7 @@ export const validateDeckRequest = {
     body('wordId').isMongoId().withMessage('Valid word ID is required'),
     body('isCorrect').isBoolean().withMessage('Is correct must be boolean'),
     body('timeSpent').optional().isInt({ min: 0 }).withMessage('Time spent must be non-negative integer'),
+    body('index').optional().isInt({ min: 0 }).withMessage('Index must be non-negative integer'),
     handleValidationErrors,
   ],
 

@@ -1,6 +1,7 @@
 // src/app.ts
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
 import routes from "./routes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 
@@ -23,6 +24,12 @@ app.use("/", routes);
 // 루트 경로
 app.get("/", (req, res) => {
   res.send("API is running...");
+});
+
+// 가동률 모니터용 — DB 연결까지 확인한다 (Atlas 휴면·연결 끊김을 감지)
+app.get("/health", (req, res) => {
+  const dbUp = mongoose.connection.readyState === 1;
+  res.status(dbUp ? 200 : 503).json({ success: dbUp, data: { db: dbUp ? "up" : "down" } });
 });
 
 // 존재하지 않는 경로 처리

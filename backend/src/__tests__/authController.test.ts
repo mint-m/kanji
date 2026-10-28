@@ -1,5 +1,8 @@
 import { Response, NextFunction } from 'express';
 
+// 기본은 이 앱(GOOGLE_CLIENT_ID)이 발급한 토큰
+const mockGetTokenInfo = jest.fn();
+
 // --- 모든 외부 모듈을 factory로 명시적 mock ---
 jest.mock('../config', () => ({
   __esModule: true,
@@ -15,7 +18,7 @@ jest.mock('../config', () => ({
 
 jest.mock('../models/user', () => ({
   __esModule: true,
-  default: { findById: jest.fn(), findOne: jest.fn() },
+  default: { findById: jest.fn(), findOne: jest.fn(), findOrCreateFromOAuth: jest.fn() },
 }));
 
 jest.mock('../services/kakao', () => ({
@@ -30,6 +33,7 @@ jest.mock('../services/auth', () => ({
 jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn().mockImplementation(() => ({
     setCredentials: jest.fn(),
+    getTokenInfo: mockGetTokenInfo,
   })),
 }));
 
@@ -56,9 +60,49 @@ const makeNext = () => jest.fn() as unknown as NextFunction;
 const makeReq = (overrides = {}) =>
   ({ user: { _id: 'user-id-123' }, body: {}, ...overrides } as unknown as AuthenticatedRequest);
 
+beforeEach(() => {
+  mockGetTokenInfo.mockResolvedValue({ aud: 'test-google-client-id' });
+});
+
+// --- googleLogin ---
+describe('googleLogin', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('다른 앱이 발급한 access token → UnauthorizedError, 로그인하지 않음', async () => {
+    mockGetTokenInfo.mockResolvedValue({ aud: 'other-app-client-id' });
+    const next = makeNext();
+    await authController.googleLogin(makeReq({ body: { accessToken: 'foreign-token' } }), makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    expect(User.findOrCreateFromOAuth).not.toHaveBeenCalled();
+  });
+
+  it('이 앱이 발급한 access token → 로그인 응답', async () => {
+    (User.findOrCreateFromOAuth as jest.Mock).mockResolvedValue({
+      _id: 'user-id-123', email: 'test@gmail.com', name: 'tester', type: 'google', isActive: true,
+      authProviders: [{ provider: 'google', providerId: 'google-id-456' }],
+      profile: {}, getDisplayName: () => 'tester', isNewUser: () => false,
+    });
+    const res = makeRes();
+    await authController.googleLogin(makeReq({ body: { accessToken: 'valid-token' } }), res, makeNext());
+
+    expect(User.findOrCreateFromOAuth).toHaveBeenCalledWith(expect.objectContaining({ providerId: 'google-id-456' }));
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true, token: 'mocked-jwt' }));
+  });
+});
+
 // --- linkGoogle ---
 describe('linkGoogle', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it('다른 앱이 발급한 access token → UnauthorizedError, 연동하지 않음', async () => {
+    mockGetTokenInfo.mockResolvedValue({ aud: 'other-app-client-id' });
+    const next = makeNext();
+    await authController.linkGoogle(makeReq({ body: { accessToken: 'foreign-token' } }), makeRes(), next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+    expect(User.findById).not.toHaveBeenCalled();
+  });
 
   it('이미 Google 연동된 사용자가 재연동 시도 → ConflictError', async () => {
     const mockUser = {

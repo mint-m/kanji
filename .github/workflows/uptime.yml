@@ -1,0 +1,20 @@
+name: Uptime
+
+# 6시간마다 API 헬스체크(/health, DB 연결 포함)를 호출한다.
+# - 실패하면 GitHub가 워크플로 실패 알림을 보낸다 (장애 감지)
+# - 주기적인 DB 접속으로 Atlas 무료 클러스터의 30일 무접속 자동 일시정지를 막는다
+# 저장소 Variables에 HEALTHCHECK_URL(예: https://<backend>.onrender.com/health)을 등록해야 실행된다.
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    if: vars.HEALTHCHECK_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      # Render 무료 플랜 콜드 스타트(약 1분)를 감안해 재시도한다
+      - run: curl --fail --silent --show-error --retry 5 --retry-delay 30 --retry-all-errors --max-time 90 "$HEALTHCHECK_URL"
+        env:
+          HEALTHCHECK_URL: ${{ vars.HEALTHCHECK_URL }}

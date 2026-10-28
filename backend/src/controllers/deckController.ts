@@ -115,10 +115,11 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
 export const completeWord = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { progressType } = req.params as { progressType: ProgressType };
-    const { wordId, isCorrect, timeSpent } = req.body as {
+    const { wordId, isCorrect, timeSpent, index } = req.body as {
       wordId: string;
       timeSpent: number;
       isCorrect: boolean;
+      index?: number;
     };
 
     const userId = req.user!._id;
@@ -131,6 +132,18 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
       res.status(404).json({
         success: false,
         message: `No active ${progressType} session found`,
+      });
+      return;
+    }
+
+    // 위치가 어긋난 요청(실패 후 재시도, 앞선 요청 유실)은 기록하지 않고 서버 위치를 알려준다 — 클라이언트는 덱을 다시 불러온다
+    // index는 배포 순서(백엔드 먼저) 호환을 위해 선택값이다
+    if (index !== undefined && !progress.isAtWord(index, wordObjectId)) {
+      res.status(409).json({
+        success: false,
+        code: 'PROGRESS_OUT_OF_SYNC',
+        message: 'Answered word does not match the current position',
+        data: { currentIndex: progress.current_index },
       });
       return;
     }
