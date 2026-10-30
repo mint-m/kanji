@@ -4,6 +4,22 @@
 
 슬라이딩 윈도우 덱 시스템을 활용한 효율적인 일본어 단어 학습 플랫폼입니다.
 
+**[라이브](https://kanji-red.vercel.app)** (Google·카카오 로그인 필요 · 무료 서버라 첫 로딩이 느릴 수 있습니다)
+
+<p>
+  <img src="docs/img/card.png" width="240" alt="플래시카드 — 요미가나 앞면">
+  <img src="docs/img/card-revealed.png" width="240" alt="한자·뜻을 펼친 카드">
+</p>
+
+<sub>화면은 샘플 단어를 넣은 E2E mock 기반 캡처입니다.</sub>
+
+## 왜 이렇게 만들었나
+
+- **모르는 단어만 돌린다** — 3단계 슬라이딩 윈도우(`1-3 → 2-4 → 3-5`)에서 덱의 모든 단어를 "알았음"으로 넘겨야 다음 윈도우로 간다. 패스마다 모르는 단어만 다시 섞는다. 학습 철학은 [LEARNING_PHILOSOPHY.md](docs/LEARNING_PHILOSOPHY.md).
+- **어디서 끊겨도 이어진다** — 세션 상태를 서버 체크포인트로 저장하고, 중복 클릭·순서 어긋남은 서버가 409로 막는다(`PROGRESS_OUT_OF_SYNC`).
+- **검증 장치** — PR마다 CI가 백엔드·프론트 테스트와 Playwright E2E를 돌린다. 로직은 컨트롤러가 아니라 Mongoose 모델에 두고, 규칙과 함정은 [CLAUDE.md](CLAUDE.md)에 한 곳으로 모은다.
+- **종결 단계** — 기능을 더하기보다 안정성과 코드 축소를 우선한다.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.0-61dafb.svg)](https://reactjs.org/)
@@ -316,19 +332,8 @@ yarn test        # 테스트 실행
 
 ---
 
-## 🙏 감사의 말
-
-- JLPT 단어 데이터 제공처
-- React 및 Node.js 커뮤니티
-- 모든 기여자들
-
----
-
 ## 📧 문의
 
 - GitHub Issues: [Create an issue](https://github.com/mint-m/kanji/issues)
 - Email: fwwfly@gmail.com
 
----
-
-**Happy Learning! 📖✨**
