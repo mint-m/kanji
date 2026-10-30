@@ -52,7 +52,7 @@ const StatsPage: FC = () => {
           </div>
           <div className={styles.tile}>
             <span className={styles.tileLabel}>익힌 단어</span>
-            <span className={styles.tileValue}>{learned.total}<span className={styles.tileUnit}>개</span></span>
+            <span className={styles.tileValue}>{learned.total.toLocaleString()}<span className={styles.tileUnit}>개</span></span>
             <span className={styles.tileSub}>장기 기억 {learned.longTerm}개</span>
           </div>
           <div className={styles.tile}>
@@ -79,7 +79,7 @@ const StatsPage: FC = () => {
                   max={row.total}
                   label={`${levelName(row.level)} 익힌 단어 ${row.learned}개, 장기 기억 ${row.longTerm}개, 전체 ${row.total}개`}
                 />
-                <span className={styles.levelCount}>{row.learned} / {row.total}</span>
+                <span className={styles.levelCount}>{row.learned.toLocaleString()} / {row.total.toLocaleString()}</span>
               </div>
             ))}
           </div>
