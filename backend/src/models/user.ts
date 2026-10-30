@@ -42,7 +42,7 @@ const UserSchema = new mongoose.Schema<UserDocument>(
     preferences: {
       studyReminders: { type: Boolean, default: true },
       reminderTime: { type: String, default: '19:00' },
-      dailyGoal: { type: Number, default: 20, min: 1, max: 100 },
+      dailyGoal: { type: Number, default: 30, min: 1, max: 100 },
       theme: { type: String, enum: ['light', 'dark', 'auto'], default: 'light' },
       language: { type: String, enum: ['ko', 'en', 'ja'], default: 'ko' },
       soundEffects: { type: Boolean, default: true },

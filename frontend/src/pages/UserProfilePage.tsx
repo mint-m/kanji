@@ -10,7 +10,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { startKakaoAuth } from 'services/kakaoOAuth';
 import * as styles from './UserProfilePage.css';
 
-const GOAL_OPTIONS = [10, 20, 30, 50, 100];
+const GOAL_OPTIONS = [10, 30, 50, 100];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();

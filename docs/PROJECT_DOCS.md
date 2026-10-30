@@ -145,7 +145,7 @@ backend/src/
   preferences: {
     studyReminders: boolean,     // 학습 알림 (기본: true)
     reminderTime: string,        // 알림 시간 (기본: "19:00")
-    dailyGoal: number,           // 일일 목표 (1-100, 기본: 20)
+    dailyGoal: number,           // 일일 목표 (1-100, 기본: 30)
     theme: "light" | "dark" | "auto", // 테마 (기본: "light")
     language: "ko" | "en" | "ja", // 언어 (기본: "ko")
     soundEffects: boolean,       // 효과음 (기본: true)
