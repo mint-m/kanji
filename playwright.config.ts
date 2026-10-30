@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:4200',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure', // 재시도가 없으니 실패한 테스트의 트레이스를 남겨 CI에서만 나는 실패도 볼 수 있게 한다
     screenshot: 'only-on-failure',
   },
   projects: [
