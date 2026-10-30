@@ -13,6 +13,7 @@ export interface KanjiDataType {
   kunRead?: string;
   koreanPron: string;
   means: Array<Mean>;
+  missing?: boolean; // 사전에도 DB에도 풀이가 없는 한자 — 패널에 그렇다고 알린다
 }
 
 interface KanjiState {

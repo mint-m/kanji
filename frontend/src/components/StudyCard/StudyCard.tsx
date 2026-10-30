@@ -1,7 +1,9 @@
-import { FC, MouseEvent, useCallback, useEffect, useState } from 'react';
+import { FC, MouseEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { clsx } from 'clsx';
 import OriginWord from 'components/OriginWord';
+import { KANJI } from 'components/OriginWord/OriginWord';
+import { showKanji } from 'components/OriginWord/kanjiDataFilter';
 import Kanji from 'components/Kanji';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { reset as resetKanji } from 'store/modules/kanji';
@@ -18,6 +20,7 @@ export interface StudyWord {
 
 interface StudyCardProps {
   word: StudyWord;
+  next?: StudyWord; // 다음 카드 — 글꼴을 미리 받아 둔다
   onAnswer: (know: boolean) => void;
   isBookmarked?: boolean;
   onBookmark?: () => void;
@@ -32,26 +35,47 @@ const shouldIgnore = (event: KeyboardEvent) => {
 };
 
 // 진도 학습·오늘의 복습·북마크 학습이 함께 쓰는 단어 카드와 응답 버튼
-const StudyCard: FC<StudyCardProps> = ({ word, onAnswer, isBookmarked, onBookmark }) => {
+const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onBookmark }) => {
   const dispatch = useDispatch();
   const [showReading, setShowReading] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
+  const kanjiCursor = useRef(0);
   const speakable = canSpeak();
   // 가나로만 쓰는 단어는 읽기가 본문과 같다
   const hasReading = Boolean(word.pron) && word.pron !== word.entry;
+  const written = word.pron || word.entry;
 
-  useEffect(() => {
+  // 다음 단어가 그려지기 전에 가린다 — useEffect면 앞 카드의 공개 상태로 한 프레임 보이고, 바로 누른 Space가 앞 카드 기준으로 토글된다
+  useLayoutEffect(() => {
     setShowReading(false);
     setShowMeaning(false);
+    kanjiCursor.current = 0;
     dispatch(resetKanji());
   }, [word._id, dispatch]);
 
-  const revealAll = useCallback(() => {
-    setShowReading(true);
-    setShowMeaning(true);
-  }, []);
+  // 웹 글꼴은 글자 묶음별로 받는다 — 다음 단어의 글자를 미리 받아 넘길 때 대체 글꼴이 잠깐 보이는 깜빡임을 없앤다
+  useEffect(() => {
+    if (!next) return;
+    document.fonts?.load(`1em 'Noto Sans JP'`, `${next.pron ?? ''}${next.entry}`).catch(() => {});
+  }, [next]);
+
+  const allShown = showMeaning && (showReading || !hasReading);
+
+  // 읽기·뜻이 다 보이면 둘 다 가리고, 하나라도 가려져 있으면 둘 다 보인다
+  const toggleAll = useCallback(() => {
+    setShowReading(!allShown);
+    setShowMeaning(!allShown);
+  }, [allShown]);
 
   const speak = useCallback(() => speakJapanese(word.entry), [word.entry]);
+
+  // K를 누를 때마다 단어의 다음 한자 풀이를 연다
+  const openNextKanji = useCallback(() => {
+    const kanjis = Array.from(written).filter((char) => KANJI.test(char));
+    if (kanjis.length === 0) return;
+    showKanji(kanjis[kanjiCursor.current % kanjis.length], dispatch);
+    kanjiCursor.current += 1;
+  }, [written, dispatch]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -60,18 +84,20 @@ const StudyCard: FC<StudyCardProps> = ({ word, onAnswer, isBookmarked, onBookmar
         case 'ArrowRight': onAnswer(true); break;
         case 'ArrowLeft': onAnswer(false); break;
         case 'Space':
-        case 'Enter': revealAll(); break;
-        case 'KeyR': setShowReading(true); break;
-        case 'KeyM': setShowMeaning(true); break;
+        case 'Enter': toggleAll(); break;
+        case 'KeyR': if (hasReading) setShowReading((shown) => !shown); break;
+        case 'KeyM': setShowMeaning((shown) => !shown); break;
         case 'KeyS': if (speakable) speak(); break;
         case 'KeyB': onBookmark?.(); break;
+        case 'KeyK': openNextKanji(); break;
+        case 'Escape': dispatch(resetKanji()); break;
         default: return;
       }
       event.preventDefault();
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onAnswer, onBookmark, revealAll, speak, speakable]);
+  }, [onAnswer, onBookmark, toggleAll, hasReading, speak, speakable, openNextKanji, dispatch]);
 
   const stop = (action: () => void) => (event: MouseEvent) => {
     event.stopPropagation();
@@ -83,7 +109,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, onAnswer, isBookmarked, onBookmar
   return (
     <div className={styles.wrapper}>
       <Kanji />
-      <div className={styles.card} onClick={revealAll} role="group" aria-label="단어 카드 — 누르면 읽기와 뜻이 보여요">
+      <div className={styles.card} onClick={toggleAll} role="group" aria-label="단어 카드 — 누르면 읽기와 뜻을 보이거나 가려요">
         <div className={styles.tools}>
           {speakable && (
             <button type="button" className={styles.toolBtn} onClick={stop(speak)} aria-label="발음 듣기" aria-keyshortcuts="S">
@@ -110,7 +136,10 @@ const StudyCard: FC<StudyCardProps> = ({ word, onAnswer, isBookmarked, onBookmar
         <div className={clsx(styles.reading, !(showReading && hasReading) && styles.concealed)} lang="ja" aria-hidden={!(showReading && hasReading)}>
           {word.entry}
         </div>
-        <OriginWord word={word.pron || word.entry} />
+        <div className={styles.headword}>
+          <OriginWord word={written} />
+        </div>
+        {/* 뜻 칸은 높이가 정해져 있다 — 뜻이 여러 줄이어도 표제어 자리가 단어마다 같다 */}
         <div className={clsx(styles.meaning, !showMeaning && styles.concealed)} aria-hidden={!showMeaning}>
           {!!word.parts?.length && (
             <div className={styles.parts}>
@@ -130,27 +159,32 @@ const StudyCard: FC<StudyCardProps> = ({ word, onAnswer, isBookmarked, onBookmar
           <DefaultButton
             className={styles.revealBtn}
             pressed={showReading}
-            onClick={() => setShowReading(true)}
+            onClick={() => setShowReading((shown) => !shown)}
             disabled={!hasReading}
             title={hasReading ? undefined : '가나로 쓰는 단어라 읽기가 같아요'}
             aria-keyshortcuts="R"
           >
             요미가나
           </DefaultButton>
-          <DefaultButton className={styles.revealBtn} pressed={showMeaning} onClick={() => setShowMeaning(true)} aria-keyshortcuts="M">
+          <DefaultButton
+            className={styles.revealBtn}
+            pressed={showMeaning}
+            onClick={() => setShowMeaning((shown) => !shown)}
+            aria-keyshortcuts="M"
+          >
             한글 뜻
           </DefaultButton>
         </div>
         <div className={styles.row}>
-          <DefaultButton className={styles.answerBtn} variant="unknown" onClick={() => onAnswer(false)} aria-keyshortcuts="ArrowLeft">
+          <DefaultButton className={clsx(styles.answerBtn, styles.unknown)} onClick={() => onAnswer(false)} aria-keyshortcuts="ArrowLeft">
             <span className={styles.key} aria-hidden="true">←</span>몰라요
           </DefaultButton>
-          <DefaultButton className={styles.answerBtn} variant="know" onClick={() => onAnswer(true)} aria-keyshortcuts="ArrowRight">
+          <DefaultButton className={clsx(styles.answerBtn, styles.know)} onClick={() => onAnswer(true)} aria-keyshortcuts="ArrowRight">
             알아요<span className={styles.key} aria-hidden="true">→</span>
           </DefaultButton>
         </div>
         <p className={styles.shortcutHint} aria-hidden="true">
-          Space 공개 · ← 몰라요 · → 알아요 · R 요미가나 · M 뜻{speakable && ' · S 발음'}{onBookmark && ' · B 북마크'}
+          Space 공개·가리기 · ← 몰라요 · → 알아요 · R 요미가나 · M 뜻 · K 한자 풀이{speakable && ' · S 발음'}{onBookmark && ' · B 북마크'}
         </p>
       </div>
     </div>

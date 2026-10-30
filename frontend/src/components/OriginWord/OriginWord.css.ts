@@ -30,8 +30,3 @@ export const kanjiChar = style({
     '&:disabled': { cursor: 'progress' },
   },
 });
-
-export const notFoundChar = style({
-  cursor: 'default',
-  textDecoration: 'none',
-});

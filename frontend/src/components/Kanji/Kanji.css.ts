@@ -8,7 +8,7 @@ export const panel = style({
   right: 0,
   bottom: 0,
   zIndex: 60,
-  maxHeight: '50vh',
+  maxHeight: '80vh',
   overflowY: 'auto',
   padding: `${vars.space.sm} ${vars.space.md} ${vars.space.lg}`,
   backgroundColor: vars.color.bg,
@@ -22,7 +22,8 @@ export const panel = style({
       left: 'auto',
       bottom: 'auto',
       right: `calc(100% + ${vars.space.lg})`,
-      top: 0,
+      // 카드 윗변보다 조금 위 — 진행 표시 줄과 높이를 맞춘다
+      top: '-5vh',
       width: '280px',
       maxHeight: 'none',
       padding: 0,
@@ -31,6 +32,18 @@ export const panel = style({
       boxShadow: 'none',
       overflow: 'visible',
     },
+  },
+});
+
+// 시트 뒤를 덮어 바깥을 누르면 닫힌다. 넓은 화면의 옆 패널에는 없다
+export const backdrop = style({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 59,
+  backgroundColor: 'rgba(44, 62, 80, 0.25)',
+
+  '@media': {
+    'screen and (min-width: 1100px)': { display: 'none' },
   },
 });
 

@@ -1,5 +1,5 @@
 import { style } from '@vanilla-extract/css';
-import { vars } from 'styles/vars.css';
+import { MOBILE, vars } from 'styles/vars.css';
 
 export const wrapper = style({
   position: 'relative',
@@ -57,12 +57,24 @@ export const reading = style({
   color: vars.color.textMuted,
 });
 
+// 표제어 칸 높이를 고정해 글자 수가 달라도 자리가 같다
+export const headword = style({
+  height: '7rem',
+  maxWidth: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+// 뜻 칸도 높이를 고정한다 — 길면 칸 안에서 스크롤하고, 가려진 동안에도 카드 모양이 단어마다 같다
 export const meaning = style({
+  width: '100%',
+  height: '8rem',
+  overflowY: 'auto',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   gap: vars.space.sm,
-  minHeight: '4rem',
 });
 
 export const parts = style({
@@ -118,18 +130,32 @@ export const revealBtn = style({
   fontSize: vars.fontSize.sm,
 });
 
+// 응답 버튼도 다른 버튼과 같은 뉴모피즘 바탕 — 색은 글자와 화살표에만 써서 시선이 카드에 머문다
 export const answerBtn = style({
   padding: `${vars.space.md} ${vars.space.md}`,
-  fontSize: vars.fontSize.md,
+  fontSize: vars.fontSize.base,
+  fontWeight: 600,
 });
 
-export const key = style({
-  fontSize: vars.fontSize.xs,
-  fontWeight: 500,
-  opacity: 0.7,
+export const know = style({ color: vars.color.know });
 
+export const unknown = style({ color: vars.color.unknown });
+
+export const key = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '1.7rem',
+  height: '1.7rem',
+  borderRadius: '50%',
+  fontSize: vars.fontSize.sm,
+  fontWeight: 700,
+  boxShadow: vars.shadow.pressed,
+
+  // 키보드가 없는 기기에서는 숨긴다
   '@media': {
     '(hover: none)': { display: 'none' },
+    [MOBILE]: { display: 'none' },
   },
 });
 
@@ -139,8 +165,9 @@ export const shortcutHint = style({
   fontSize: vars.fontSize.xs,
   color: vars.color.textMuted,
 
-  // 키보드가 없는 터치 기기에서는 숨긴다
+  // 키보드가 없는 터치 기기·모바일 폭에서는 숨긴다
   '@media': {
     '(hover: none)': { display: 'none' },
+    [MOBILE]: { display: 'none' },
   },
 });

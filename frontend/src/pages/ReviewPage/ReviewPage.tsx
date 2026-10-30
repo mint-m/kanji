@@ -161,6 +161,7 @@ const ReviewPage: FC = () => {
       <StudyCard
         key={turn}
         word={current}
+        next={queue[1]}
         onAnswer={handleAnswer}
         isBookmarked={bookmarkedIds.has(current._id)}
         onBookmark={handleBookmark}

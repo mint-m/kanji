@@ -245,6 +245,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
         {warningBanner}
         <StudyCard
           word={deck[wordIndex]}
+          next={deck[wordIndex + 1]}
           onAnswer={handleKnowClick}
           isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
           onBookmark={handleBookmark}

@@ -8,7 +8,7 @@ interface OriginWordProps {
 // 글자 수에 맞춰 줄이되 카드 폭(모바일 85vw, 데스크톱 35rem)을 넘지 않게 한다
 const fontSizeFor = (length: number) => `min(6rem, ${Math.floor(68 / length)}vw, ${Math.floor(480 / length)}px)`;
 
-const KANJI = /[一-龥]/;
+export const KANJI = /[一-龥]/;
 
 const OriginWord = ({ word }: OriginWordProps) => {
   const chars = Array.from(word);

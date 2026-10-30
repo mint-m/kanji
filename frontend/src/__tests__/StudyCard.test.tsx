@@ -1,7 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import store from 'store';
+import { api } from '../services/apiClient';
 import StudyCard from '../components/StudyCard';
+
+jest.mock('../services/apiClient', () => ({ api: { get: jest.fn() } }));
+
+// 学은 사전에 있고 生은 없다 (CRA는 테스트마다 mock 구현을 지우므로 beforeEach에서 정한다)
+const mockKanjiSearch = () => (api.get as jest.Mock).mockImplementation((_url: string, { params }: { params: { kanji: string } }) => Promise.resolve(
+  params.kanji === '学'
+    ? { searchResult: [{ handleEntry: '学', expAudioRead: 'ガク', expMeaningRead: 'まなぶ', expKoreanPron: '배울 학', frequencyAdd: 'JLPT 5^', meansCollector: [{ means: [] }] }] }
+    : { searchResult: [] }
+));
 
 const WORD = { _id: 'w1', entry: 'がくせい', pron: '学生', means: ['학생'], parts: ['명사'] };
 
@@ -22,19 +32,49 @@ const press = (code: string, target: Element | Window = window) => fireEvent.key
 const meaningShown = () => screen.queryAllByRole('listitem').length > 0;
 
 describe('StudyCard', () => {
-  it('처음에는 읽기·뜻을 숨기고, Space로 둘 다 공개한다', () => {
+  beforeEach(mockKanjiSearch);
+
+  it('처음에는 읽기·뜻을 숨기고, Space로 둘 다 공개했다가 다시 가린다', () => {
     renderCard();
     expect(meaningShown()).toBe(false);
     expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'true');
     press('Space');
     expect(meaningShown()).toBe(true);
     expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'false');
+    press('Space');
+    expect(meaningShown()).toBe(false);
+    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('카드를 누르면 공개한다', () => {
+  it('카드를 누르면 공개하고, 다시 누르면 가린다', () => {
     renderCard();
     fireEvent.click(screen.getByRole('group'));
     expect(meaningShown()).toBe(true);
+    fireEvent.click(screen.getByRole('group'));
+    expect(meaningShown()).toBe(false);
+  });
+
+  it('요미가나·한글 뜻은 버튼과 R·M으로 하나씩 보이고 가린다', () => {
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: '한글 뜻' }));
+    expect(meaningShown()).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: '한글 뜻' }));
+    expect(meaningShown()).toBe(false);
+    press('KeyR');
+    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'false');
+    press('KeyR');
+    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'true');
+    expect(meaningShown()).toBe(false);
+  });
+
+  it('K는 단어의 한자 풀이를 차례로 열고, 풀이가 없는 한자도 알린다. Esc로 닫는다', async () => {
+    renderCard();
+    press('KeyK');
+    expect(await screen.findByText('배울')).toBeInTheDocument();
+    press('KeyK');
+    expect(await screen.findByText('아직 풀이가 없는 한자예요')).toBeInTheDocument();
+    press('Escape');
+    expect(screen.queryByRole('complementary', { name: '한자 풀이' })).not.toBeInTheDocument();
   });
 
   it('→ 알아요, ← 몰라요, B 북마크', () => {

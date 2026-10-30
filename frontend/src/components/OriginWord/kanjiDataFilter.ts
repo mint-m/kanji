@@ -1,5 +1,6 @@
+import type { Dispatch } from '@reduxjs/toolkit';
 import { api } from 'services/apiClient';
-import { KanjiDataType, Mean } from 'store/modules/kanji';
+import { addKanji, KanjiDataType, Mean } from 'store/modules/kanji';
 
 const fetchKanji = async (kanji: string): Promise<KanjiDataType | null> => {
   const { searchResult } = await api.get('/api/words/kanjiSearch', { params: { kanji } });
@@ -34,4 +35,16 @@ export const lookupKanji = (kanji: string): Promise<KanjiDataType | null> => {
   });
   cache.set(kanji, request);
   return request;
+};
+
+// 한자를 눌렀을 때와 K 단축키가 함께 쓴다. 풀이가 없어도 패널에 알린다 — 예전에는 글자 모양만 바뀌어 고장 난 것처럼 보였다(蕎)
+// 조회는 순서대로 패널에 넣는다 — 연달아 누르면 먼저 끝난 조회가 앞에 오던 것을 막는다
+let showQueue: Promise<void> = Promise.resolve();
+export const showKanji = (kanji: string, dispatch: Dispatch): Promise<void> => {
+  const lookup = lookupKanji(kanji);
+  showQueue = showQueue.then(async () => {
+    const data = await lookup;
+    dispatch(addKanji(data ?? { kanji, level: '', koreanPron: '', means: [], missing: true }));
+  });
+  return showQueue;
 };

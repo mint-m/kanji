@@ -153,6 +153,7 @@ const BookmarkStudyPage: FC = () => {
       <StudyCard
         key={`${round}-${index}`}
         word={current}
+        next={roundWords[index + 1]}
         onAnswer={handleAnswer}
         isBookmarked={bookmarkedIds.has(current._id)}
         onBookmark={handleBookmark}

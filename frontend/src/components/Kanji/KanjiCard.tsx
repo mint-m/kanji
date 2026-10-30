@@ -8,7 +8,11 @@ interface KanjiCardProps {
   onRead?: string;
   kunRead?: string;
   koreanPron: string;
+  missing?: boolean;
 }
+
+// 좁은 화면의 시트에서는 처음부터 음독·훈독까지 펼쳐 보인다
+const opensExpanded = () => window.matchMedia?.('(max-width: 1099px)').matches ?? false;
 
 const processReadings = (reading: string | undefined): string[] => {
   if (!reading) return [];
@@ -25,8 +29,8 @@ const parseKoreanPron = (koreanPron: string): { mean: string; sound: string }[] 
   });
 };
 
-const KanjiCard: FC<KanjiCardProps> = ({ kanji, koreanPron, onRead, kunRead, level }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const KanjiCard: FC<KanjiCardProps> = ({ kanji, koreanPron, onRead, kunRead, level, missing }) => {
+  const [isExpanded, setIsExpanded] = useState(opensExpanded);
   const toggle = () => setIsExpanded((prev) => !prev);
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -66,7 +70,9 @@ const KanjiCard: FC<KanjiCardProps> = ({ kanji, koreanPron, onRead, kunRead, lev
         <div className={styles.kanjiRow}>
           <div className={styles.kanjiGlyph} lang="ja">{kanji}</div>
           <div className={styles.pronWrapper}>
-            {pronItems.map((item, i) => (
+            {missing ? (
+              <p className={styles.missing}>아직 풀이가 없는 한자예요</p>
+            ) : pronItems.map((item, i) => (
               <div key={i} className={styles.pronEntry}>
                 {item.mean && <span className={styles.pronMean}>{item.mean}</span>}
                 <span className={styles.pronSound}>{item.sound}</span>

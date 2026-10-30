@@ -23,6 +23,11 @@ export const cardCollapsed = style({
 
 export const cardExpanded = style({
   maxHeight: '400px',
+
+  // 좁은 화면의 시트는 음독·훈독을 자르지 않고 한 번에 다 보인다 — 시트 자체가 스크롤한다
+  '@media': {
+    'screen and (max-width: 1099px)': { maxHeight: 'none' },
+  },
 });
 
 export const cardClickable = style({
@@ -65,14 +70,23 @@ export const cardBody = style({
   flexDirection: 'column',
 });
 
+// 한자와 훈음 목록을 세로 가운데로 맞춘다
 export const kanjiRow = style({
   display: 'flex',
+  alignItems: 'center',
   margin: '8px 0 12px',
 });
 
 export const kanjiGlyph = style({
   fontSize: vars.fontSize.kanji,
+  lineHeight: 1,
   marginRight: vars.space.md,
+});
+
+export const missing = style({
+  margin: 0,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
 });
 
 export const pronWrapper = style({
@@ -113,6 +127,10 @@ export const readingsScroll = style({
   gap: vars.space.md,
   maxHeight: '130px',
   overflowY: 'auto',
+
+  '@media': {
+    'screen and (max-width: 1099px)': { maxHeight: 'none', overflowY: 'visible' },
+  },
 
   selectors: {
     '&::-webkit-scrollbar': { width: '6px' },
