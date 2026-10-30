@@ -45,6 +45,9 @@ test.describe('로그인 페이지', () => {
 
     await page.goto('/study');
     await expect(page).toHaveURL(/\/login/);
+    // 토큰 없는 사용자 정보로 로그인 상태를 되살리면 /login이 곧바로 홈으로 돌려보낸다 — 로그인 화면이 남아 있는지까지 본다
+    await expect(page.getByRole('button', { name: /카카오/ })).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test('만료된 토큰이면 /login으로 리다이렉트', async ({ page }) => {

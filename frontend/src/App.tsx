@@ -8,7 +8,7 @@ import ProtectedRoute from './ProtectedRoute';
 import ErrorBoundary from 'components/ErrorBoundary';
 import { setUser } from 'store/modules/user';
 import { AuthBannerProvider } from 'contexts/AuthBannerContext';
-import { loginWithGoogleIdToken, toUserState, getUserLocally } from 'services/authService';
+import { loginWithGoogleIdToken, toUserState, getUserLocally, getTokenLocally } from 'services/authService';
 import KakaoOAuthCallback from 'components/auth/KakaoOAuthCallback';
 import type { RootState } from 'store';
 
@@ -32,7 +32,8 @@ const AppContent = () => {
 
   useEffect(() => {
     const storedUser = getUserLocally();
-    if (storedUser) {
+    // 토큰 없이 남은 사용자 정보로는 로그인 상태를 되살리지 않는다 — 되살리면 /login이 홈으로 돌려보내고 홈은 토큰 없는 요청만 보낸다
+    if (storedUser && getTokenLocally()) {
       dispatch(setUser(toUserState(storedUser)));
     }
   }, [dispatch]);
