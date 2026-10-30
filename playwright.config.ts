@@ -15,7 +15,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Google 로그인 스크립트(GSI)를 막는다 — CI에는 .env가 없어 client_id가 비고, GSI는 그때 initCodeClient에서
+        // 예외를 던져 로그인 전 화면이 오류 화면이 된다. 스크립트가 늦게 오면 통과해서 실패가 들쭉날쭉했다
+        launchOptions: { args: ['--host-resolver-rules=MAP accounts.google.com ~NOTFOUND'] },
+      },
     },
   ],
   webServer: {
