@@ -35,15 +35,20 @@ describe('BookmarkStudyPage', () => {
     renderPage();
 
     expect(await screen.findByText('1회차')).toBeInTheDocument();
-    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    expect(screen.getByText('0 / 2')).toBeInTheDocument();
+    expect(screen.getByText('남음 2')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '몰라요' }));
+    // 몰랐던 카드는 연한 칸으로 남고, 안 단어 수는 그대로
+    expect(screen.getByText('0 / 2')).toBeInTheDocument();
+    expect(screen.getByText('남음 1')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '이번 회차에서 안 단어' })).toHaveAttribute('aria-valuetext', '0 / 2, 남음 1');
     fireEvent.click(screen.getByRole('button', { name: '알아요' }));
 
     expect(screen.getByText('1회차 완료')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '몰랐던 1개 다시' }));
 
     expect(screen.getByText('2회차')).toBeInTheDocument();
-    expect(screen.getByText('1 / 1')).toBeInTheDocument();
+    expect(screen.getByText('0 / 1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '알아요' }));
 
     expect(screen.getByText('북마크 단어를 모두 알았어요 🎉')).toBeInTheDocument();

@@ -44,16 +44,16 @@ describe('ReviewPage', () => {
 
     expect(await screen.findByText('1일 간격 복습')).toBeInTheDocument();
     expect(showing('水')).toBeInTheDocument();
-    expect(screen.getByText('남은 2')).toBeInTheDocument();
+    expect(screen.getByText('0 / 2')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '알아요' }));
     expect(showing('本')).toBeInTheDocument();
     expect(screen.getByText('3일 간격 복습')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '몰라요' }));
-    // 남은 단어가 本 하나뿐이라 바로 다시 나온다
+    // 남은 단어가 本 하나뿐이라 바로 다시 나온다 — 끝낸 수는 그대로
     expect(showing('本')).toBeInTheDocument();
-    expect(screen.getByText('남은 1')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '알아요' }));
     expect(await screen.findByText('복습을 마쳤어요 🎉')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('ReviewPage', () => {
     (reviewService.answer as jest.Mock).mockRejectedValue(new Error('network'));
     renderPage();
 
-    await screen.findByText('남은 2');
+    await screen.findByText('0 / 2');
     fireEvent.click(screen.getByRole('button', { name: '알아요' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('일부 응답을 저장하지 못했어요');
     expect(showing('本')).toBeInTheDocument();

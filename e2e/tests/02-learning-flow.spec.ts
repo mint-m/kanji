@@ -105,6 +105,8 @@ test.describe('키보드로 학습', () => {
     await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
 
     await expect(page.getByText('뜻0')).toBeHidden();
+    // 진행은 막대 하나와 '익힘 / 전체 · 남음 n' 하나
+    await expect(page.getByRole('progressbar', { name: '이 범위에서 익힌 단어' })).toHaveAttribute('aria-valuetext', '0 / 3, 남음 3');
     await page.keyboard.press('Space');
     await expect(page.getByText('てすと0')).toBeVisible();
     await expect(page.getByText('뜻0')).toBeHidden();
@@ -116,6 +118,7 @@ test.describe('키보드로 학습', () => {
     await page.keyboard.press('Space');
     await expect(page.getByText('뜻1')).toBeVisible();
     await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('progressbar', { name: '이 범위에서 익힌 단어' })).toHaveAttribute('aria-valuetext', '1 / 3, 남음 1');
 
     await expect.poll(() => answers).toEqual([true, false]);
   });

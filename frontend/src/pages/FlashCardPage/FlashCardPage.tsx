@@ -116,6 +116,7 @@ const FlashCardPage: FC = () => {
   }, [isLoading]);
 
   const isSub = progressType === 'sub';
+  const remaining = deck ? Math.max(deck.length - liveIndex, 0) : undefined;
 
   return (
     <div className={styles.page}>
@@ -123,12 +124,13 @@ const FlashCardPage: FC = () => {
         title={level ? levelName(level) : isSub ? '집중 학습' : '진도 학습'}
         exit={{ to: '/', label: '홈' }}
         subtitle={steps ? `${isSub ? '집중 학습' : '진도 학습'} · ${formatSteps(steps, progressType)}` : undefined}
-        counter={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         progress={windowProgress ? {
           value: windowProgress.known,
           max: windowProgress.total,
           label: isSub ? '이 스텝에서 익힌 단어' : '이 범위에서 익힌 단어',
-          caption: `익힘 ${windowProgress.known} / ${windowProgress.total}`,
+          remaining,
+          // 이번 회차에 몰라요로 넘긴 카드 = 전체 − 익힘 − 이번 회차에 남은 카드
+          passed: remaining === undefined ? undefined : Math.max(windowProgress.total - windowProgress.known - remaining, 0),
         } : undefined}
       />
       {error && <div className="error-box" role="alert" style={{ margin: '0 0 16px' }}>{error}</div>}

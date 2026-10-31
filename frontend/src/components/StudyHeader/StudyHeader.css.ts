@@ -42,14 +42,6 @@ export const subtitle = style({
   color: vars.color.textMuted,
 });
 
-export const counter = style({
-  marginLeft: 'auto',
-  fontSize: vars.fontSize.sm,
-  fontWeight: 600,
-  color: vars.color.textMuted,
-  fontVariantNumeric: 'tabular-nums',
-});
-
 export const progressRow = style({
   display: 'grid',
   gridTemplateColumns: '1fr auto',
@@ -58,8 +50,14 @@ export const progressRow = style({
 });
 
 export const caption = style({
+  display: 'inline-flex',
+  gap: vars.space.sm,
   fontSize: vars.fontSize.xs,
   fontWeight: 600,
   color: vars.color.textMuted,
   fontVariantNumeric: 'tabular-nums',
+});
+
+export const remaining = style({
+  fontWeight: 400,
 });

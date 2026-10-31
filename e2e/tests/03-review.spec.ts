@@ -36,8 +36,8 @@ test.describe('오늘의 복습', () => {
     await page.getByRole('button', { name: '알아요' }).click();
     await expect(page.getByText('7일 간격 복습')).toBeVisible();
     await page.getByRole('button', { name: '몰라요' }).click();
-    // 하나 남은 단어가 다시 나온다
-    await expect(page.getByText('남은 1')).toBeVisible();
+    // 하나 남은 단어가 다시 나온다 — 끝낸 수는 그대로
+    await expect(page.getByText('1 / 2')).toBeVisible();
     await page.keyboard.press('ArrowRight');
 
     await expect(page.getByText('복습을 마쳤어요 🎉')).toBeVisible();

@@ -146,8 +146,13 @@ const BookmarkStudyPage: FC = () => {
         title="북마크 학습"
         exit={{ to: '/bookmarks', label: '북마크' }}
         subtitle={`${round}회차`}
-        counter={`${index + 1} / ${roundWords.length}`}
-        progress={{ value: index, max: roundWords.length, label: '이번 회차 진행', caption: `몰랐음 ${unknown.length}` }}
+        progress={{
+          value: index - unknown.length,
+          passed: unknown.length,
+          remaining: roundWords.length - index,
+          max: roundWords.length,
+          label: '이번 회차에서 안 단어',
+        }}
       />
       {bookmarkWarning && <div className={styles.bookmarkWarningBanner} role="status">🔖 {bookmarkWarning}</div>}
       <StudyCard

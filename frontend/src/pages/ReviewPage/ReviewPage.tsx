@@ -160,8 +160,7 @@ const ReviewPage: FC = () => {
         title="오늘의 복습"
         exit={EXIT}
         subtitle={stageLabel(current.stage)}
-        counter={`남은 ${queue.length}`}
-        progress={{ value: total - queue.length, max: total, label: '이번 복습 진행', caption: `${total - queue.length} / ${total}` }}
+        progress={{ value: total - queue.length, max: total, label: '이번 복습에서 끝낸 단어' }}
       />
       {saveFailed && (
         <p className={styles.notice} role="alert">일부 응답을 저장하지 못했어요. 그 단어는 다음 복습에 다시 나와요.</p>
