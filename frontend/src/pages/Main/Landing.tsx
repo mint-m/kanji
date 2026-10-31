@@ -2,7 +2,6 @@ import { FC } from 'react';
 import { Link } from 'react-router-dom';
 import GoogleLoginButton from 'components/LoginButton/GoogleLoginButton';
 import KakaoLoginButton from 'components/LoginButton/KakaoLoginButton';
-import { vars } from 'styles/vars.css';
 import * as layout from 'styles/layout.css';
 import * as styles from './Landing.css';
 
@@ -33,8 +32,8 @@ const Landing: FC<{ error?: string }> = ({ error }) => (
         <span className={styles.demoWord} lang="ja">学生</span>
         <span className={styles.demoMean}>학생</span>
         <div className={styles.demoAnswers} aria-hidden="true">
-          <span className={styles.demoAnswer} style={{ color: vars.color.unknown, backgroundColor: vars.color.unknownBg }}>몰라요</span>
-          <span className={styles.demoAnswer} style={{ color: vars.color.know, backgroundColor: vars.color.knowBg }}>알아요</span>
+          <span className={styles.demoUnknown}>몰라요</span>
+          <span className={styles.demoKnow}>알아요</span>
         </div>
       </div>
     </section>

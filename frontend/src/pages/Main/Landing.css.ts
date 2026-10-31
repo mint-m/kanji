@@ -87,12 +87,19 @@ export const demoAnswers = style({
   marginTop: vars.space.lg,
 });
 
-export const demoAnswer = style({
+// 학습 카드의 응답 버튼과 같은 모양 — 바탕은 다른 버튼과 같고 색은 글자에만 쓴다
+const demoAnswer = style({
   padding: vars.space.sm,
   borderRadius: vars.radius.md,
   textAlign: 'center',
-  fontWeight: 700,
+  fontWeight: 600,
+  backgroundColor: vars.color.bg,
+  boxShadow: vars.shadow.outer,
 });
+
+export const demoUnknown = style([demoAnswer, { color: vars.color.unknown }]);
+
+export const demoKnow = style([demoAnswer, { color: vars.color.know }]);
 
 export const features = style({
   display: 'grid',
