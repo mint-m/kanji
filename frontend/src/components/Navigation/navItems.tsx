@@ -15,6 +15,9 @@ const Icon = ({ children }: { children: ReactNode }) => (
   </svg>
 );
 
+// 카드를 넘기는 학습 화면 — 상단 메뉴와 하단 탭바를 숨겨 카드에 집중하게 한다. 나가는 길은 학습 머리글(StudyHeader)에 있다
+export const FOCUS_ROUTES = ['/study', '/review', '/bookmarks/study'];
+
 export const NAV_ITEMS: NavItem[] = [
   {
     to: '/',

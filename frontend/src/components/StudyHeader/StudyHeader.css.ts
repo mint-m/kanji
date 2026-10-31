@@ -9,6 +9,21 @@ export const header = style({
   marginBottom: vars.space.md,
 });
 
+// 나가기 — 글자는 제목 왼쪽 끝에 맞춘다
+export const exit = style({
+  alignSelf: 'flex-start',
+  marginLeft: `calc(-1 * ${vars.space.sm})`,
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  borderRadius: vars.radius.md,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+  textDecoration: 'none',
+
+  selectors: {
+    '&:hover': { backgroundColor: vars.color.surfaceHover, color: vars.color.textDark },
+  },
+});
+
 export const titleRow = style({
   display: 'flex',
   alignItems: 'baseline',

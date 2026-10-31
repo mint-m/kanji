@@ -330,7 +330,7 @@ test.describe('완료 화면 재진입', () => {
 
     await expect(page.getByText(/이 스텝을 모두 익혔어요/)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: '다시 학습하기' })).toBeVisible();
-    // 상단 로고 링크(aria-label 'kanji 홈으로')와 구분하도록 버튼 텍스트로 찾는다
+    // 머리글의 '← 홈' 링크와 구분하도록 버튼 텍스트로 찾는다
     await expect(page.getByRole('button').getByText('홈으로', { exact: true })).toBeVisible();
   });
 });
@@ -438,5 +438,28 @@ test.describe('레벨 끝', () => {
     await expect(page.getByText(/이 설정으로 바뀌어요/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: '학습 시작' })).toBeEnabled();
     expect(completeCount).toBe(1);
+  });
+});
+
+test.describe('학습 화면 집중', () => {
+  test.beforeEach(async ({ page }) => {
+    await injectMockAuth(page);
+  });
+
+  test('학습 중에는 상단 메뉴를 숨기고, 머리글의 ← 홈으로 나간다', async ({ page }) => {
+    await page.route('**/api/users/me/progress/main/current', (route) => {
+      route.fulfill({ json: makeDeck(['word0', 'word1']) });
+    });
+    await page.route('**/api/users/me/progress', (route) => {
+      route.fulfill({ json: { success: true, data: { sessions: [], totalSessions: 0 } } });
+    });
+
+    await page.goto('/study');
+    await expect(page.getByRole('button', { name: '알아요' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('navigation', { name: '주 메뉴' })).toHaveCount(0);
+
+    await page.getByRole('link', { name: '← 홈' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('navigation', { name: '주 메뉴' })).toBeVisible();
   });
 });

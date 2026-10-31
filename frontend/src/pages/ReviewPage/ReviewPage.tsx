@@ -9,6 +9,8 @@ import { ReviewWord } from 'services/types';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
 import * as styles from './ReviewPage.css';
 
+const EXIT = { to: '/', label: '홈' };
+
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' });
 
@@ -84,12 +86,18 @@ const ReviewPage: FC = () => {
   });
 
   if (status === 'loading') {
-    return <div className={styles.page}><p className="loading-text">복습할 단어를 불러오는 중...</p></div>;
+    return (
+      <div className={styles.page}>
+        <StudyHeader title="오늘의 복습" exit={EXIT} />
+        <p className="loading-text">복습할 단어를 불러오는 중...</p>
+      </div>
+    );
   }
 
   if (status === 'error') {
     return (
       <div className={styles.page}>
+        <StudyHeader title="오늘의 복습" exit={EXIT} />
         <div className={styles.panel}>
           <p className={styles.desc}>{error}</p>
           <DefaultButton variant="primary" onClick={load}>다시 시도</DefaultButton>
@@ -101,7 +109,7 @@ const ReviewPage: FC = () => {
   if (total === 0) {
     return (
       <div className={styles.page}>
-        <StudyHeader title="오늘의 복습" />
+        <StudyHeader title="오늘의 복습" exit={EXIT} />
         <div className={styles.panel}>
           <h2 className={styles.title}>지금 복습할 단어가 없어요</h2>
           <p className={styles.desc}>
@@ -121,7 +129,7 @@ const ReviewPage: FC = () => {
     const remaining = dueCount - total;
     return (
       <div className={styles.page}>
-        <StudyHeader title="오늘의 복습" />
+        <StudyHeader title="오늘의 복습" exit={EXIT} />
         <div className={styles.panel}>
           <h2 className={styles.title}>복습을 마쳤어요 🎉</h2>
           <div className={styles.stats}>
@@ -150,6 +158,7 @@ const ReviewPage: FC = () => {
     <div className={styles.page}>
       <StudyHeader
         title="오늘의 복습"
+        exit={EXIT}
         subtitle={stageLabel(current.stage)}
         counter={`남은 ${queue.length}`}
         progress={{ value: total - queue.length, max: total, label: '이번 복습 진행', caption: `${total - queue.length} / ${total}` }}

@@ -1,11 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from 'store';
-import { NAV_ITEMS, isNavActive } from './navItems';
+import { FOCUS_ROUTES, NAV_ITEMS, isNavActive } from './navItems';
 import * as styles from './TabBar.css';
-
-// 카드를 넘기는 학습 화면에서는 탭바를 숨겨 카드와 응답 버튼에 공간을 준다
-const FOCUS_ROUTES = ['/study', '/review', '/bookmarks/study'];
 
 const TabBar = () => {
   const { pathname } = useLocation();

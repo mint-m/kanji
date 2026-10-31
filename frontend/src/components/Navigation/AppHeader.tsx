@@ -2,12 +2,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from 'store';
 import UserMenu from './UserMenu';
-import { NAV_ITEMS, isNavActive } from './navItems';
+import { FOCUS_ROUTES, NAV_ITEMS, isNavActive } from './navItems';
 import * as styles from './AppHeader.css';
 
 const AppHeader = () => {
   const { pathname } = useLocation();
   const isLoggedIn = useSelector((state: RootState) => state.user.isLoggedIn);
+
+  if (isLoggedIn && FOCUS_ROUTES.includes(pathname)) return null;
 
   return (
     <header className={styles.header}>

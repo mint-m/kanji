@@ -121,6 +121,7 @@ const FlashCardPage: FC = () => {
     <div className={styles.page}>
       <StudyHeader
         title={level ? levelName(level) : isSub ? '집중 학습' : '진도 학습'}
+        exit={{ to: '/', label: '홈' }}
         subtitle={steps ? `${isSub ? '집중 학습' : '진도 학습'} · ${formatSteps(steps, progressType)}` : undefined}
         counter={deck ? `${Math.min(liveIndex + 1, deck.length)} / ${deck.length}` : undefined}
         progress={windowProgress ? {
