@@ -165,14 +165,14 @@ const headerBtn = {
   whiteSpace: 'nowrap',
 } as const;
 
-/* ── 하루 목표 ── */
-export const goalOptions = style({
+/* ── 학습 설정(하루 목표, 카드 공개 순서) ── */
+export const choices = style({
   display: 'flex',
   flexWrap: 'wrap',
   gap: vars.space.sm,
 });
 
-export const goalOption = style({
+export const choice = style({
   minWidth: '64px',
   padding: `${vars.space.sm} ${vars.space.md}`,
   border: 'none',
@@ -186,13 +186,14 @@ export const goalOption = style({
   cursor: 'pointer',
 
   selectors: {
-    '&:hover:not(:disabled)': { boxShadow: HOVER, color: vars.color.textDark },
+    // 고른 것 위에 마우스를 올려도 고른 모양을 지킨다 — hover 규칙이 더 구체적이라 덮어썼다
+    '&:hover:not(:disabled):not([aria-checked="true"])': { boxShadow: HOVER, color: vars.color.textDark },
     '&[aria-checked="true"]': { boxShadow: PRESSED, color: vars.color.primary },
     '&:disabled': { cursor: 'wait' },
   },
 });
 
-export const goalHint = style({
+export const settingHint = style({
   margin: `${vars.space.md} 0 0`,
   fontSize: vars.fontSize.sm,
   color: vars.color.textMuted,

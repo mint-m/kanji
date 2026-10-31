@@ -9,6 +9,7 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { reset as resetKanji } from 'store/modules/kanji';
 import { canSpeak, speakJapanese } from 'utils/speech';
 import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
+import { useRevealFirst } from 'hooks/useRevealFirst';
 import * as styles from './StudyCard.css';
 
 export interface StudyWord {
@@ -41,6 +42,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
   const [showReading, setShowReading] = useState(false);
   const [showMeaning, setShowMeaning] = useState(false);
   const kanjiCursor = useRef(0);
+  const revealFirst = useRevealFirst();
   const speakable = canSpeak();
   const { written, others } = displaySpelling(word);
   // 가나로만 쓰는 단어는 읽기가 본문과 같다
@@ -60,13 +62,21 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
     document.fonts?.load(`1em 'Noto Sans JP'`, `${next.pron ?? ''}${next.entry}`).catch(() => {});
   }, [next]);
 
-  const allShown = showMeaning && (showReading || !hasReading);
+  const readingDone = showReading || !hasReading;
+  const allShown = showMeaning && readingDone;
 
-  // 읽기·뜻이 다 보이면 둘 다 가리고, 하나라도 가려져 있으면 둘 다 보인다
-  const toggleAll = useCallback(() => {
-    setShowReading(!allShown);
-    setShowMeaning(!allShown);
-  }, [allShown]);
+  // 누를 때마다 정한 순서(요미가나 → 뜻 / 뜻 → 요미가나)로 하나씩 보이고, 다 보이면 둘 다 가린다.
+  // R·M으로 하나를 먼저 열었으면 남은 것을 보인다
+  const revealNext = useCallback(() => {
+    if (allShown) {
+      setShowReading(false);
+      setShowMeaning(false);
+    } else if (!readingDone && (revealFirst === 'reading' || showMeaning)) {
+      setShowReading(true);
+    } else {
+      setShowMeaning(true);
+    }
+  }, [allShown, readingDone, revealFirst, showMeaning]);
 
   const speak = useCallback(() => speakJapanese(word.entry), [word.entry]);
 
@@ -85,7 +95,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
         case 'ArrowRight': onAnswer(true); break;
         case 'ArrowLeft': onAnswer(false); break;
         case 'Space':
-        case 'Enter': toggleAll(); break;
+        case 'Enter': revealNext(); break;
         case 'KeyR': if (hasReading) setShowReading((shown) => !shown); break;
         case 'KeyM': setShowMeaning((shown) => !shown); break;
         case 'KeyS': if (speakable) speak(); break;
@@ -98,7 +108,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onAnswer, onBookmark, toggleAll, hasReading, speak, speakable, openNextKanji, dispatch]);
+  }, [onAnswer, onBookmark, revealNext, hasReading, speak, speakable, openNextKanji, dispatch]);
 
   const stop = (action: () => void) => (event: MouseEvent) => {
     event.stopPropagation();
@@ -106,11 +116,12 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
   };
 
   const revealed = showReading || showMeaning;
+  const order = revealFirst === 'meaning' ? '뜻 → 요미가나' : '요미가나 → 뜻';
 
   return (
     <div className={styles.wrapper}>
       <Kanji />
-      <div className={styles.card} onClick={toggleAll} role="group" aria-label="단어 카드 — 누르면 읽기와 뜻을 보이거나 가려요">
+      <div className={styles.card} onClick={revealNext} role="group" aria-label="단어 카드 — 누를 때마다 요미가나와 뜻을 하나씩 보이고, 다 보이면 가려요">
         <div className={styles.tools}>
           {speakable && (
             <button type="button" className={styles.toolBtn} onClick={stop(speak)} aria-label="발음 듣기" aria-keyshortcuts="S">
@@ -156,7 +167,9 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
           )}
         </div>
 
-        {!revealed && <p className={styles.tapHint}>카드를 누르면 읽기와 뜻이 보여요</p>}
+        {!revealed && (
+          <p className={styles.tapHint}>{hasReading ? `카드를 누를 때마다 ${order} 순서로 보여요` : '카드를 누르면 뜻이 보여요'}</p>
+        )}
       </div>
 
       <div className={styles.controls}>
@@ -189,7 +202,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
           </DefaultButton>
         </div>
         <p className={styles.shortcutHint} aria-hidden="true">
-          Space 공개·가리기 · ← 몰라요 · → 알아요 · R 요미가나 · M 뜻 · K 한자 풀이{speakable && ' · S 발음'}{onBookmark && ' · B 북마크'}
+          Space 하나씩 공개 · ← 몰라요 · → 알아요 · R 요미가나 · M 뜻 · K 한자 풀이{speakable && ' · S 발음'}{onBookmark && ' · B 북마크'}
         </p>
       </div>
     </div>

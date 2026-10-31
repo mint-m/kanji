@@ -9,6 +9,8 @@ jest.mock('../services/bookmarkService', () => ({
   __esModule: true,
   default: { getBookmarks: jest.fn(), toggleBookmark: jest.fn() },
 }));
+// 카드 공개 순서 설정을 서버에 묻지 않는다
+jest.mock('../hooks/useRevealFirst', () => ({ useRevealFirst: () => 'reading' }));
 
 const bookmark = (id: string, pron: string, entry: string) => ({
   _id: `b-${id}`, user_id: 'u', word_id: id, progress_type: 'main', is_bookmarked: true, bookmarked_at: '',

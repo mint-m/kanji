@@ -217,10 +217,44 @@ describe('updatePreferences', () => {
   });
 
   it('성공 → 저장된 하루 목표 반환', async () => {
-    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30 } });
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30, revealFirst: 'reading' } });
     const res = makeRes();
     await userController.updatePreferences(makeReq({ body: { dailyGoal: 30 } }), res, makeNext());
     expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { 'preferences.dailyGoal': 30 }, { new: true });
-    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30 } });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30, revealFirst: 'reading' } });
+  });
+
+  it.each(['kanji', '', 1])('먼저 보일 것 %p → 400, 저장하지 않음', async (revealFirst) => {
+    const next = makeNext();
+    await userController.updatePreferences(makeReq({ body: { revealFirst } }), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('먼저 보일 것만 보내면 그것만 바꾼다', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 50, revealFirst: 'meaning' } });
+    const res = makeRes();
+    await userController.updatePreferences(makeReq({ body: { revealFirst: 'meaning' } }), res, makeNext());
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { 'preferences.revealFirst': 'meaning' }, { new: true });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 50, revealFirst: 'meaning' } });
+  });
+});
+
+describe('getPreferences', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('하루 목표와 먼저 보일 것을 돌려준다', async () => {
+    (User.findById as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30, revealFirst: 'reading' } });
+    const res = makeRes();
+    await userController.getPreferences(makeReq(), res, makeNext());
+    expect(User.findById).toHaveBeenCalledWith('user-id-123');
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30, revealFirst: 'reading' } });
+  });
+
+  it('사용자가 없으면 404', async () => {
+    (User.findById as jest.Mock).mockResolvedValue(null);
+    const next = makeNext();
+    await userController.getPreferences(makeReq(), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(404);
   });
 });

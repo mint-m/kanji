@@ -10,6 +10,8 @@ jest.mock('../services/reviewService', () => ({
   default: { getDue: jest.fn(), answer: jest.fn() },
   REVIEW_INTERVAL_DAYS: [0, 1, 3, 7, 14, 30, 60],
 }));
+// 카드 공개 순서 설정을 서버에 묻지 않는다
+jest.mock('../hooks/useRevealFirst', () => ({ useRevealFirst: () => 'reading' }));
 
 const word = (id: string, pron: string, entry: string, mean: string, stage = 1) => ({
   _id: id, origin_entry_id: id, entry, pron, level: 'N5' as const, step: 1, means: [mean], parts: [], stage, isBookmarked: false,

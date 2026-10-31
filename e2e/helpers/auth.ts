@@ -23,4 +23,8 @@ export async function injectMockAuth(page: Page, userOverrides: Partial<typeof M
     },
     { token: MOCK_TOKEN, user: { ...MOCK_USER, ...userOverrides } },
   );
+  // 학습 카드가 공개 순서 설정을 묻는다 — 실제 서버로 가면 401로 로그아웃된다
+  await page.route('**/api/users/me/preferences', (route) => {
+    route.fulfill({ json: { success: true, data: { dailyGoal: 30, revealFirst: 'reading' } } });
+  });
 }

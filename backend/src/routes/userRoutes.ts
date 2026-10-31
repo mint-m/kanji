@@ -15,7 +15,8 @@ const router = Router();
 // 내 닉네임 변경
 router.patch('/me', authenticateUser, userController.updateUserName);
 
-// 내 학습 설정(하루 목표) 업데이트
+// 내 학습 설정(하루 목표, 카드를 누를 때 먼저 보일 것) 조회·업데이트
+router.get('/me/preferences', authenticateUser, userController.getPreferences);
 router.patch('/me/preferences', authenticateUser, userController.updatePreferences);
 
 // 내 활성 세션 타입 업데이트

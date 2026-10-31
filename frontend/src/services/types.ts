@@ -44,6 +44,14 @@ export interface SessionSummary {
 }
 
 // 학습 기록 (GET /me/stats) — 익힌 단어 = 복습에 등록된 단어, 장기 기억 = 14일 간격 이상
+// 학습 설정 — 학습 카드를 누를 때 먼저 보일 것은 요미가나(reading) 또는 뜻(meaning)
+export type RevealFirst = 'reading' | 'meaning';
+
+export interface Preferences {
+  dailyGoal: number;
+  revealFirst: RevealFirst;
+}
+
 export interface UserStats {
   learned: { total: number; longTerm: number };
   levels: { level: LearningLevel; total: number; learned: number; longTerm: number }[];

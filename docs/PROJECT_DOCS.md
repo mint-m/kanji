@@ -33,7 +33,7 @@ kanji는 일본어 능력시험(JLPT) 단어를 효율적으로 학습하기 위
 - **오늘의 복습**: 처음 "알아요"를 누른 단어를 1·3·7·14·30·60일 간격으로 다시 묻는 간격 복습(Leitner)
 - **북마크 학습**: 어려운 단어를 모아 회차 반복 (최대 150개)
 - **기록**: 익힌 단어·장기 기억(레벨별), 연속 학습일, 오늘 학습량/하루 목표
-- **학습 카드**: 응답 구분(몰라요/알아요 — 색은 글자에만), 공개·가리기 토글, 사전 표기 정리(대표 표기·송가나·쉼표 — `utils/wordDisplay`), 키보드 단축키, 발음 듣기, 한자 풀이, 범위 진행 막대
+- **학습 카드**: 응답 구분(몰라요/알아요 — 색은 글자에만), 누를 때마다 하나씩 공개(요미가나 → 뜻, 순서는 설정), 사전 표기 정리(대표 표기·송가나·쉼표 — `utils/wordDisplay`), 키보드 단축키, 발음 듣기, 한자 풀이, 범위 진행 막대
 - **daily 레벨**: 시험 무관 생활 필수 어휘 (N5~N1 외 별도)
 - **자동 체크포인트**: 단어마다 서버에 위치를 저장하고 어긋나면 409로 막는다
 
@@ -82,7 +82,7 @@ frontend/src/
 │   ├── StatsPage/         # /stats — 기록
 │   ├── BookmarkPage.tsx   # /bookmarks — 북마크 목록·메모
 │   ├── BookmarkStudyPage/ # /bookmarks/study — 북마크 학습(회차 반복)
-│   ├── UserProfilePage.tsx # /profile — 닉네임·하루 목표·계정 연동
+│   ├── UserProfilePage.tsx # /profile — 닉네임·하루 목표·카드 공개 순서·계정 연동
 │   ├── SourcesPage/       # /sources — 데이터 출처(KANJIDIC2 라이선스 표기, 로그인 불필요)
 │   └── NotFound/
 ├── services/              # 모든 API 호출 (apiClient 경유)
@@ -146,6 +146,7 @@ backend/src/
     studyReminders: boolean,     // 학습 알림 (기본: true)
     reminderTime: string,        // 알림 시간 (기본: "19:00")
     dailyGoal: number,           // 일일 목표 (1-100, 기본: 30)
+    revealFirst: "reading" | "meaning", // 학습 카드를 누를 때 먼저 보일 것 (기본: "reading" — 요미가나 → 뜻)
     theme: "light" | "dark" | "auto", // 테마 (기본: "light")
     language: "ko" | "en" | "ja", // 언어 (기본: "ko")
     soundEffects: boolean,       // 효과음 (기본: true)
@@ -382,7 +383,8 @@ backend/src/
 | 메서드 | 경로 | 용도 |
 |---|---|---|
 | PATCH | `/me` | 이름 변경 |
-| PATCH | `/me/preferences` | 하루 목표 단어 수 변경 `{ dailyGoal }` (1~100) |
+| GET | `/me/preferences` | 학습 설정 `{ dailyGoal, revealFirst }` |
+| PATCH | `/me/preferences` | 학습 설정 변경 — 보낸 것만 바꾼다 `{ dailyGoal?, revealFirst? }` (하루 목표 1~100, 먼저 보일 것 `reading`\|`meaning`, 그 외·빈 요청 400) |
 | PATCH | `/me/active-progress-type` | 활성 세션 타입 변경 (`main`\|`sub`\|`null`, 그 외 400) |
 | PATCH | `/me/checkpoint` | 세션 생성 — **같은 타입 세션이 있으면 409** (교체는 `DELETE /me/progress/:type` 후 생성) |
 | GET | `/me/stats` | 학습 기록 — 익힌 단어·장기 기억(레벨별), 복습 대기·다음 복습, 연속 학습일(어제까지 이어진 경우만), 오늘 학습량·하루 목표 (`UserStats` 타입) |
@@ -573,7 +575,7 @@ GET /health                                           # DB 연결 확인 — 200
 | `/review` | 오늘의 복습 | `GET /me/reviews/due`, `POST /me/reviews/answer` |
 | `/bookmarks`, `/bookmarks/study` | 북마크 목록·메모, 북마크 학습 | `GET /me/bookmarks`, `POST /me/bookmarks/toggle`, `PUT /me/bookmarks/:wordId` |
 | `/stats` | 기록 | `GET /me/stats` |
-| `/profile` | 닉네임, 하루 목표, 계정 연동 | `PATCH /me`, `PATCH /me/preferences`, `/api/auth/link/*` |
+| `/profile` | 닉네임, 하루 목표, 카드 공개 순서, 계정 연동 | `PATCH /me`, `GET·PATCH /me/preferences`, `/api/auth/link/*` |
 | `/sources` | 데이터 출처 — KANJIDIC2(EDRDG, CC BY-SA 4.0) 표기. 사용자 메뉴와 로그인 전 첫 화면 아래에서 연결 | 없음 |
 
 ### 진도·집중 학습
@@ -598,7 +600,7 @@ GET /health                                           # DB 연결 확인 — 200
 
 ### 키보드 단축키 (학습 카드)
 
-`Space`·`Enter` 공개·가리기 · `←` 몰라요 · `→` 알아요 · `R` 요미가나 · `M` 한글 뜻(각각 보이기·가리기) · `K` 한자 풀이(누를 때마다 다음 한자) · `Esc` 한자 풀이 닫기 · `S` 발음 · `B` 북마크 — 입력 중에는 쉬고, 버튼에 포커스가 있으면 `Space`·`Enter`는 그 버튼을 누른다. 모바일 폭·터치 기기에서는 안내를 숨긴다.
+`Space`·`Enter` 하나씩 공개(요미가나 → 뜻, 다 보이면 가리기 — 순서는 내 정보에서 바꾼다) · `←` 몰라요 · `→` 알아요 · `R` 요미가나 · `M` 한글 뜻(각각 보이기·가리기) · `K` 한자 풀이(누를 때마다 다음 한자) · `Esc` 한자 풀이 닫기 · `S` 발음 · `B` 북마크 — 입력 중에는 쉬고, 버튼에 포커스가 있으면 `Space`·`Enter`는 그 버튼을 누른다. 모바일 폭·터치 기기에서는 안내를 숨긴다.
 
 ### Redux Store 구조
 

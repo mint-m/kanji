@@ -91,7 +91,7 @@ test.describe('키보드로 학습', () => {
     await injectMockAuth(page);
   });
 
-  test('Space로 읽기·뜻 공개, →로 알아요, ←로 몰라요', async ({ page }) => {
+  test('Space로 요미가나 → 뜻 하나씩 공개, →로 알아요, ←로 몰라요', async ({ page }) => {
     const answers: boolean[] = [];
     await page.route('**/api/users/me/progress/main/current', (route) => {
       route.fulfill({ json: makeDeck(['word0', 'word1', 'word2']) });
@@ -106,10 +106,13 @@ test.describe('키보드로 학습', () => {
 
     await expect(page.getByText('뜻0')).toBeHidden();
     await page.keyboard.press('Space');
-    await expect(page.getByText('뜻0')).toBeVisible();
     await expect(page.getByText('てすと0')).toBeVisible();
+    await expect(page.getByText('뜻0')).toBeHidden();
+    await page.keyboard.press('Space');
+    await expect(page.getByText('뜻0')).toBeVisible();
 
     await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Space');
     await page.keyboard.press('Space');
     await expect(page.getByText('뜻1')).toBeVisible();
     await page.keyboard.press('ArrowLeft');

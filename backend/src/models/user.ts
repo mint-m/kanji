@@ -43,6 +43,8 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       studyReminders: { type: Boolean, default: true },
       reminderTime: { type: String, default: '19:00' },
       dailyGoal: { type: Number, default: 30, min: 1, max: 100 },
+      // 학습 카드를 누를 때 먼저 보일 것 — 요미가나 → 뜻 / 뜻 → 요미가나
+      revealFirst: { type: String, enum: ['reading', 'meaning'], default: 'reading' },
       theme: { type: String, enum: ['light', 'dark', 'auto'], default: 'light' },
       language: { type: String, enum: ['ko', 'en', 'ja'], default: 'ko' },
       soundEffects: { type: Boolean, default: true },

@@ -5,6 +5,8 @@ import { api } from '../services/apiClient';
 import StudyCard from '../components/StudyCard';
 
 jest.mock('../services/apiClient', () => ({ api: { get: jest.fn() } }));
+let mockRevealFirst: 'reading' | 'meaning' = 'reading';
+jest.mock('../hooks/useRevealFirst', () => ({ useRevealFirst: () => mockRevealFirst }));
 
 // 学은 사전에 있고 生은 없다 (CRA는 테스트마다 mock 구현을 지우므로 beforeEach에서 정한다)
 const mockKanjiSearch = () => (api.get as jest.Mock).mockImplementation((_url: string, { params }: { params: { kanji: string } }) => Promise.resolve(
@@ -30,28 +32,47 @@ const press = (code: string, target: Element | Window = window) => fireEvent.key
 
 // 숨긴 뜻 목록은 aria-hidden이라 역할 조회에서 빠진다
 const meaningShown = () => screen.queryAllByRole('listitem').length > 0;
+const readingShown = () => screen.getByText('がくせい').getAttribute('aria-hidden') === 'false';
 
 describe('StudyCard', () => {
-  beforeEach(mockKanjiSearch);
-
-  it('처음에는 읽기·뜻을 숨기고, Space로 둘 다 공개했다가 다시 가린다', () => {
-    renderCard();
-    expect(meaningShown()).toBe(false);
-    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'true');
-    press('Space');
-    expect(meaningShown()).toBe(true);
-    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'false');
-    press('Space');
-    expect(meaningShown()).toBe(false);
-    expect(screen.getByText('がくせい')).toHaveAttribute('aria-hidden', 'true');
+  beforeEach(() => {
+    mockKanjiSearch();
+    mockRevealFirst = 'reading';
   });
 
-  it('카드를 누르면 공개하고, 다시 누르면 가린다', () => {
+  it('Space를 누를 때마다 요미가나 → 뜻 순서로 하나씩 보이고, 다 보이면 둘 다 가린다', () => {
     renderCard();
+    expect(readingShown()).toBe(false);
+    expect(meaningShown()).toBe(false);
+    press('Space');
+    expect(readingShown()).toBe(true);
+    expect(meaningShown()).toBe(false);
+    press('Space');
+    expect(meaningShown()).toBe(true);
+    press('Space');
+    expect(readingShown()).toBe(false);
+    expect(meaningShown()).toBe(false);
+  });
+
+  it('카드를 눌러도 하나씩 보인다 — 먼저 보일 것을 뜻으로 정하면 뜻 → 요미가나', () => {
+    mockRevealFirst = 'meaning';
+    renderCard();
+    expect(screen.getByText('카드를 누를 때마다 뜻 → 요미가나 순서로 보여요')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('group'));
     expect(meaningShown()).toBe(true);
+    expect(readingShown()).toBe(false);
+    fireEvent.click(screen.getByRole('group'));
+    expect(readingShown()).toBe(true);
     fireEvent.click(screen.getByRole('group'));
     expect(meaningShown()).toBe(false);
+  });
+
+  it('M으로 뜻을 먼저 열었으면 Space는 남은 요미가나를 보인다', () => {
+    renderCard();
+    press('KeyM');
+    press('Space');
+    expect(readingShown()).toBe(true);
+    expect(meaningShown()).toBe(true);
   });
 
   it('요미가나·한글 뜻은 버튼과 R·M으로 하나씩 보이고 가린다', () => {
@@ -113,9 +134,13 @@ describe('StudyCard', () => {
     expect(screen.getByText('締切・〆切').closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'false');
   });
 
-  it('가나로만 쓰는 단어는 요미가나 버튼을 끈다', () => {
+  it('가나로만 쓰는 단어는 요미가나 버튼을 끄고, 누르면 뜻만 보였다가 가린다', () => {
     renderCard({ word: { _id: 'w2', entry: 'ありがとう', pron: '', means: ['고마워'] } });
     expect(screen.getByRole('button', { name: '요미가나' })).toBeDisabled();
+    press('Space');
+    expect(meaningShown()).toBe(true);
+    press('Space');
+    expect(meaningShown()).toBe(false);
   });
 
   it('한자 글자는 누를 수 있는 버튼이다 (풀이는 누를 때만 조회)', () => {

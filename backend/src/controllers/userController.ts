@@ -3,6 +3,7 @@ import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import { NotFoundError, BadRequestError, InternalServerError, InvalidStepRangeError, ConflictError } from '../utils/errors';
 import { ProgressType, LearningLevel, LEARNING_LEVELS } from '../types/common';
+import { UserPreferences } from '../interfaces/user';
 
 // 닉네임(이름) 업데이트
 export const updateUserName = async (req: Request, res: Response, next: NextFunction) => {
@@ -31,22 +32,54 @@ export const updateUserName = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// 학습 설정 — 하루 목표 단어 수
+// 학습 설정 — 하루 목표 단어 수, 학습 카드를 누를 때 먼저 보일 것
+const toPreferences = (user: { preferences: UserPreferences }) => ({
+  dailyGoal: user.preferences.dailyGoal,
+  revealFirst: user.preferences.revealFirst,
+});
+
+export const getPreferences = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+    res.json({ success: true, data: toPreferences(user) });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    next(new InternalServerError('Failed to get preferences'));
+  }
+};
+
+// 보낸 설정만 바꾼다
 export const updatePreferences = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!._id;
-    const { dailyGoal } = req.body;
+    const { dailyGoal, revealFirst } = req.body;
+    const changes: Record<string, unknown> = {};
 
-    if (!Number.isInteger(dailyGoal) || dailyGoal < 1 || dailyGoal > 100) {
-      return next(new BadRequestError('하루 목표는 1~100 사이의 정수로 입력해주세요'));
+    if (dailyGoal !== undefined) {
+      if (!Number.isInteger(dailyGoal) || dailyGoal < 1 || dailyGoal > 100) {
+        return next(new BadRequestError('하루 목표는 1~100 사이의 정수로 입력해주세요'));
+      }
+      changes['preferences.dailyGoal'] = dailyGoal;
+    }
+    if (revealFirst !== undefined) {
+      if (revealFirst !== 'reading' && revealFirst !== 'meaning') {
+        return next(new BadRequestError("먼저 보일 것은 'reading' 또는 'meaning'이어야 합니다"));
+      }
+      changes['preferences.revealFirst'] = revealFirst;
+    }
+    if (Object.keys(changes).length === 0) {
+      return next(new BadRequestError('바꿀 설정이 없습니다'));
     }
 
-    const user = await User.findByIdAndUpdate(userId, { 'preferences.dailyGoal': dailyGoal }, { new: true });
+    const user = await User.findByIdAndUpdate(userId, changes, { new: true });
     if (!user) {
       return next(new NotFoundError('User not found'));
     }
 
-    res.json({ success: true, data: { dailyGoal: user.preferences.dailyGoal } });
+    res.json({ success: true, data: toPreferences(user) });
   } catch (error) {
     console.error('Update preferences error:', error);
     next(new InternalServerError('Failed to update preferences'));

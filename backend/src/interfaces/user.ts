@@ -2,11 +2,14 @@ import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
 import { UserAuthType, Theme, Language } from '../types/common';
 
+export type RevealFirst = 'reading' | 'meaning';
+
 // User preferences interface
 export interface UserPreferences {
   studyReminders: boolean;
   reminderTime?: string; // HH:MM format
   dailyGoal: number; // words per day
+  revealFirst: RevealFirst; // 학습 카드를 누를 때 먼저 보일 것
   theme: Theme;
   language: Language;
   soundEffects: boolean;
