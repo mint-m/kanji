@@ -12,7 +12,8 @@ const fetchKanji = async (kanji: string): Promise<KanjiDataType | null> => {
     onRead: kanjiData.expAudioRead,
     kunRead: kanjiData.expMeaningRead,
     koreanPron: kanjiData.expKoreanPron,
-    level: (kanjiData.frequencyAdd as string | undefined)?.substring(5, 6) ?? '',
+    // 'JLPT 5^GRADE 1^…'(서버가 새 등급으로 옮겨 준다). JLPT에 없는 한자(鬱)는 'GRADE …'로 시작해 등급을 비운다
+    level: /^JLPT (\d)/.exec(kanjiData.frequencyAdd ?? '')?.[1] ?? '',
     means:
       kanjiData.meansCollector?.[0]?.means.map((mean: Mean) => ({
         value: mean.value,

@@ -37,6 +37,18 @@ describe('searchKanji', () => {
     expect(axios.get).toHaveBeenCalledTimes(1);
   });
 
+  it('외부 사전의 옛 JLPT 등급(4가 가장 쉽다)은 DB와 같은 새 등급으로 옮긴다', async () => {
+    (axios.get as jest.Mock).mockResolvedValue({ data: { searchResult: [
+      { handleEntry: '生', frequencyAdd: 'JLPT 4^GRADE 1^NAMEYN 1' },
+      { handleEntry: '説', frequencyAdd: 'JLPT 3^GRADE 4^NAMEYN 1' },
+      { handleEntry: '鬱', frequencyAdd: 'JLPT 1^' },
+      { handleEntry: '蕎', frequencyAdd: '' },
+    ] } });
+    const entries = (await search('生')).searchResult;
+    expect(entries.map((entry: { frequencyAdd: string }) => entry.frequencyAdd))
+      .toEqual(['JLPT 5^GRADE 1^NAMEYN 1', 'JLPT 4^GRADE 4^NAMEYN 1', 'JLPT 1^', '']);
+  });
+
   it('외부 사전·DB 모두 없으면 빈 결과, 기억하지 않는다', async () => {
     (axios.get as jest.Mock).mockResolvedValue({ data: { searchResult: [] } });
     (Kanji.findOne as jest.Mock).mockResolvedValue(null);

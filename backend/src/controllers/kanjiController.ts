@@ -8,13 +8,24 @@ const NAVER_KANJI_URL = 'https://ja.dict.naver.com/api3/jako/search/hanja';
 const toHiragana = (str: string): string =>
   str.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
 
+// 네이버는 옛 JLPT 등급(1~4, 4가 가장 쉽다)을 준다 — DB(seedKanji의 JLPT_MAP)와 같은 새 등급 숫자로 옮긴다.
+// 그대로 두면 화면이 'N'을 붙여 生·行 같은 N5 한자를 N4로 보인다
+const NEW_JLPT: Record<string, string> = { '4': '5', '3': '4', '2': '2', '1': '1' };
+const toNewJlpt = (frequencyAdd: string) =>
+  frequencyAdd.replace(/^JLPT (\d)/, (match, old: string) => (NEW_JLPT[old] ? `JLPT ${NEW_JLPT[old]}` : match));
+
 const fetchFromNaver = async (kanji: string): Promise<object | null> => {
   try {
     const result = await axios.get(NAVER_KANJI_URL, {
       params: { query: kanji },
       timeout: 3000,
     });
-    return result.data?.searchResult?.length > 0 ? result.data : null;
+    const entries: { frequencyAdd?: unknown }[] | undefined = result.data?.searchResult;
+    if (!entries?.length) return null;
+    entries.forEach((entry) => {
+      if (typeof entry.frequencyAdd === 'string') entry.frequencyAdd = toNewJlpt(entry.frequencyAdd);
+    });
+    return result.data;
   } catch (error) {
     if (axios.isCancel(error)) {
       console.warn('Naver API request cancelled');

@@ -29,8 +29,13 @@ describe('lookupKanji', () => {
     expect(api.get).toHaveBeenCalledTimes(2);
   });
 
+  it('JLPT에 없는 한자는 등급을 비운다', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ searchResult: [{ ...NAVER.searchResult[0], handleEntry: '鬱', frequencyAdd: 'GRADE 7^NAMEYN 1' }] });
+    expect(await lookupKanji('鬱')).toEqual(expect.objectContaining({ kanji: '鬱', level: '' }));
+  });
+
   it('사전에 없는 한자 → null', async () => {
     (api.get as jest.Mock).mockResolvedValue({ searchResult: [] });
-    expect(await lookupKanji('鬱')).toBeNull();
+    expect(await lookupKanji('蕎')).toBeNull();
   });
 });
