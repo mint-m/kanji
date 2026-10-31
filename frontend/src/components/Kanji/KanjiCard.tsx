@@ -57,53 +57,58 @@ const KanjiCard: FC<KanjiCardProps> = ({ kanji, koreanPron, onRead, kunRead, lev
       role={hasReadings ? 'button' : undefined}
       aria-expanded={hasReadings ? isExpanded : undefined}
     >
-      <div className={styles.kanjiRow}>
-        <div className={styles.kanjiGlyph} lang="ja">{kanji}</div>
-        <div className={styles.pronWrapper}>
-          {missing ? (
-            <p className={styles.missing}>아직 풀이가 없는 한자예요</p>
-          ) : pronItems.map((item, i) => (
-            <div key={i} className={styles.pronEntry}>
-              {item.mean && <span className={styles.pronMean}>{item.mean}</span>}
-              <span className={styles.pronSound}>{item.sound}</span>
-            </div>
-          ))}
+      {hasReadings && (
+        <span
+          className={styles.indicator}
+          style={{ background: isExpanded ? 'transparent' : 'rgba(0,0,0,0.1)' }}
+        />
+      )}
+
+      {level && <div className={styles.levelBadge}>N{level}</div>}
+
+      <div className={styles.cardBody}>
+        <div className={styles.kanjiRow}>
+          <div className={styles.kanjiGlyph} lang="ja">{kanji}</div>
+          <div className={styles.pronWrapper}>
+            {missing ? (
+              <p className={styles.missing}>아직 풀이가 없는 한자예요</p>
+            ) : pronItems.map((item, i) => (
+              <div key={i} className={styles.pronEntry}>
+                {item.mean && <span className={styles.pronMean}>{item.mean}</span>}
+                <span className={styles.pronSound}>{item.sound}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        {level && <span className={styles.chip}>N{level}</span>}
-        {/* 펼칠 수 있다는 표시 — 예전의 회색 막대는 끌어 올리는 손잡이처럼 보였다 */}
-        {hasReadings && (
-          <svg className={clsx(styles.chevron, isExpanded && styles.chevronUp)} width="18" height="18" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
+
+        {hasReadings && isExpanded && (
+          <div className={styles.readingsPanel}>
+            <div className={styles.readingsScroll}>
+              {onReadItems.length > 0 && (
+                <div className={styles.readingGroup}>
+                  <span className={styles.readingTag}>음</span>
+                  <div className={styles.readingList}>
+                    {onReadItems.map((item, i) => (
+                      <span key={`on-${i}`} className={styles.readingItem}>{item}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {kunReadItems.length > 0 && (
+                <div className={styles.readingGroup}>
+                  <span className={styles.readingTag}>훈</span>
+                  <div className={styles.readingList}>
+                    {kunReadItems.map((item, i) => (
+                      <span key={`kun-${i}`} className={styles.readingItem}>{item}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* 음독·훈독은 줄 단위로 놓고 읽기는 옆으로 이어 쓴다 — 세로 목록은 훈독이 많은 한자(下·生)에서 열 줄이 됐다 */}
-      {hasReadings && isExpanded && (
-        <div className={styles.readings}>
-          {onReadItems.length > 0 && (
-            <div className={styles.readingGroup}>
-              <span className={styles.chip}>음</span>
-              <span className={styles.readingList} lang="ja">
-                {onReadItems.map((item, i) => (
-                  <span key={`on-${i}`} className={styles.readingItem}>{item}</span>
-                ))}
-              </span>
-            </div>
-          )}
-          {kunReadItems.length > 0 && (
-            <div className={styles.readingGroup}>
-              <span className={styles.chip}>훈</span>
-              <span className={styles.readingList} lang="ja">
-                {kunReadItems.map((item, i) => (
-                  <span key={`kun-${i}`} className={styles.readingItem}>{item}</span>
-                ))}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
