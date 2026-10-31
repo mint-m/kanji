@@ -131,32 +131,21 @@ export const row = style({
   gap: vars.space.sm,
 });
 
-export const revealBtn = style({
+// 공개·응답 버튼 넷은 크기가 같다 — 응답 버튼만 크면 시선이 카드 대신 버튼으로 간다
+export const controlBtn = style({
+  minHeight: '48px',
   padding: `${vars.space.sm} ${vars.space.md}`,
-  fontSize: vars.fontSize.sm,
-});
-
-// 응답 버튼도 다른 버튼과 같은 뉴모피즘 바탕 — 색은 글자와 화살표에만 써서 시선이 카드에 머문다
-export const answerBtn = style({
-  padding: `${vars.space.md} ${vars.space.md}`,
   fontSize: vars.fontSize.base,
-  fontWeight: 600,
 });
 
-export const know = style({ color: vars.color.know });
+// 응답 버튼도 다른 버튼과 같은 뉴모피즘 바탕 — 색은 글자와 화살표에만 쓴다
+export const know = style({ color: vars.color.know, fontWeight: 600 });
 
-export const unknown = style({ color: vars.color.unknown });
+export const unknown = style({ color: vars.color.unknown, fontWeight: 600 });
 
+// 단축키 화살표는 글자만 둔다 — 눌린 원 모양은 버튼 안의 또 다른 버튼처럼 보였다
 export const key = style({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '1.7rem',
-  height: '1.7rem',
-  borderRadius: '50%',
-  fontSize: vars.fontSize.sm,
   fontWeight: 700,
-  boxShadow: vars.shadow.pressed,
 
   // 키보드가 없는 기기에서는 숨긴다
   '@media': {

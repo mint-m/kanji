@@ -162,7 +162,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
       <div className={styles.controls}>
         <div className={styles.row}>
           <DefaultButton
-            className={styles.revealBtn}
+            className={styles.controlBtn}
             pressed={showReading}
             onClick={() => setShowReading((shown) => !shown)}
             disabled={!hasReading}
@@ -172,7 +172,7 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
             요미가나
           </DefaultButton>
           <DefaultButton
-            className={styles.revealBtn}
+            className={styles.controlBtn}
             pressed={showMeaning}
             onClick={() => setShowMeaning((shown) => !shown)}
             aria-keyshortcuts="M"
@@ -181,10 +181,10 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
           </DefaultButton>
         </div>
         <div className={styles.row}>
-          <DefaultButton className={clsx(styles.answerBtn, styles.unknown)} onClick={() => onAnswer(false)} aria-keyshortcuts="ArrowLeft">
+          <DefaultButton className={clsx(styles.controlBtn, styles.unknown)} onClick={() => onAnswer(false)} aria-keyshortcuts="ArrowLeft">
             <span className={styles.key} aria-hidden="true">←</span>몰라요
           </DefaultButton>
-          <DefaultButton className={clsx(styles.answerBtn, styles.know)} onClick={() => onAnswer(true)} aria-keyshortcuts="ArrowRight">
+          <DefaultButton className={clsx(styles.controlBtn, styles.know)} onClick={() => onAnswer(true)} aria-keyshortcuts="ArrowRight">
             알아요<span className={styles.key} aria-hidden="true">→</span>
           </DefaultButton>
         </div>
