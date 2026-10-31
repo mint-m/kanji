@@ -14,7 +14,8 @@ const STATS: UserStats = {
   ],
   review: { due: 0, nextDueAt: '2026-10-25T15:00:00.000Z' },
   streak: { current: 3, longest: 7, studyDays: 12 },
-  today: { count: 8, goal: 20 },
+  today: { date: '2026-10-31', count: 8, goal: 20 },
+  activity: [],
   totalAnswers: 1234,
 };
 

@@ -3,8 +3,13 @@ import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import Word from '../models/word';
 import WordReview, { LONG_TERM_STAGE } from '../models/wordReview';
+import StudyDay from '../models/studyDay';
+import { toKstDate } from '../utils/date';
 import { LEARNING_LEVELS } from '../types/common';
 import { NotFoundError, InternalServerError } from '../utils/errors';
+
+// 홈의 학습 잔디 — 최근 16주
+const ACTIVITY_DAYS = 16 * 7;
 
 // 학습 기록 — "익힌 단어"는 복습에 등록된 단어, "장기 기억"은 14일 간격 이상을 통과한 단어다.
 // 윈도우를 옮길 때 리셋되는 is_window_completed로 세면 진도가 나갈수록 숫자가 줄었다 늘었다 했다
@@ -17,7 +22,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
     }
 
     const now = new Date();
-    const [wordCountByLevel, learnedByLevel, dueCount, nextDueAt] = await Promise.all([
+    const [wordCountByLevel, learnedByLevel, dueCount, nextDueAt, activity] = await Promise.all([
       Word.aggregate<{ _id: string; count: number }>([{ $group: { _id: '$level', count: { $sum: 1 } } }]),
       WordReview.aggregate<{ _id: string; learned: number; longTerm: number }>([
         { $match: { user_id: userId } },
@@ -33,6 +38,7 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
       ]),
       WordReview.countDue(userId, now),
       WordReview.findNextDueAt(userId, now),
+      StudyDay.findRecent(userId, ACTIVITY_DAYS, now),
     ]);
 
     const levels = LEARNING_LEVELS.map((level) => {
@@ -59,7 +65,8 @@ export const getUserStats = async (req: Request, res: Response, next: NextFuncti
           longest: user.statistics.longestStreak,
           studyDays: user.statistics.studyDaysCount,
         },
-        today: { count: user.getTodayCount(now), goal: user.preferences.dailyGoal },
+        today: { date: toKstDate(now), count: user.getTodayCount(now), goal: user.preferences.dailyGoal },
+        activity,
         totalAnswers: user.statistics.totalWordsStudied,
       },
     });

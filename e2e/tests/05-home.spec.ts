@@ -23,7 +23,8 @@ test.describe('홈', () => {
         success: true,
         data: {
           learned: { total: 10, longTerm: 2 }, levels: [], review: { due: 4, nextDueAt: null },
-          streak: { current: 2, longest: 5, studyDays: 9 }, today: { count: 5, goal: 20 }, totalAnswers: 50,
+          streak: { current: 2, longest: 5, studyDays: 9 }, today: { date: '2026-10-31', count: 5, goal: 20 }, totalAnswers: 50,
+          activity: [{ date: '2026-10-30', count: 24 }, { date: '2026-10-31', count: 5 }],
         },
       },
     }));
@@ -40,6 +41,8 @@ test.describe('홈', () => {
     await page.goto('/');
     await expect(page.getByText('익힘 7 / 30')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('🔥 연속 2일')).toBeVisible();
+    // 학습 잔디 — 최근 16주 중 이틀, 그중 하루는 목표(20장) 달성
+    await expect(page.getByRole('img', { name: '최근 16주 중 2일 학습, 하루 목표 달성 1일' })).toBeVisible();
 
     await page.getByRole('button', { name: '복습 시작' }).click();
     await expect(page).toHaveURL(/\/review/);

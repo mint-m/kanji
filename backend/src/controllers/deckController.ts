@@ -5,6 +5,7 @@ import WordProgress from '../models/wordProgress';
 import WordReview from '../models/wordReview';
 import Word from '../models/word';
 import User from '../models/user';
+import StudyDay from '../models/studyDay';
 import SlidingWindowService from '../services/slidingWindowService';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ProgressType } from '../types';
@@ -180,6 +181,8 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
     if (user) {
       user.recordStudy(timeSpent || 0);
       await user.save();
+      // 잔디 기록이 실패해도 응답 처리는 이어간다
+      await StudyDay.record(userId).catch((error) => console.error('Record study day error:', error));
     }
 
     // Always advance index (moveToNext guards against overflow)

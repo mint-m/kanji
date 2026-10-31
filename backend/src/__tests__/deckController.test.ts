@@ -42,6 +42,12 @@ jest.mock('../models/user', () => ({
   default: { findById: jest.fn() },
 }));
 
+// 잔디 기록은 여기서 보지 않는다 (learningFlow.int.test.ts "학습 기록")
+jest.mock('../models/studyDay', () => ({
+  __esModule: true,
+  default: { record: () => Promise.resolve() },
+}));
+
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import UserCheckpoint from '../models/userCheckpoint';

@@ -4,6 +4,7 @@ import WordReview from '../models/wordReview';
 import Word from '../models/word';
 import WordProgress from '../models/wordProgress';
 import User from '../models/user';
+import StudyDay from '../models/studyDay';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { InternalServerError, NotFoundError } from '../utils/errors';
 import { shuffleArray } from '../utils/shuffle';
@@ -67,6 +68,8 @@ export const answerReview = async (req: AuthenticatedRequest, res: Response, nex
       if (user) {
         user.recordStudy(timeSpent || 0);
         await user.save();
+        // 잔디 기록이 실패해도 응답 처리는 이어간다
+        await StudyDay.record(userId).catch((error) => console.error('Record study day error:', error));
       }
     }
 

@@ -1,9 +1,11 @@
 const mockWordModel = { aggregate: jest.fn() };
 const mockWordReview = { aggregate: jest.fn(), countDue: jest.fn(), findNextDueAt: jest.fn() };
+const mockStudyDay = { findRecent: jest.fn() };
 
 jest.mock('../models/word', () => ({ __esModule: true, default: mockWordModel }));
 jest.mock('../models/wordReview', () => ({ __esModule: true, default: mockWordReview, LONG_TERM_STAGE: 4 }));
 jest.mock('../models/user', () => ({ __esModule: true, default: { findById: jest.fn() } }));
+jest.mock('../models/studyDay', () => ({ __esModule: true, default: mockStudyDay }));
 
 import { NextFunction, Response, Request } from 'express';
 import User from '../models/user';
@@ -41,6 +43,15 @@ describe('getUserStats', () => {
     mockWordReview.aggregate.mockResolvedValue([{ _id: 'N5', learned: 40, longTerm: 10 }]);
     mockWordReview.countDue.mockResolvedValue(6);
     mockWordReview.findNextDueAt.mockResolvedValue(new Date('2026-10-25T15:00:00Z'));
+    mockStudyDay.findRecent.mockResolvedValue([{ date: '2026-10-30', count: 12 }]);
+  });
+
+  it('학습 잔디 — 최근 16주(112일)의 날짜별 응답 수와 오늘 날짜(한국 시간)를 준다', async () => {
+    (User.findById as jest.Mock).mockResolvedValue(makeUser());
+    const { data } = await run();
+    expect(mockStudyDay.findRecent).toHaveBeenCalledWith('user-id-123', 112, expect.any(Date));
+    expect(data.activity).toEqual([{ date: '2026-10-30', count: 12 }]);
+    expect(data.today.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it('사용자 없음 → NotFoundError (next 호출, statusCode 404)', async () => {
@@ -70,7 +81,7 @@ describe('getUserStats', () => {
     (User.findById as jest.Mock).mockResolvedValue(makeUser());
     const { data } = await run();
     expect(data.streak).toEqual({ current: 3, longest: 7, studyDays: 12 });
-    expect(data.today).toEqual({ count: 18, goal: 30 });
+    expect(data.today).toEqual({ date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), count: 18, goal: 30 });
     expect(data.totalAnswers).toBe(55);
   });
 });

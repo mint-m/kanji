@@ -11,6 +11,7 @@ import { setActiveProgressType } from 'store/modules/user';
 import { formatSteps, levelName } from 'constants/levels';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import ProgressBar from 'components/ProgressBar';
+import StudyHeatmap from 'components/StudyHeatmap';
 import { RootState } from 'store';
 import * as layout from 'styles/layout.css';
 import * as styles from './Home.css';
@@ -153,6 +154,8 @@ const Home: FC = () => {
             </div>
           )}
         </div>
+
+        {stats && <StudyHeatmap activity={stats.activity} today={stats.today.date} goal={stats.today.goal} />}
 
         {stats && <ReviewCard stats={stats} onStart={() => navigate('/review')} />}
 

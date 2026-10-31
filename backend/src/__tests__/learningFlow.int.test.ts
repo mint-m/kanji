@@ -17,6 +17,8 @@ import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
 import WordReview from '../models/wordReview';
+import StudyDay from '../models/studyDay';
+import { toKstDate } from '../utils/date';
 import { generateToken } from '../services/auth';
 import { SAMPLE_WORDS } from '../scripts/sampleWords';
 import { backfillReviews } from '../scripts/backfillReviews';
@@ -76,7 +78,7 @@ const all = () => true;
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await mongoose.connect(mongo.getUri('kanji-test'));
-  await Promise.all([Word.init(), UserCheckpoint.init(), WordProgress.init(), WordReview.init()]);
+  await Promise.all([Word.init(), UserCheckpoint.init(), WordProgress.init(), WordReview.init(), StudyDay.init()]);
   await Word.insertMany(SAMPLE_WORDS);
   const user = await User.create({
     type: 'google',
@@ -104,6 +106,7 @@ beforeEach(async () => {
     UserCheckpoint.deleteMany({}),
     WordProgress.deleteMany({}),
     WordReview.deleteMany({}),
+    StudyDay.deleteMany({}),
     // 사용자 문서는 테스트 사이에 남으므로 학습 기록만 처음 상태로 돌린다
     User.updateMany({}, { $set: { 'statistics.todayCount': 0, 'statistics.currentStreak': 0 }, $unset: { 'statistics.lastStudyDate': 1, 'profile.lastActiveAt': 1 } }),
   ]);
@@ -283,6 +286,16 @@ describe('학습 기록', () => {
     expect(data.review.due).toBe(2);
     expect(data.today.count).toBe(30);
     expect(data.streak.current).toBe(1);
+    // 학습 잔디 — 진도 학습과 복습 응답이 같은 날(한국 시간)에 모인다
+    expect(data.today.date).toBe(toKstDate());
+    expect(data.activity).toEqual([{ date: toKstDate(), count: 30 }]);
+
+    const due = reviews[3];
+    expect((await request('POST', '/api/users/me/reviews/answer', { wordId: due.word_id, isCorrect: true })).status).toBe(200);
+    const after = (await request('GET', '/api/users/me/stats')).body.data;
+    expect(after.activity).toEqual([{ date: toKstDate(), count: 31 }]);
+    expect(after.today.count).toBe(31);
+    expect(await StudyDay.countDocuments({})).toBe(1);
   });
 });
 

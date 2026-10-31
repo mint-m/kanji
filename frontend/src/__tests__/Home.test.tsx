@@ -17,7 +17,8 @@ const STATS = {
   levels: [],
   review: { due: 8, nextDueAt: null },
   streak: { current: 3, longest: 7, studyDays: 12 },
-  today: { count: 12, goal: 20 },
+  today: { date: '2026-10-31', count: 12, goal: 20 },
+  activity: [{ date: '2026-10-30', count: 25 }, { date: '2026-10-31', count: 12 }],
   totalAnswers: 100,
 };
 
@@ -51,6 +52,7 @@ describe('Home', () => {
     expect(await screen.findByText('8개')).toBeInTheDocument();
     expect(screen.getByText('🔥 연속 3일')).toBeInTheDocument();
     expect(screen.getByText(/오늘 12 \/ 20/)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '최근 16주 중 2일 학습, 하루 목표 달성 1일' })).toBeInTheDocument();
     expect(await screen.findByText('스텝 4–6')).toBeInTheDocument();
     expect(screen.getByText('익힘 12 / 30')).toBeInTheDocument();
     // 집중 학습은 아직 없다

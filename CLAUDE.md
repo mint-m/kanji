@@ -56,7 +56,7 @@ Live: https://kanji-red.vercel.app (Vercel) · https://kan-ji.onrender.com (Rend
 - Business logic in Mongoose model methods, not controllers
 - All API calls through `services/apiClient.ts`, never direct axios in components
 - API 응답은 `{ success, data, message? }` 봉투 형식 유지
-- Mongo 컬렉션 이름은 명시 지정됨: `word`, `user_checkpoints`, `word_progress`, `word_review` — 북마크 aggregation의 `$lookup from: 'word'`가 이에 의존하므로 변경 금지
+- Mongo 컬렉션 이름은 명시 지정됨: `word`, `user_checkpoints`, `word_progress`, `word_review`, `study_day` — 북마크 aggregation의 `$lookup from: 'word'`가 이에 의존하므로 변경 금지
 
 ## Invariants & Gotchas
 

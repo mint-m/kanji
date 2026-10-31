@@ -57,7 +57,8 @@ export interface UserStats {
   levels: { level: LearningLevel; total: number; learned: number; longTerm: number }[];
   review: { due: number; nextDueAt: string | null };
   streak: { current: number; longest: number; studyDays: number };
-  today: { count: number; goal: number };
+  today: { date: string; count: number; goal: number }; // date: 한국 시간 'YYYY-MM-DD'
+  activity: { date: string; count: number }[]; // 학습 잔디 — 최근 16주 중 답한 날만
   totalAnswers: number;
 }
 

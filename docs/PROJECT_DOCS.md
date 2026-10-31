@@ -65,6 +65,7 @@ frontend/src/
 │   ├── Navigation/        # 상단 바(로고·주 메뉴·사용자 메뉴) + 모바일 하단 탭 — 카드 학습 화면(FOCUS_ROUTES)에서는 둘 다 숨긴다
 │   ├── StudyCard/         # 진도 학습·오늘의 복습·북마크 학습 공용 단어 카드 (공개·응답·단축키·발음)
 │   ├── StudyHeader/       # 카드 학습 화면 머리글 (나가기·제목·범위·카드 순번·진행 막대)
+│   ├── StudyHeatmap/      # 홈의 학습 잔디 (최근 16주)
 │   ├── FlashCardContainer/ # 진도·집중 학습 상태 머신 (요청 직렬화, 패스·윈도우 완료 화면)
 │   ├── OriginWord/        # 단어 표기 — 한자는 누르면 풀이를 조회하는 버튼 (조회 결과 캐시)
 │   ├── Kanji/             # 한자 풀이 패널 (넓은 화면은 카드 옆, 좁은 화면은 아래 시트)
@@ -344,6 +345,21 @@ backend/src/
 - 복습에서 알아요 → 다음 단계, 몰라요 → 0단계(바로 다시). 기한 전 응답은 반영하지 않는다
 - "익힌 단어" = 등록된 단어, "장기 기억" = 4단계(14일 간격) 이상
 
+#### 6. StudyDay
+
+날짜별 응답 수(홈의 학습 잔디) — **컬렉션 이름**: `study_day`
+
+```typescript
+{
+  _id: ObjectId,
+  user_id: ObjectId,          // ref: User
+  date: string,               // 한국 시간 'YYYY-MM-DD'
+  count: number               // 그날 답한 카드 수 (진도·집중 학습 complete-word, 복습 answer)
+}
+```
+
+**인덱스**: `{ user_id: 1, date: 1 }` (unique) — 답할 때마다 그날 문서에 1을 더한다(upsert). 사용자 문서에 날짜별로 쌓지 않는 것은 요청마다 읽는 사용자 문서가 끝없이 커지기 때문이다. 기록은 이 기능을 배포한 날부터 쌓인다(북마크 학습은 서버에 기록하지 않아 빠진다)
+
 ---
 
 ## API 엔드포인트
@@ -387,7 +403,7 @@ backend/src/
 | PATCH | `/me/preferences` | 학습 설정 변경 — 보낸 것만 바꾼다 `{ dailyGoal?, revealFirst? }` (하루 목표 1~100, 먼저 보일 것 `reading`\|`meaning`, 그 외·빈 요청 400) |
 | PATCH | `/me/active-progress-type` | 활성 세션 타입 변경 (`main`\|`sub`\|`null`, 그 외 400) |
 | PATCH | `/me/checkpoint` | 세션 생성 — **같은 타입 세션이 있으면 409** (교체는 `DELETE /me/progress/:type` 후 생성) |
-| GET | `/me/stats` | 학습 기록 — 익힌 단어·장기 기억(레벨별), 복습 대기·다음 복습, 연속 학습일(어제까지 이어진 경우만), 오늘 학습량·하루 목표 (`UserStats` 타입) |
+| GET | `/me/stats` | 학습 기록 — 익힌 단어·장기 기억(레벨별), 복습 대기·다음 복습, 연속 학습일(어제까지 이어진 경우만), 오늘(한국 날짜)·학습량·하루 목표, 학습 잔디(최근 16주 중 답한 날의 응답 수) (`UserStats` 타입) |
 
 검증: `userController.test.ts`, `userStatsController.test.ts`, `learningFlow.int.test.ts` → `describe('학습 기록')`
 
@@ -569,7 +585,7 @@ GET /health                                           # DB 연결 확인 — 200
 
 | 경로 | 화면 | 쓰는 API |
 |---|---|---|
-| `/` | 로그인 전: 소개 + 로그인 버튼 / 로그인 후: 인사·연속 학습일·오늘 학습량, 오늘의 복습, 진도·집중 학습 카드 | `GET /me/progress`, `GET /me/stats` |
+| `/` | 로그인 전: 소개 + 로그인 버튼 / 로그인 후: 인사·연속 학습일·오늘 학습량, 학습 잔디(최근 16주, 하루 목표 대비 농도), 오늘의 복습, 진도·집중 학습 카드 | `GET /me/progress`, `GET /me/stats` |
 | `/start` | 학습 방식 → 레벨 → 범위 → 확인 (진행 중 세션을 바꾸면 무엇이 남는지 안내) | `GET /words/level/:level/steps`, `GET /me/progress`, `DELETE /me/progress/:type`, `PATCH /me/checkpoint`, `PATCH /me/active-progress-type` |
 | `/study` | 진도·집중 학습 (활성 세션) | `GET /me/progress/:type/current`, `POST complete-word`, `POST complete-deck` |
 | `/review` | 오늘의 복습 | `GET /me/reviews/due`, `POST /me/reviews/answer` |
