@@ -147,13 +147,19 @@ export const readingGroup = style({
   minWidth: '120px',
 });
 
+// 음·훈 표시 — 학습 카드의 품사 칩과 같은 얕은 홈 모양 (예전의 검은 테두리 상자는 뉴모피즘 결에서 튀었다)
 export const readingTag = style({
-  border: `1px solid #333`,
-  padding: '2px 6px',
-  fontSize: vars.fontSize.sm,
+  flexShrink: 0,
+  padding: '2px 8px',
+  marginTop: '2px',
   marginRight: vars.space.sm,
+  borderRadius: vars.radius.pill,
+  fontSize: vars.fontSize.xs,
+  fontWeight: 600,
+  lineHeight: 1.5,
+  color: vars.color.textMuted,
+  boxShadow: vars.shadow.track,
   height: 'fit-content',
-  borderRadius: vars.radius.sm,
 });
 
 export const readingList = style({

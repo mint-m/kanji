@@ -24,7 +24,7 @@ export const panel = style({
       right: `calc(100% + ${vars.space.lg})`,
       // 카드 윗변보다 조금 위 — 진행 표시 줄과 높이를 맞춘다
       top: '-5vh',
-      width: '280px',
+      width: '294px',
       maxHeight: 'none',
       padding: 0,
       backgroundColor: 'transparent',
