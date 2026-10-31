@@ -16,6 +16,7 @@ import { Request } from 'express';
 import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import * as userController from '../controllers/userController';
+import { InvalidStepRangeError } from '../utils/errors';
 
 const makeRes = () => {
   const res: any = {};
@@ -99,6 +100,17 @@ describe('updateActiveProgressType', () => {
     expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(404);
   });
 
+  it('허용되지 않은 값 → 400, 저장하지 않음 (findByIdAndUpdate는 enum 검증을 하지 않는다)', async () => {
+    const next = makeNext();
+    await userController.updateActiveProgressType(
+      makeReq({ body: { activeProgressType: 'admin' } }),
+      makeRes(),
+      next,
+    );
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
   it('성공 → activeProgressType 업데이트', async () => {
     (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ ...makeUser(), activeProgressType: 'sub' });
     const res = makeRes();
@@ -150,6 +162,34 @@ describe('updateCheckpoint', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
+  it('범위에 단어 없음 → 400과 한국어 안내 (InvalidStepRangeError 판별)', async () => {
+    (User.findById as jest.Mock).mockResolvedValue(makeUser());
+    (UserCheckpoint.findOne as jest.Mock).mockResolvedValue(null);
+    (UserCheckpoint.createNewSession as jest.Mock).mockRejectedValue(new InvalidStepRangeError('no words'));
+    const next = makeNext();
+    await userController.updateCheckpoint(
+      makeReq({ body: { progressType: 'main', level: 'N5', steps: { start: 1, end: 3 } } }),
+      makeRes(),
+      next,
+    );
+    const err = (next as jest.Mock).mock.calls[0][0];
+    expect(err.statusCode).toBe(400);
+    expect(err.message).toContain('해당 범위의 단어가 없습니다');
+  });
+
+  it('동시 생성으로 고유 인덱스 충돌(E11000) → 409', async () => {
+    (User.findById as jest.Mock).mockResolvedValue(makeUser());
+    (UserCheckpoint.findOne as jest.Mock).mockResolvedValue(null);
+    (UserCheckpoint.createNewSession as jest.Mock).mockRejectedValue(Object.assign(new Error('E11000 duplicate key'), { code: 11000 }));
+    const next = makeNext();
+    await userController.updateCheckpoint(
+      makeReq({ body: { progressType: 'main', level: 'N5', steps: { start: 1, end: 3 } } }),
+      makeRes(),
+      next,
+    );
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(409);
+  });
+
   it('세션 존재 → 409, 덱을 바꾸지 않음 (레벨·스텝만 바꾸면 덱이 이전 단어로 남기 때문)', async () => {
     (User.findById as jest.Mock).mockResolvedValue(makeUser());
     const existing = makeMockCheckpoint();
@@ -163,5 +203,58 @@ describe('updateCheckpoint', () => {
     expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(409);
     expect(existing.save).not.toHaveBeenCalled();
     expect(UserCheckpoint.createNewSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('updatePreferences', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it.each([0, 101, 2.5, '20', undefined])('하루 목표 %p → 400, 저장하지 않음', async (dailyGoal) => {
+    const next = makeNext();
+    await userController.updatePreferences(makeReq({ body: { dailyGoal } }), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('성공 → 저장된 하루 목표 반환', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30, revealFirst: 'reading' } });
+    const res = makeRes();
+    await userController.updatePreferences(makeReq({ body: { dailyGoal: 30 } }), res, makeNext());
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { 'preferences.dailyGoal': 30 }, { new: true });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30, revealFirst: 'reading' } });
+  });
+
+  it.each(['kanji', '', 1])('먼저 보일 것 %p → 400, 저장하지 않음', async (revealFirst) => {
+    const next = makeNext();
+    await userController.updatePreferences(makeReq({ body: { revealFirst } }), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(400);
+    expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it('먼저 보일 것만 보내면 그것만 바꾼다', async () => {
+    (User.findByIdAndUpdate as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 50, revealFirst: 'meaning' } });
+    const res = makeRes();
+    await userController.updatePreferences(makeReq({ body: { revealFirst: 'meaning' } }), res, makeNext());
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user-id-123', { 'preferences.revealFirst': 'meaning' }, { new: true });
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 50, revealFirst: 'meaning' } });
+  });
+});
+
+describe('getPreferences', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('하루 목표와 먼저 보일 것을 돌려준다', async () => {
+    (User.findById as jest.Mock).mockResolvedValue({ preferences: { dailyGoal: 30, revealFirst: 'reading' } });
+    const res = makeRes();
+    await userController.getPreferences(makeReq(), res, makeNext());
+    expect(User.findById).toHaveBeenCalledWith('user-id-123');
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { dailyGoal: 30, revealFirst: 'reading' } });
+  });
+
+  it('사용자가 없으면 404', async () => {
+    (User.findById as jest.Mock).mockResolvedValue(null);
+    const next = makeNext();
+    await userController.getPreferences(makeReq(), makeRes(), next);
+    expect((next as jest.Mock).mock.calls[0][0].statusCode).toBe(404);
   });
 });

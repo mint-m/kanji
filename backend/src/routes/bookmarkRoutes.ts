@@ -41,7 +41,7 @@ router.get(
     query('level')
       .optional()
       .isIn([...LEARNING_LEVELS])
-      .withMessage('Level must be one of: N5, N4, N3, N2, N1'),
+      .withMessage('Level must be one of: N5, N4, N3, N2, N1, daily'),
     query('tags')
       .optional()
       .custom((value) => {
@@ -58,7 +58,7 @@ router.get(
       .withMessage(`Limit must be between 1 and ${BOOKMARK_LIMIT}`),
     query('sortBy')
       .optional()
-      .isIn(['last_studied_at', 'kanji', 'level', 'step', 'bookmark_reason'])
+      .isIn(['bookmarked_at', 'last_studied_at', 'level', 'step'])
       .withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be "asc" or "desc"'),
   ],

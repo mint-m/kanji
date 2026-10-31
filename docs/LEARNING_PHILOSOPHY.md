@@ -67,6 +67,23 @@
 
 ---
 
+## 간격 복습 (2026-10 리뉴얼)
+
+윈도우 안의 "완전 습득"은 그 순간 알았다는 뜻이다. 한 단어는 많아야 세 윈도우에서만 나오므로,
+윈도우를 지나간 단어는 잊혀도 앱이 알 수 없었다. 그래서 **윈도우로 익히고, 간격 복습으로 굳힌다.**
+
+| 단계 | 다음 복습까지 | 들어오는 경우 |
+| ---- | ------------- | ------------- |
+| 0 | 바로 다시 | 복습에서 몰라요 |
+| 1 | 1일 | 진도·집중 학습에서 처음 알아요 / 0단계에서 알아요 |
+| 2~6 | 3·7·14·30·60일 | 복습에서 알아요 (6단계는 60일 반복) |
+
+- 진도·집중 학습의 응답은 복습 일정을 바꾸지 않는다. 처음 알아요일 때 등록만 한다
+- 간격은 한국 날짜 기준 — "1일 뒤"는 다음 날 0시부터 나온다
+- **익힌 단어** = 복습에 등록된 단어, **장기 기억** = 4단계(14일 간격) 이상
+
+---
+
 ## 데이터 보존 정책
 
 ### 리셋되는 데이터 (윈도우 진행 시)
@@ -100,7 +117,7 @@
 2. **`UserCheckpoint.isCompleted()`**: 패스 순회 완료 여부 (인덱스 기반, 그대로 유지)
 3. **`UserCheckpoint.isWindowCompleted(userId, progressType)`**: 모든 단어 `is_window_completed = true` 확인
 4. **`UserCheckpoint.reshuffleUnknownWords(userId, progressType)`**: 미지 단어 추출 후 재셔플, `current_index = 0` 리셋
-5. **`UserCheckpoint.generateNextSlidingWindow(userId, progressType)`**: 다음 윈도우 생성 + 이전 단어 `is_window_completed` 자동 리셋
+5. **`UserCheckpoint.generateNextSlidingWindow(userId, progressType)`**: 다음 윈도우 생성 + 새 덱 단어의 `is_window_completed` 리셋
 6. **`deckController.completeWord()`**: 패스 완료 감지 → 자동 재셔플 또는 윈도우 완료 플래그 반환
 7. **`deckController.completeDeck()`**: `isWindowCompleted` 기반 완료 조건으로 변경
 8. **중복 카운팅 버그 수정**: `markCompleted()`/`markIncomplete()`가 `try_count`를 중복 증가하던 버그 제거

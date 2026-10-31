@@ -5,23 +5,20 @@ interface OriginWordProps {
   word: string;
 }
 
-const calculateFontSize = (stringLength: number) => {
-  const maxSize = 30;
-  const minSize = 6;
-  const fontSize = Math.min(maxSize / stringLength, minSize);
-  return `${fontSize}rem`;
-};
+// 글자 수에 맞춰 줄이되 카드 폭(모바일 85vw, 데스크톱 35rem)을 넘지 않게 한다
+const fontSizeFor = (length: number) => `min(6rem, ${Math.floor(68 / length)}vw, ${Math.floor(480 / length)}px)`;
+
+export const KANJI = /[一-龥]/;
 
 const OriginWord = ({ word }: OriginWordProps) => {
   const chars = Array.from(word);
-  const isKanjiRegex = /[一-龥]/;
 
   return (
-    <div className={styles.wordRow} style={{ fontSize: calculateFontSize(chars.length) }}>
+    <div className={styles.wordRow} style={{ fontSize: fontSizeFor(chars.length) }} lang="ja">
       {chars.map((char, index) =>
-        isKanjiRegex.test(char)
-          ? <KanjiCharacter key={index} kanji={char} />
-          : <div key={index}>{char}</div>
+        KANJI.test(char)
+          ? <KanjiCharacter key={`${index}-${char}`} kanji={char} />
+          : <span key={`${index}-${char}`}>{char}</span>
       )}
     </div>
   );

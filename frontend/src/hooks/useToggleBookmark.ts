@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import bookmarkService from 'services/bookmarkService';
-import { ApiError } from 'services/authService';
+import { getErrorCode } from 'services/apiClient';
 import { ProgressType } from 'services/types';
 
 interface Options {
@@ -36,7 +36,7 @@ export function useToggleBookmark({
       }
     } catch (err) {
       setBookmarkedIds(prev => toggleSet(prev, wordId));
-      if (err instanceof ApiError && err.code === 'BOOKMARK_LIMIT_EXCEEDED') {
+      if (getErrorCode(err) === 'BOOKMARK_LIMIT_EXCEEDED') {
         onLimitError('북마크가 가득 찼습니다 (최대 150개). 복습 후 정리해주세요.');
       }
     }

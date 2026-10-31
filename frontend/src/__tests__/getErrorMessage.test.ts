@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
-import { getErrorMessage } from '../services/apiClient';
+import { getErrorMessage, getErrorCode } from '../services/apiClient';
+import { ApiError } from '../services/authService';
 
 const FALLBACK = '불러오는데 실패했습니다.';
 const withStatus = (status: number) =>
@@ -28,5 +29,23 @@ describe('getErrorMessage', () => {
 
   it('axios 오류가 아니면 기본 문구', () => {
     expect(getErrorMessage(new Error('boom'), FALLBACK)).toBe(FALLBACK);
+  });
+});
+
+describe('getErrorCode', () => {
+  it('apiClient 호출의 AxiosError → 응답 본문의 code (AxiosError 자체 code가 아님)', () => {
+    const err = new AxiosError('conflict', 'ERR_BAD_REQUEST', undefined, undefined, {
+      status: 409, data: { code: 'BOOKMARK_LIMIT_EXCEEDED' },
+    } as any);
+    expect(getErrorCode(err)).toBe('BOOKMARK_LIMIT_EXCEEDED');
+  });
+
+  it('응답 본문에 code가 없으면 undefined', () => {
+    expect(getErrorCode(withStatus(400))).toBeUndefined();
+    expect(getErrorCode(new AxiosError('Network Error', 'ERR_NETWORK'))).toBeUndefined();
+  });
+
+  it('인증 호출의 ApiError → code', () => {
+    expect(getErrorCode(new ApiError('limit', 'BOOKMARK_LIMIT_EXCEEDED'))).toBe('BOOKMARK_LIMIT_EXCEEDED');
   });
 });

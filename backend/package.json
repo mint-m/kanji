@@ -20,6 +20,7 @@
     "@types/xml2js": "^0.4.14",
     "concurrently": "^8.2.0",
     "jest": "27",
+    "mongodb-memory-server": "10.4.3",
     "nodemon": "^2.0.22",
     "ts-jest": "27",
     "ts-node": "^10.9.1",
@@ -32,8 +33,10 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
+    "dev:memory": "ts-node --transpile-only src/scripts/devServer.ts",
     "test": "jest",
     "seed:kanji": "ts-node src/scripts/seedKanji.ts",
+    "backfill:reviews": "ts-node --transpile-only src/scripts/backfillReviews.ts",
     "augment:frequency": "node --max-old-space-size=4096 -r ts-node/register src/scripts/augmentFrequency.ts",
     "clean:words": "ts-node src/scripts/cleanWords.ts",
     "clean:words:dry": "ts-node src/scripts/cleanWords.ts --dry-run",
@@ -48,8 +51,12 @@
     "globals": {
       "ts-jest": {
         "tsconfig": "./tsconfig.test.json",
-        "diagnostics": false
+        "diagnostics": false,
+        "isolatedModules": true
       }
+    },
+    "moduleNameMapper": {
+      "^axios$": "<rootDir>/node_modules/axios/dist/node/axios.cjs"
     },
     "testMatch": [
       "**/__tests__/**/*.test.ts"

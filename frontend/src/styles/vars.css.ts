@@ -5,15 +5,22 @@ export const vars = createGlobalTheme(':root', {
     bg: '#E6EAED',
     text: '#5A5A5A',
     textDark: '#2c3e50',
-    textMuted: '#7f8c8d',
+    textMuted: '#5f6b6c', // 배경(#E6EAED) 대비 4.5:1
     textFaint: '#95a5a6',
     textLight: '#666666',
     textStrong: '#212529',
     white: '#ffffff',
-    primary: '#3498db',
-    primaryDark: '#2980b9',
-    primaryLight: '#e8f4f8',
-    primaryBg: '#e3f2fd',
+    // 주 동작(시작·이어하기) — 흰 글자 대비 4.5:1 이상
+    primary: '#2563eb',
+    primaryDark: '#1d4ed8',
+    primaryLight: '#e8f0fe',
+    primaryBg: '#e3edff',
+    // 응답 색 — 알아요(초록) / 몰라요(주황)
+    know: '#047857',
+    knowBg: '#d1fae5',
+    unknown: '#b45309',
+    unknownBg: '#fef3c7',
+    focus: '#2563eb',
     danger: '#d32f2f',
     dangerBg: '#fff0f0',
     dangerBorder: '#d32f2f',
@@ -49,7 +56,7 @@ export const vars = createGlobalTheme(':root', {
     base: "'Noto Sans JP', sans-serif",
   },
   fontSize: {
-    xs: '0.5rem',
+    xs: '0.75rem',
     sm: '0.85rem',
     base: '1rem',
     md: '1.2rem',
@@ -74,4 +81,12 @@ export const vars = createGlobalTheme(':root', {
     xl: '32px',
     xxl: '48px',
   },
+  layout: {
+    header: '56px',
+    tabBar: '64px',
+    content: '960px',
+  },
 });
+
+// 모바일 하단 탭바가 나타나는 폭
+export const MOBILE = 'screen and (max-width: 767px)';

@@ -1,14 +1,12 @@
 import { FC, memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { clsx } from 'clsx';
 
-import FlashCard, { ShowType } from 'components/FlashCard';
-import ControlPanel from 'components/ControlPanel';
+import StudyCard from 'components/StudyCard';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { DeckWord } from 'services/types';
-import * as kanjiActions from 'store/modules/kanji';
 import progressService from 'services/progressService';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
+import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
 import * as styles from './FlashCardContainer.css';
 
 interface FlashCardContainerProps {
@@ -21,13 +19,12 @@ interface FlashCardContainerProps {
   onGoHome: () => void;               // 서브 세션 완료 후 홈으로
   onResync: () => Promise<boolean>;   // 진행 저장 실패: 서버에 저장된 위치로 덱을 다시 불러오기
   onIndexChange?: (index: number) => void;
+  onAnswer?: (know: boolean) => void; // 범위 진행(익힘 수) 표시용
 }
 
 const FlashCardContainer: FC<FlashCardContainerProps> = memo(
-  ({ deck, progressType, initialIndex, initialPassResult, onContinue, onAdvance, onGoHome, onResync, onIndexChange }) => {
+  ({ deck, progressType, initialIndex, initialPassResult, onContinue, onAdvance, onGoHome, onResync, onIndexChange, onAnswer }) => {
     const [wordIndex, setWordIndex] = useState(initialIndex);
-    const [showMean, setShowMean] = useState(false);
-    const [showHiragana, setShowHiragana] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mastered, setMastered] = useState<DeckWord[]>([]);
     const [learning, setLearning] = useState<DeckWord[]>([]);
@@ -45,7 +42,6 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     const syncFailedRef = useRef(false);
     const lastSubmittedWordIdRef = useRef<string | null>(null);
     const requestQueueRef = useRef<Promise<any>>(Promise.resolve());
-    const dispatch = useDispatch();
 
     const isPassComplete = wordIndex >= deck.length;
     const currentWordId = deck[wordIndex]?._id;
@@ -65,12 +61,6 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       return () => clearTimeout(timer);
     }, [bookmarkWarning]);
 
-    const resetUIState = useCallback(() => {
-      dispatch(kanjiActions.reset());
-      setShowMean(false);
-      setShowHiragana(false);
-    }, [dispatch]);
-
     const handleKnowClick = useCallback((know: boolean) => {
       if (!currentWordId || lastSubmittedWordIdRef.current === currentWordId) return;
       lastSubmittedWordIdRef.current = currentWordId;
@@ -83,7 +73,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       if (know) setMastered(prev => [...prev, answeredWord]);
       else setLearning(prev => [...prev, answeredWord]);
       setWordIndex(prev => prev + 1);
-      resetUIState();
+      onAnswer?.(know);
 
       requestQueueRef.current = requestQueueRef.current
         .then(() => {
@@ -101,11 +91,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
           syncFailedRef.current = true;
           setSyncFailed(true);
         });
-    }, [currentWordId, deck, wordIndex, cardStudyTime, progressType, resetUIState]);
-
-    const handleShowClick = useCallback((type: ShowType['type']) => {
-      type === 'Mean' ? setShowMean(true) : setShowHiragana(true);
-    }, []);
+    }, [currentWordId, deck, wordIndex, cardStudyTime, progressType, onAnswer]);
 
     const handleBookmark = useToggleBookmark({
       wordId: currentWordId,
@@ -132,7 +118,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
             네트워크가 불안정하거나 서버가 깨어나는 중일 수 있어요. 다시 불러오면 마지막으로 저장된 단어부터 이어갑니다.
           </p>
           <div className={styles.completeActions}>
-            <DefaultButton onClick={() => runAction(onResync)} disabled={isProcessing}>
+            <DefaultButton variant="primary" onClick={() => runAction(onResync)} disabled={isProcessing} autoFocus>
               {isProcessing ? '불러오는 중...' : '다시 불러오기'}
             </DefaultButton>
           </div>
@@ -141,15 +127,15 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
     }
 
     const errorBanner = error && (
-      <div className={styles.errorBanner}>
-        <span className={styles.errorIcon}>⚠️</span>
+      <div className={styles.errorBanner} role="alert">
+        <span className={styles.errorIcon} aria-hidden="true">⚠️</span>
         <span className={styles.errorText}>{error}</span>
       </div>
     );
 
     const warningBanner = bookmarkWarning && (
-      <div className={styles.warningBanner}>
-        <span className={styles.errorIcon}>🔖</span>
+      <div className={styles.warningBanner} role="status">
+        <span className={styles.errorIcon} aria-hidden="true">🔖</span>
         <span className={styles.warningText}>{bookmarkWarning}</span>
       </div>
     );
@@ -174,8 +160,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
               {!passResult
                 ? '처리 중...'
                 : isWindowDone
-                  ? (isMain ? '윈도우 완료! 🎉' : '스텝 마스터! 🎉')
-                  : '패스 완료'}
+                  ? (isMain ? '이 범위를 모두 익혔어요 🎉' : '이 스텝을 모두 익혔어요 🎉')
+                  : '한 바퀴 완료'}
             </h3>
 
             {hasAnswers && (
@@ -185,6 +171,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                     type="button"
                     className={clsx(styles.statItemButton, openList === 'mastered' && styles.statItemActive)}
                     onClick={() => toggleList('mastered')}
+                    aria-expanded={openList === 'mastered'}
                   >
                     <span className={styles.statLabel}>알았음</span>
                     <span className={styles.statValueGreen}>{mastered.length}</span>
@@ -193,6 +180,7 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                     type="button"
                     className={clsx(styles.statItemButton, openList === 'learning' && styles.statItemActive)}
                     onClick={() => toggleList('learning')}
+                    aria-expanded={openList === 'learning'}
                   >
                     <span className={styles.statLabel}>몰랐음</span>
                     <span className={styles.statValueAmber}>{learning.length}</span>
@@ -206,14 +194,14 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                     ) : (
                       listWords.map(w => (
                         <div key={w._id} className={styles.wordItem}>
-                          <span className={styles.wordItemEntry}>{w.pron || w.entry}</span>
-                          <span className={styles.wordItemMean}>{w.means[0] ?? ''}</span>
+                          <span className={styles.wordItemEntry} lang="ja">{displaySpelling(w).written}</span>
+                          <span className={styles.wordItemMean}>{formatMeaning(w.means[0] ?? '')}</span>
                         </div>
                       ))
                     )}
                   </div>
                 ) : (
-                  <p className={styles.statHint}>숫자를 탭하면 단어 목록을 볼 수 있어요</p>
+                  <p className={styles.statHint}>숫자를 누르면 단어 목록을 볼 수 있어요</p>
                 )}
               </>
             )}
@@ -223,22 +211,22 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                 <p className={styles.completeDesc}>
                   {isWindowDone
                     ? isMain
-                      ? '이 범위의 단어를 모두 익혔어요. 다음 스텝 범위로 넘어갑니다.'
-                      : '이 스텝의 단어를 모두 익혔어요. 다시 섞어 복습하거나 홈으로 갈 수 있어요.'
+                      ? '다음 범위로 넘어갑니다. 오늘 익힌 단어는 내일부터 오늘의 복습에 나와요.'
+                      : '다시 섞어 한 번 더 하거나 홈으로 갈 수 있어요.'
                     : `아직 익히지 못한 ${remaining}개 단어를 다시 섞어 학습을 이어갑니다.`}
                 </p>
                 <div className={styles.completeActions}>
                   {!isWindowDone ? (
-                    <DefaultButton onClick={() => runAction(onContinue)} disabled={isProcessing}>
+                    <DefaultButton variant="primary" onClick={() => runAction(onContinue)} disabled={isProcessing} autoFocus>
                       {isProcessing ? '처리 중...' : '이어가기'}
                     </DefaultButton>
                   ) : isMain ? (
-                    <DefaultButton onClick={() => runAction(onAdvance)} disabled={isProcessing}>
-                      {isProcessing ? '처리 중...' : '다음 윈도우로'}
+                    <DefaultButton variant="primary" onClick={() => runAction(onAdvance)} disabled={isProcessing} autoFocus>
+                      {isProcessing ? '처리 중...' : '다음 범위로'}
                     </DefaultButton>
                   ) : (
                     <>
-                      <DefaultButton onClick={() => runAction(onAdvance)} disabled={isProcessing}>
+                      <DefaultButton variant="primary" onClick={() => runAction(onAdvance)} disabled={isProcessing} autoFocus>
                         {isProcessing ? '처리 중...' : '다시 학습하기'}
                       </DefaultButton>
                       <DefaultButton onClick={onGoHome} disabled={isProcessing}>홈으로</DefaultButton>
@@ -256,18 +244,12 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
       <>
         {errorBanner}
         {warningBanner}
-        <FlashCard
+        <StudyCard
           word={deck[wordIndex]}
-          showMean={showMean}
-          showHiragana={showHiragana}
+          next={deck[wordIndex + 1]}
+          onAnswer={handleKnowClick}
           isBookmarked={bookmarkedIds.has(currentWordId ?? '')}
           onBookmark={handleBookmark}
-        />
-        <ControlPanel
-          onShowClick={handleShowClick}
-          onKnowClick={handleKnowClick}
-          showMean={showMean}
-          showHiragana={showHiragana}
         />
       </>
     );

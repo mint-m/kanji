@@ -1,8 +1,6 @@
 import { FC } from 'react';
+import { startKakaoAuth } from 'services/kakaoOAuth';
 import * as styles from '../loginButton.css';
-
-const KAKAO_REST_API_KEY = process.env['REACT_APP_KAKAO_REST_API_KEY'];
-const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
 
 interface KakaoLoginButtonProps {
   className?: string;
@@ -17,28 +15,15 @@ const KakaoIcon = () => (
   </svg>
 );
 
-const KakaoLoginButton: FC<KakaoLoginButtonProps> = ({ className }) => {
-  const handleKakaoLogin = () => {
-    const kakaoAuthUrl =
-      `https://kauth.kakao.com/oauth/authorize` +
-      `?client_id=${KAKAO_REST_API_KEY}` +
-      `&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI!)}` +
-      `&response_type=code` +
-      `&scope=account_email,profile_nickname`;
-
-    window.location.href = kakaoAuthUrl;
-  };
-
-  return (
-    <button
-      className={`${styles.kakao}${className ? ` ${className}` : ''}`}
-      onClick={handleKakaoLogin}
-      type="button"
-    >
-      <KakaoIcon />
-      카카오 로그인
-    </button>
-  );
-};
+const KakaoLoginButton: FC<KakaoLoginButtonProps> = ({ className }) => (
+  <button
+    className={`${styles.kakao}${className ? ` ${className}` : ''}`}
+    onClick={() => startKakaoAuth('login')}
+    type="button"
+  >
+    <KakaoIcon />
+    카카오 로그인
+  </button>
+);
 
 export default KakaoLoginButton;

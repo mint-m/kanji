@@ -18,13 +18,12 @@ export interface UserCheckpointDocument extends Document {
   isWindowCompleted(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>; // all words known
   getCurrentWord(): mongoose.Types.ObjectId | null;
   isAtWord(index: number, wordId: mongoose.Types.ObjectId): boolean;
-  getRemainingWords(): mongoose.Types.ObjectId[];
   moveToNext(): boolean;
-  resetProgress(): void;
   getSessionStats(): SessionStats;
-  canMoveToNextWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<boolean>;
+  getWindowProgress(): Promise<{ total: number; known: number }>;
   reshuffleUnknownWords(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<number>;
   generateNextSlidingWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
+  restartWindow(userId: mongoose.Types.ObjectId, progressType: ProgressType): Promise<void>;
 }
 
 // UserCheckpoint model interface with static methods

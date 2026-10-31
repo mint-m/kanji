@@ -4,6 +4,8 @@ import bookmarkService, { Bookmark, GetBookmarksOptions, BookmarkPagination } fr
 import { LearningLevel, ProgressType } from 'services/types';
 import { getErrorMessage } from 'services/apiClient';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
+import { LEVELS, levelName } from 'constants/levels';
+import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
 import { clsx } from 'clsx';
 import * as styles from './BookmarkPage.css';
 
@@ -11,7 +13,7 @@ type SortOption = 'recent' | 'level';
 
 
 const LEVEL_COLORS: Record<string, string> = {
-  N5: '#e74c3c', N4: '#e67e22', N3: '#f39c12', N2: '#3498db', N1: '#9b59b6',
+  daily: '#16a085', N5: '#e74c3c', N4: '#e67e22', N3: '#f39c12', N2: '#3498db', N1: '#9b59b6',
 };
 
 const BookmarkPage: FC = () => {
@@ -25,6 +27,7 @@ const BookmarkPage: FC = () => {
   const [pagination, setPagination] = useState<BookmarkPagination | null>(null);
   const [editingBookmark, setEditingBookmark] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
 
   const fetchBookmarks = useCallback(async (page: number = 1) => {
@@ -67,18 +70,20 @@ const BookmarkPage: FC = () => {
 
   const handleRemoveBookmark = async (wordId: string, progressType?: string) => {
     if (!window.confirm('이 북마크를 삭제하시겠습니까?')) return;
+    setActionError(null);
     try {
       const response = await bookmarkService.toggleBookmark(wordId, progressType as ProgressType);
       if (response.success) {
         const targetPage = bookmarks.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
         fetchBookmarks(targetPage);
       }
-    } catch {
-      alert('북마크 삭제에 실패했습니다.');
+    } catch (err) {
+      setActionError(getErrorMessage(err, '북마크를 삭제하지 못했어요.'));
     }
   };
 
   const handleUpdateNotes = async (wordId: string) => {
+    setActionError(null);
     try {
       const response = await bookmarkService.updateBookmarkNotes(wordId, editNotes);
       if (response.success) {
@@ -86,8 +91,8 @@ const BookmarkPage: FC = () => {
         setEditingBookmark(null);
         setEditNotes('');
       }
-    } catch {
-      alert('메모 업데이트에 실패했습니다.');
+    } catch (err) {
+      setActionError(getErrorMessage(err, '메모를 저장하지 못했어요.'));
     }
   };
 
@@ -104,37 +109,39 @@ const BookmarkPage: FC = () => {
 
       <div className={styles.filtersBar}>
         <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>레벨</label>
+          <label className={styles.filterLabel} htmlFor="bookmark-level">레벨</label>
           <select
+            id="bookmark-level"
             className={styles.filterSelect}
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value as LearningLevel | 'all')}
           >
             <option value="all">전체</option>
-            {['N5','N4','N3','N2','N1'].map(l => <option key={l} value={l}>{l}</option>)}
+            {LEVELS.map(l => <option key={l} value={l}>{levelName(l)}</option>)}
           </select>
         </div>
         <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>정렬</label>
+          <label className={styles.filterLabel} htmlFor="bookmark-sort">정렬</label>
           <select
+            id="bookmark-sort"
             className={styles.filterSelect}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
           >
-            <option value="recent">최근 순</option>
+            <option value="recent">최근 북마크 순</option>
             <option value="level">레벨 순</option>
           </select>
         </div>
         <button
           className={styles.studyBtn}
-          onClick={() => navigate('/bookmark-study', { state: { level: selectedLevel, sortBy } })}
+          onClick={() => navigate('/bookmarks/study', { state: { level: selectedLevel, sortBy } })}
           disabled={bookmarks.length === 0}
         >
-          복습 시작
+          북마크 학습
         </button>
       </div>
 
-      {error && <div className="error-box" style={{ marginBottom: '16px' }}>{error}</div>}
+      {(error || actionError) && <div className="error-box" role="alert" style={{ marginBottom: '16px' }}>{error || actionError}</div>}
 
       {bookmarks.length === 0 ? (
         <div className={clsx('card', styles.emptyCard)}>
@@ -151,15 +158,21 @@ const BookmarkPage: FC = () => {
                   className={styles.levelBadge}
                   style={{ backgroundColor: LEVEL_COLORS[bookmark.word.level] || '#95a5a6' }}
                 >
-                  {bookmark.word.level}·{bookmark.word.step}
+                  {levelName(bookmark.word.level)}·{bookmark.word.step}
                 </span>
-                <button className={styles.deleteBtn} onClick={() => handleRemoveBookmark(bookmark.word._id, bookmark.progress_type)}>×</button>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() => handleRemoveBookmark(bookmark.word._id, bookmark.progress_type)}
+                  aria-label={`${displaySpelling(bookmark.word).written} 북마크 삭제`}
+                >
+                  ×
+                </button>
               </div>
 
               <div className={styles.wordArea}>
                 {bookmark.word.pron ? (
                   <ruby className={styles.wordKanji}>
-                    {bookmark.word.pron}
+                    {displaySpelling(bookmark.word).written}
                     <rt className={styles.wordReading}>{bookmark.word.entry}</rt>
                   </ruby>
                 ) : (
@@ -176,13 +189,15 @@ const BookmarkPage: FC = () => {
                     ))}
                   </div>
                 )}
-                <p className={styles.meanings}>{bookmark.word.means.join(', ')}</p>
+                {/* 한 뜻 안은 쉼표로 이어지므로 뜻과 뜻 사이는 / 로 나눈다 */}
+                <p className={styles.meanings}>{bookmark.word.means.map(formatMeaning).join(' / ')}</p>
               </div>
 
               <div className={styles.notesBox}>
                 {editingBookmark === bookmark.word._id ? (
                   <>
                     <textarea
+                      aria-label="메모"
                       className={styles.notesTextarea}
                       value={editNotes}
                       onChange={(e) => setEditNotes(e.target.value)}
@@ -194,12 +209,14 @@ const BookmarkPage: FC = () => {
                     </div>
                   </>
                 ) : bookmark.notes ? (
-                  <div
+                  <button
+                    type="button"
                     className={styles.notesDisplay}
                     onClick={() => { setEditingBookmark(bookmark.word._id); setEditNotes(bookmark.notes || ''); }}
+                    aria-label={`메모 수정: ${bookmark.notes}`}
                   >
                     {bookmark.notes}
-                  </div>
+                  </button>
                 ) : (
                   <button
                     className={styles.addNotesBtn}

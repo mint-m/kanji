@@ -6,6 +6,7 @@ import {
   AuthProvider,
 } from '../interfaces/user';
 import { ConflictError } from '../utils/errors';
+import { toKstDate, daysBetween } from '../utils/date';
 
 const UserSchema = new mongoose.Schema<UserDocument>(
   {
@@ -41,7 +42,9 @@ const UserSchema = new mongoose.Schema<UserDocument>(
     preferences: {
       studyReminders: { type: Boolean, default: true },
       reminderTime: { type: String, default: '19:00' },
-      dailyGoal: { type: Number, default: 20, min: 1, max: 100 },
+      dailyGoal: { type: Number, default: 30, min: 1, max: 100 },
+      // 학습 카드를 누를 때 먼저 보일 것 — 요미가나 → 뜻 / 뜻 → 요미가나
+      revealFirst: { type: String, enum: ['reading', 'meaning'], default: 'reading' },
       theme: { type: String, enum: ['light', 'dark', 'auto'], default: 'light' },
       language: { type: String, enum: ['ko', 'en', 'ja'], default: 'ko' },
       soundEffects: { type: Boolean, default: true },
@@ -64,6 +67,8 @@ const UserSchema = new mongoose.Schema<UserDocument>(
       averageSessionTime: { type: Number, default: 0, min: 0 },
       studyDaysCount: { type: Number, default: 0, min: 0 },
       favoriteStudyTime: { type: String },
+      lastStudyDate: { type: String }, // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
+      todayCount: { type: Number, default: 0, min: 0 }, // lastStudyDate 하루 동안의 응답 수
     },
     isActive: {
       type: Boolean,
@@ -95,27 +100,44 @@ UserSchema.methods.updateLastActive = function (this: UserDocument): void {
   this.profile.lastActiveAt = new Date();
 };
 
-// 하루에 한 번만 streak/studyDaysCount 증가, lastActiveAt 갱신
-UserSchema.methods.updateDailyStreak = function (this: UserDocument): void {
-  const now = new Date();
-  const last = this.profile.lastActiveAt;
-  if (last && last.toDateString() === now.toDateString()) return;
+// 단어 응답 1회를 기록한다. 연속 학습일은 실제로 학습한 날(한국 시간)만 센다 —
+// 로그인·토큰 갱신도 lastActiveAt을 바꾸므로 그 값으로 판단하면 로그인한 날의 학습이 누락된다
+UserSchema.methods.recordStudy = function (this: UserDocument, timeSpent: number): void {
+  const stats = this.statistics;
+  const today = toKstDate();
+  // lastStudyDate 도입 전 사용자는 이전 방식의 기준이던 마지막 접속일을 이어받는다
+  const lastStudyDate = stats.lastStudyDate ?? (this.profile.lastActiveAt && toKstDate(this.profile.lastActiveAt));
 
-  const toMidnight = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  stats.totalWordsStudied += 1;
+  stats.totalTimeSpent += timeSpent;
+  stats.todayCount = stats.lastStudyDate === today ? stats.todayCount + 1 : 1;
+  this.profile.lastActiveAt = new Date();
 
-  const diffDays = last ? Math.round((toMidnight(now) - toMidnight(last)) / 86400000) : 0;
-  this.statistics.currentStreak = diffDays === 1 ? this.statistics.currentStreak + 1 : 1;
-  if (this.statistics.currentStreak > this.statistics.longestStreak) {
-    this.statistics.longestStreak = this.statistics.currentStreak;
+  if (stats.lastStudyDate === today) return;
+
+  const gap = lastStudyDate ? daysBetween(lastStudyDate, today) : null;
+  if (gap === 0) {
+    // 도입 전 사용자가 오늘 이미 접속한 경우 — 이전 방식이 오늘을 셌을 수 있으니 연속 일수는 유지한다
+    stats.currentStreak = Math.max(stats.currentStreak, 1);
+  } else {
+    stats.currentStreak = gap === 1 ? stats.currentStreak + 1 : 1;
+    stats.studyDaysCount += 1;
   }
-  this.statistics.studyDaysCount++;
-  this.profile.lastActiveAt = now;
+  stats.longestStreak = Math.max(stats.longestStreak, stats.currentStreak);
+  stats.lastStudyDate = today;
 };
 
-UserSchema.methods.updateStudyStats = function (this: UserDocument, timeSpent: number, wordsStudied: number): void {
-  this.statistics.totalTimeSpent += timeSpent;
-  this.statistics.totalWordsStudied += wordsStudied;
+// 표시용 연속 학습일 — 어제까지 이어졌어야 살아 있다 (저장값은 다음 학습 때에야 리셋된다)
+UserSchema.methods.getCurrentStreak = function (this: UserDocument, now: Date = new Date()): number {
+  const stats = this.statistics;
+  const last = stats.lastStudyDate ?? (this.profile.lastActiveAt && toKstDate(this.profile.lastActiveAt));
+  if (!last) return 0;
+  return daysBetween(last, toKstDate(now)) <= 1 ? stats.currentStreak : 0;
+};
+
+// 오늘(한국 날짜) 응답 수
+UserSchema.methods.getTodayCount = function (this: UserDocument, now: Date = new Date()): number {
+  return this.statistics.lastStudyDate === toKstDate(now) ? this.statistics.todayCount : 0;
 };
 
 UserSchema.methods.getStudyLevel = function (this: UserDocument): 'beginner' | 'intermediate' | 'advanced' {

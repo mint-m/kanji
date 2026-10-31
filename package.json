@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "concurrently --kill-others \"cd backend && yarn dev\" \"cd frontend && yarn start\"",
+    "start:memory": "concurrently --kill-others \"cd backend && yarn dev:memory\" \"cd frontend && yarn start\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

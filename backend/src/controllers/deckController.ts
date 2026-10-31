@@ -2,10 +2,11 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import UserCheckpoint from '../models/userCheckpoint';
 import WordProgress from '../models/wordProgress';
+import WordReview from '../models/wordReview';
 import Word from '../models/word';
 import User from '../models/user';
+import StudyDay from '../models/studyDay';
 import SlidingWindowService from '../services/slidingWindowService';
-import { shuffleArray } from '../utils/shuffle';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ProgressType } from '../types';
 
@@ -70,7 +71,10 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
     });
 
     const sessionStats = progress.getSessionStats();
-    const isWindowComplete = await progress.isWindowCompleted(userId, progressType);
+    const [isWindowComplete, windowProgress] = await Promise.all([
+      progress.isWindowCompleted(userId, progressType),
+      progress.getWindowProgress(),
+    ]);
     const canMoveToNext = isWindowComplete
       && await SlidingWindowService.canMoveToNextWindow(progress.steps, progress.current_level);
 
@@ -84,6 +88,7 @@ export const getCurrentDeck = async (req: AuthenticatedRequest, res: Response): 
         words: deckWords,
         currentIndex: progress.current_index,
         sessionStats,
+        window: windowProgress,
         deckStatus: {
           isPassComplete: progress.isCompleted(),
           isWindowComplete,
@@ -166,12 +171,18 @@ export const completeWord = async (req: AuthenticatedRequest, res: Response): Pr
 
     await wordProgress.save();
 
+    // 처음 "알아요"를 누른 단어는 내일부터 간격 복습에 나온다 (이미 등록된 단어는 그대로)
+    if (isCorrect) {
+      await WordReview.enroll(userId, wordObjectId);
+    }
+
     // Update user statistics
     const user = await User.findById(userId);
     if (user) {
-      user.updateStudyStats(timeSpent || 0, 1);
-      user.updateDailyStreak();
+      user.recordStudy(timeSpent || 0);
       await user.save();
+      // 잔디 기록이 실패해도 응답 처리는 이어간다
+      await StudyDay.record(userId).catch((error) => console.error('Record study day error:', error));
     }
 
     // Always advance index (moveToNext guards against overflow)
@@ -245,11 +256,8 @@ export const completeDeck = async (req: AuthenticatedRequest, res: Response): Pr
     let canMoveToNext = false;
 
     if (progressType === 'sub') {
-      // 서브 세션 집중 루프: 같은 스텝을 재셔플해서 다시 시작
-      await WordProgress.resetWindowCompletionForWords(userId, progress.shuffled_order, 'sub');
-      progress.shuffled_order = shuffleArray(progress.shuffled_order);
-      progress.markModified('shuffled_order');
-      progress.current_index = 0;
+      // 서브 세션 집중 루프: 같은 스텝의 단어 전체를 다시 섞어 처음부터
+      await progress.restartWindow(userId, 'sub');
       await progress.save();
       isSubLoop = true;
       nextWindow = {

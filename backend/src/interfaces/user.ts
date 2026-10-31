@@ -1,21 +1,15 @@
 import { Document, Model } from 'mongoose';
 import mongoose from 'mongoose';
-import { UserAuthType, LearningLevel, Theme, Language } from '../types/common';
+import { UserAuthType, Theme, Language } from '../types/common';
 
-// Legacy learning checkpoint interface (for migration)
-export interface LearningCheckpoint {
-  level: LearningLevel;
-  step: {
-    start: number;
-    end: number;
-  };
-}
+export type RevealFirst = 'reading' | 'meaning';
 
 // User preferences interface
 export interface UserPreferences {
   studyReminders: boolean;
   reminderTime?: string; // HH:MM format
   dailyGoal: number; // words per day
+  revealFirst: RevealFirst; // 학습 카드를 누를 때 먼저 보일 것
   theme: Theme;
   language: Language;
   soundEffects: boolean;
@@ -31,6 +25,8 @@ export interface UserStats {
   averageSessionTime: number;
   studyDaysCount: number;
   favoriteStudyTime?: string; // Most common study hour
+  lastStudyDate?: string; // 마지막으로 학습한 날 (한국 시간 'YYYY-MM-DD')
+  todayCount: number; // lastStudyDate 하루 동안의 응답 수
 }
 
 // User profile interface
@@ -68,8 +64,9 @@ export interface UserDocument extends Document {
   // Instance methods
   getDisplayName(): string;
   updateLastActive(): void;
-  updateDailyStreak(): void;
-  updateStudyStats(timeSpent: number, wordsStudied: number): void;
+  recordStudy(timeSpent: number): void;
+  getCurrentStreak(now?: Date): number;
+  getTodayCount(now?: Date): number;
   getStudyLevel(): 'beginner' | 'intermediate' | 'advanced';
   canReceiveReminders(): boolean;
   isNewUser(): boolean;

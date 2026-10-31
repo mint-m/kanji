@@ -14,11 +14,3 @@ export interface DeckWindow {
   isCircular: boolean;
   totalWindows: number;
 }
-
-export interface WindowCheckpoint {
-  level: LearningLevel;
-  currentWindow: DeckWindow;
-  completedWindows: number;
-  isLevelCompleted: boolean;
-  updatedAt: Date;
-}

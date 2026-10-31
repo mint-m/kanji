@@ -3,11 +3,10 @@ import { vars } from 'styles/vars.css';
 
 export const card = style({
   position: 'relative',
-  marginLeft: 'auto',
-  marginRight: 'auto',
   marginTop: vars.space.sm,
   marginBottom: vars.space.sm,
-  width: '90%',
+  width: '100%',
+  backgroundColor: vars.color.bg,
   display: 'flex',
   flexDirection: 'column',
   padding: vars.space.sm,
@@ -16,12 +15,6 @@ export const card = style({
   overflow: 'hidden',
   transition: 'max-height 0.3s ease-in-out, transform 0.3s ease-in-out',
 
-  selectors: {
-    '&:focus-visible': {
-      outline: `2px solid #4527a0`,
-      outlineOffset: '2px',
-    },
-  },
 });
 
 export const cardCollapsed = style({
@@ -30,6 +23,11 @@ export const cardCollapsed = style({
 
 export const cardExpanded = style({
   maxHeight: '400px',
+
+  // 좁은 화면의 시트는 음독·훈독을 자르지 않고 한 번에 다 보인다 — 시트 자체가 스크롤한다
+  '@media': {
+    'screen and (max-width: 1099px)': { maxHeight: 'none' },
+  },
 });
 
 export const cardClickable = style({
@@ -72,14 +70,23 @@ export const cardBody = style({
   flexDirection: 'column',
 });
 
+// 한자와 훈음 목록을 세로 가운데로 맞춘다
 export const kanjiRow = style({
   display: 'flex',
+  alignItems: 'center',
   margin: '8px 0 12px',
 });
 
 export const kanjiGlyph = style({
   fontSize: vars.fontSize.kanji,
+  lineHeight: 1,
   marginRight: vars.space.md,
+});
+
+export const missing = style({
+  margin: 0,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
 });
 
 export const pronWrapper = style({
@@ -121,6 +128,10 @@ export const readingsScroll = style({
   maxHeight: '130px',
   overflowY: 'auto',
 
+  '@media': {
+    'screen and (max-width: 1099px)': { maxHeight: 'none', overflowY: 'visible' },
+  },
+
   selectors: {
     '&::-webkit-scrollbar': { width: '6px' },
     '&::-webkit-scrollbar-track': { backgroundColor: '#f1f1f1', borderRadius: '9999px' },
@@ -136,13 +147,19 @@ export const readingGroup = style({
   minWidth: '120px',
 });
 
+// 음·훈 표시 — 학습 카드의 품사 칩과 같은 얕은 홈 모양 (예전의 검은 테두리 상자는 뉴모피즘 결에서 튀었다)
 export const readingTag = style({
-  border: `1px solid #333`,
-  padding: '2px 6px',
-  fontSize: vars.fontSize.sm,
+  flexShrink: 0,
+  padding: '2px 8px',
+  marginTop: '2px',
   marginRight: vars.space.sm,
+  borderRadius: vars.radius.pill,
+  fontSize: vars.fontSize.xs,
+  fontWeight: 600,
+  lineHeight: 1.5,
+  color: vars.color.textMuted,
+  boxShadow: vars.shadow.track,
   height: 'fit-content',
-  borderRadius: vars.radius.sm,
 });
 
 export const readingList = style({

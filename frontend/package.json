@@ -15,16 +15,12 @@
     "@vanilla-extract/css": "^1.20.1",
     "axios": "^1.4.0",
     "http-proxy-middleware": "2.0.6",
-    "rc-slider": "10.2.1",
-    "rc-tooltip": "^6.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-page-scroller": "^3.0.1",
     "react-redux": "^8.1.1",
     "react-router-dom": "^6.13.0",
     "redux": "^4.2.1",
-    "typescript": "^4.9.5",
-    "web-vitals": "^2.1.4"
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "craco start",
@@ -55,7 +51,7 @@
         "files": [
           "**/services/apiClient.ts",
           "**/services/authService.ts",
-          "**/OriginWord/kanjiDataFilter.ts"
+          "**/__tests__/**"
         ],
         "rules": {
           "no-restricted-imports": "off"

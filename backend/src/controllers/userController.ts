@@ -3,6 +3,7 @@ import User from '../models/user';
 import UserCheckpoint from '../models/userCheckpoint';
 import { NotFoundError, BadRequestError, InternalServerError, InvalidStepRangeError, ConflictError } from '../utils/errors';
 import { ProgressType, LearningLevel, LEARNING_LEVELS } from '../types/common';
+import { UserPreferences } from '../interfaces/user';
 
 // 닉네임(이름) 업데이트
 export const updateUserName = async (req: Request, res: Response, next: NextFunction) => {
@@ -31,12 +32,71 @@ export const updateUserName = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+// 학습 설정 — 하루 목표 단어 수, 학습 카드를 누를 때 먼저 보일 것
+const toPreferences = (user: { preferences: UserPreferences }) => ({
+  dailyGoal: user.preferences.dailyGoal,
+  revealFirst: user.preferences.revealFirst,
+});
+
+export const getPreferences = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+    res.json({ success: true, data: toPreferences(user) });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    next(new InternalServerError('Failed to get preferences'));
+  }
+};
+
+// 보낸 설정만 바꾼다
+export const updatePreferences = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!._id;
+    const { dailyGoal, revealFirst } = req.body;
+    const changes: Record<string, unknown> = {};
+
+    if (dailyGoal !== undefined) {
+      if (!Number.isInteger(dailyGoal) || dailyGoal < 1 || dailyGoal > 100) {
+        return next(new BadRequestError('하루 목표는 1~100 사이의 정수로 입력해주세요'));
+      }
+      changes['preferences.dailyGoal'] = dailyGoal;
+    }
+    if (revealFirst !== undefined) {
+      if (revealFirst !== 'reading' && revealFirst !== 'meaning') {
+        return next(new BadRequestError("먼저 보일 것은 'reading' 또는 'meaning'이어야 합니다"));
+      }
+      changes['preferences.revealFirst'] = revealFirst;
+    }
+    if (Object.keys(changes).length === 0) {
+      return next(new BadRequestError('바꿀 설정이 없습니다'));
+    }
+
+    const user = await User.findByIdAndUpdate(userId, changes, { new: true });
+    if (!user) {
+      return next(new NotFoundError('User not found'));
+    }
+
+    res.json({ success: true, data: toPreferences(user) });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    next(new InternalServerError('Failed to update preferences'));
+  }
+};
+
 // 활성 진행 타입 업데이트
 export const updateActiveProgressType = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // authenticateJwt 미들웨어에서 이미 검증됨
     const userId = req.user!._id;
     const { activeProgressType } = req.body;
+
+    // findByIdAndUpdate는 스키마 enum 검증을 돌리지 않는다
+    if (!['main', 'sub', null].includes(activeProgressType)) {
+      return next(new BadRequestError('activeProgressType must be "main", "sub" or null'));
+    }
 
     const user = await User.findByIdAndUpdate(userId, { activeProgressType }, { new: true });
 
@@ -100,7 +160,11 @@ export const updateCheckpoint = async (req: Request, res: Response, next: NextFu
         );
       } catch (err) {
         if (err instanceof InvalidStepRangeError) {
-          return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다. 스크립트를 먼저 실행해주세요.`));
+          return next(new BadRequestError(`선택한 레벨(${level})에 해당 범위의 단어가 없습니다.`));
+        }
+        // (user_id, progress_type) 고유 인덱스 — 동시에 들어온 생성 요청 중 하나만 성공한다
+        if ((err as { code?: number }).code === 11000) {
+          return next(new ConflictError('이미 진행 중인 세션이 있습니다. 세션을 삭제한 뒤 다시 시작해주세요.'));
         }
         return next(err);
       }

@@ -2,115 +2,74 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import Word from '../models/word';
-import UserCheckpoint from '../models/userCheckpoint';
-import WordProgress from '../models/wordProgress';
+import WordReview, { LONG_TERM_STAGE } from '../models/wordReview';
+import StudyDay from '../models/studyDay';
+import { toKstDate } from '../utils/date';
 import { LEARNING_LEVELS } from '../types/common';
 import { NotFoundError, InternalServerError } from '../utils/errors';
 
-// Get learning stats for a user
+// 홈의 학습 잔디 — 최근 16주
+const ACTIVITY_DAYS = 16 * 7;
+
+// 학습 기록 — "익힌 단어"는 복습에 등록된 단어, "장기 기억"은 14일 간격 이상을 통과한 단어다.
+// 윈도우를 옮길 때 리셋되는 is_window_completed로 세면 진도가 나갈수록 숫자가 줄었다 늘었다 했다
 export const getUserStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // authenticateJwt 미들웨어에서 이미 검증됨
     const userId = req.user!._id;
-
-    // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
       return next(new NotFoundError('User not found'));
     }
 
-    const [mainProgress, subProgress] = await Promise.all([
-      UserCheckpoint.findByUserAndType(userId, 'main'),
-      UserCheckpoint.findByUserAndType(userId, 'sub'),
-    ]);
-
-    // 전체 단어 수 + 레벨별 단어 수를 한 번의 aggregation으로 조회
-    const wordCountByLevel: { _id: string; count: number }[] = await Word.aggregate([
-      { $group: { _id: '$level', count: { $sum: 1 } } },
-    ]);
-
-    const totalWordsInDatabase = wordCountByLevel.reduce((sum, l) => sum + l.count, 0);
-
-    // 완료된 단어 수를 레벨별로 한 번의 aggregation으로 조회
-    const completedByLevel: { _id: string; count: number }[] = await WordProgress.aggregate([
-      { $match: { user_id: userId, is_window_completed: true } },
-      { $group: { _id: '$word_id' } },
-      {
-        $lookup: {
-          from: 'word',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'word',
+    const now = new Date();
+    const [wordCountByLevel, learnedByLevel, dueCount, nextDueAt, activity] = await Promise.all([
+      Word.aggregate<{ _id: string; count: number }>([{ $group: { _id: '$level', count: { $sum: 1 } } }]),
+      WordReview.aggregate<{ _id: string; learned: number; longTerm: number }>([
+        { $match: { user_id: userId } },
+        { $lookup: { from: 'word', localField: 'word_id', foreignField: '_id', as: 'word' } },
+        { $unwind: '$word' },
+        {
+          $group: {
+            _id: '$word.level',
+            learned: { $sum: 1 },
+            longTerm: { $sum: { $cond: [{ $gte: ['$stage', LONG_TERM_STAGE] }, 1, 0] } },
+          },
         },
-      },
-      { $unwind: '$word' },
-      { $group: { _id: '$word.level', count: { $sum: 1 } } },
+      ]),
+      WordReview.countDue(userId, now),
+      WordReview.findNextDueAt(userId, now),
+      StudyDay.findRecent(userId, ACTIVITY_DAYS, now),
     ]);
 
-    const totalCompletedWords = completedByLevel.reduce((sum, l) => sum + l.count, 0);
-    const overallProgressPercentage =
-      totalWordsInDatabase > 0 ? Math.round((totalCompletedWords / totalWordsInDatabase) * 100) : 0;
-
-    const levelBreakdown = LEARNING_LEVELS.map((level) => {
-      const total = wordCountByLevel.find((l) => l._id === level)?.count ?? 0;
-      const completed = completedByLevel.find((l) => l._id === level)?.count ?? 0;
-      return { level, total, completed, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
+    const levels = LEARNING_LEVELS.map((level) => {
+      const learned = learnedByLevel.find((row) => row._id === level);
+      return {
+        level,
+        total: wordCountByLevel.find((row) => row._id === level)?.count ?? 0,
+        learned: learned?.learned ?? 0,
+        longTerm: learned?.longTerm ?? 0,
+      };
     });
 
-    const response: {
-      overall: { totalWords: number; completedWords: number; progressPercentage: number };
-      streak: { current: number; longest: number; studyDays: number };
-      totalWordsStudied: number;
-      levelBreakdown: { level: string; total: number; completed: number; percentage: number }[];
-      sessions: { type: string; currentLevel: string; steps: object; cycleProgress: object }[];
-    } = {
-      overall: {
-        totalWords: totalWordsInDatabase,
-        completedWords: totalCompletedWords,
-        progressPercentage: overallProgressPercentage,
-      },
-      streak: {
-        current: user.statistics.currentStreak,
-        longest: user.statistics.longestStreak,
-        studyDays: user.statistics.studyDaysCount,
-      },
-      totalWordsStudied: user.statistics.totalWordsStudied,
-      levelBreakdown,
-      sessions: [],
-    };
-
-    // Add main session info if exists
-    if (mainProgress) {
-      const sessionStats = mainProgress.getSessionStats();
-      response.sessions.push({
-        type: 'main',
-        currentLevel: mainProgress.current_level,
-        steps: mainProgress.steps,
-        cycleProgress: {
-          current: sessionStats.completedWords,
-          total: sessionStats.totalWords,
-          percentage: Math.round(sessionStats.progressPercentage),
+    res.json({
+      success: true,
+      data: {
+        learned: {
+          total: levels.reduce((sum, row) => sum + row.learned, 0),
+          longTerm: levels.reduce((sum, row) => sum + row.longTerm, 0),
         },
-      });
-    }
-
-    // Add sub session info if exists
-    if (subProgress) {
-      const sessionStats = subProgress.getSessionStats();
-      response.sessions.push({
-        type: 'sub',
-        currentLevel: subProgress.current_level,
-        steps: subProgress.steps,
-        cycleProgress: {
-          current: sessionStats.completedWords,
-          total: sessionStats.totalWords,
-          percentage: Math.round(sessionStats.progressPercentage),
+        levels,
+        review: { due: dueCount, nextDueAt },
+        streak: {
+          current: user.getCurrentStreak(now),
+          longest: user.statistics.longestStreak,
+          studyDays: user.statistics.studyDaysCount,
         },
-      });
-    }
-
-    // Return stats
-    res.json(response);
+        today: { date: toKstDate(now), count: user.getTodayCount(now), goal: user.preferences.dailyGoal },
+        activity,
+        totalAnswers: user.statistics.totalWordsStudied,
+      },
+    });
   } catch (error) {
     console.error('Get user stats error:', error);
     next(new InternalServerError('Failed to get user statistics'));

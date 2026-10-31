@@ -13,6 +13,7 @@ export interface KanjiDataType {
   kunRead?: string;
   koreanPron: string;
   means: Array<Mean>;
+  missing?: boolean; // 사전에도 DB에도 풀이가 없는 한자 — 패널에 그렇다고 알린다
 }
 
 interface KanjiState {
@@ -28,7 +29,9 @@ const kanjiSlice = createSlice({
   initialState,
   reducers: {
     addKanji: (state, action: PayloadAction<KanjiDataType>) => {
-      state.kanjis.push(action.payload);
+      if (!state.kanjis.some((item) => item.kanji === action.payload.kanji)) {
+        state.kanjis.push(action.payload);
+      }
     },
     reset: () => initialState,
   },

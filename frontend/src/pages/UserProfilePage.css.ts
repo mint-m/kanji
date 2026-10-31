@@ -116,7 +116,6 @@ export const nameInput = style({
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.bg,
   boxShadow: TRACK,
-  outline: 'none',
   width: '160px',
   maxWidth: '100%',
 });
@@ -166,56 +165,38 @@ const headerBtn = {
   whiteSpace: 'nowrap',
 } as const;
 
-// 학습 통계 — 통계 정보와 같은 그룹의 우측 버튼
-export const statsBtn = style({
-  ...headerBtn,
-  color: vars.color.textDark,
-
-  selectors: {
-    '&:hover': { boxShadow: HOVER },
-    '&:active': { boxShadow: PRESSED },
-  },
-});
-
-/* ── 통계 그룹: 간단한 통계 + 학습 통계 버튼 ── */
-export const statsGroup = style({
+/* ── 학습 설정(하루 목표, 카드 공개 순서) ── */
+export const choices = style({
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: vars.space.md,
   flexWrap: 'wrap',
-  paddingTop: vars.space.md,
-  boxShadow: `inset 0 1px 0 ${vars.color.borderLight}`,
+  gap: vars.space.sm,
 });
 
-// 간단한 통계 — 값별 짧은 라벨 한 줄
-export const miniStats = style({
-  display: 'flex',
-  alignItems: 'baseline',
-  flexWrap: 'wrap',
-  gap: `${vars.space.xs} ${vars.space.md}`,
-  minWidth: 0,
-});
-
-// 라벨 + 값 한 쌍
-export const miniStatItem = style({
-  display: 'inline-flex',
-  alignItems: 'baseline',
-  gap: vars.space.xs,
-});
-
-// 라벨만 약한 강조
-export const miniLabel = style({
+export const choice = style({
+  minWidth: '64px',
+  padding: `${vars.space.sm} ${vars.space.md}`,
+  border: 'none',
+  borderRadius: vars.radius.pill,
+  fontFamily: 'inherit',
   fontSize: vars.fontSize.sm,
   fontWeight: 600,
   color: vars.color.textMuted,
+  backgroundColor: vars.color.bg,
+  boxShadow: SOFT,
+  cursor: 'pointer',
+
+  selectors: {
+    // 고른 것 위에 마우스를 올려도 고른 모양을 지킨다 — hover 규칙이 더 구체적이라 덮어썼다
+    '&:hover:not(:disabled):not([aria-checked="true"])': { boxShadow: HOVER, color: vars.color.textDark },
+    '&[aria-checked="true"]': { boxShadow: PRESSED, color: vars.color.primary },
+    '&:disabled': { cursor: 'wait' },
+  },
 });
 
-// 값은 강조하지 않음
-export const miniValue = style({
+export const settingHint = style({
+  margin: `${vars.space.md} 0 0`,
   fontSize: vars.fontSize.sm,
-  fontWeight: 400,
-  color: vars.color.textFaint,
+  color: vars.color.textMuted,
 });
 
 /* ── 계정 연동 ── */

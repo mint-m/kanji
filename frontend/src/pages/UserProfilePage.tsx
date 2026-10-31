@@ -4,15 +4,18 @@ import { setUser } from 'store/modules/user';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getProfile, getStats, updateName } from 'services/userService';
-import deckService from 'services/deckService';
-import { CurrentDeck } from 'services/types';
+import { getProfile, getPreferences, updateName, updatePreferences } from 'services/userService';
+import { Preferences, RevealFirst } from 'services/types';
 import { logout, linkGoogleAccount, exchangeCodeForToken, getUserLocally, saveUserLocally, updateLocalUser } from 'services/authService';
 import { useGoogleLogin } from '@react-oauth/google';
+import { startKakaoAuth } from 'services/kakaoOAuth';
 import * as styles from './UserProfilePage.css';
 
-const KAKAO_REST_API_KEY = process.env['REACT_APP_KAKAO_REST_API_KEY'];
-const KAKAO_REDIRECT_URI = process.env['REACT_APP_KAKAO_REDIRECT_URI'];
+const GOAL_OPTIONS = [10, 30, 50, 100];
+const REVEAL_OPTIONS: { value: RevealFirst; label: string }[] = [
+  { value: 'reading', label: '요미가나 → 뜻' },
+  { value: 'meaning', label: '뜻 → 요미가나' },
+];
 
 const UserProfilePage: FC = () => {
   const navigate = useNavigate();
@@ -30,9 +33,10 @@ const UserProfilePage: FC = () => {
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  // 간단한 통계
-  const [progress, setProgress] = useState<number | null>(null);
-  const [currentDeck, setCurrentDeck] = useState<CurrentDeck | null>(null);
+  // 학습 설정 — 하루 목표, 카드 공개 순서
+  const [preferences, setPreferences] = useState<Preferences | null>(null);
+  const [savingKey, setSavingKey] = useState<keyof Preferences | null>(null);
+  const [failedKey, setFailedKey] = useState<keyof Preferences | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -55,21 +59,13 @@ const UserProfilePage: FC = () => {
     fetchUserData();
   }, []);
 
-  // 최근 학습 위치 + 진도
   useEffect(() => {
-    if (!userData) return;
     let active = true;
-    getStats()
-      .then((s) => { if (active) setProgress(s.overall.progressPercentage); })
+    getPreferences()
+      .then((loaded) => { if (active) setPreferences(loaded); })
       .catch(() => {});
-    const type = userData.activeProgressType;
-    if (type) {
-      deckService.getCurrentDeck(type)
-        .then((res) => { if (active && res.success && res.data) setCurrentDeck(res.data); })
-        .catch(() => {});
-    }
     return () => { active = false; };
-  }, [userData]);
+  }, []);
 
   const startEditName = () => {
     setNameInput(userData.name || '');
@@ -93,6 +89,19 @@ const UserProfilePage: FC = () => {
       setNameError('닉네임 변경에 실패했습니다.');
     } finally {
       setNameSaving(false);
+    }
+  };
+
+  const savePreference = async <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
+    if (!preferences || preferences[key] === value || savingKey) return;
+    setSavingKey(key);
+    setFailedKey(null);
+    try {
+      setPreferences(await updatePreferences({ [key]: value } as Partial<Preferences>));
+    } catch {
+      setFailedKey(key);
+    } finally {
+      setSavingKey(null);
     }
   };
 
@@ -121,18 +130,6 @@ const UserProfilePage: FC = () => {
     onError: () => setLinkError('Google 인증에 실패했습니다.'),
   });
 
-  const handleKakaoLink = () => {
-    if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) return;
-    const url =
-      `https://kauth.kakao.com/oauth/authorize` +
-      `?client_id=${KAKAO_REST_API_KEY}` +
-      `&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}` +
-      `&response_type=code` +
-      `&scope=account_email,profile_nickname` +
-      `&state=link`;
-    window.location.href = url;
-  };
-
   const linkedProviders: string[] = userData?.authProviders ?? (userData?.type ? [userData.type] : []);
 
   if (isLoading) {
@@ -151,10 +148,6 @@ const UserProfilePage: FC = () => {
     );
   }
 
-  const levelText = currentDeck?.level ?? '—';
-  const stepText = currentDeck?.steps ? `${currentDeck.steps.start}–${currentDeck.steps.end}` : '—';
-  const progressText = progress !== null ? `${progress}%` : '—';
-
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>프로필</h1>
@@ -172,6 +165,7 @@ const UserProfilePage: FC = () => {
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') setIsEditingName(false); }}
                     maxLength={20}
+                    aria-label="닉네임"
                     autoFocus
                   />
                   <button className={styles.nameSaveBtn} onClick={saveName} disabled={nameSaving}>
@@ -191,25 +185,51 @@ const UserProfilePage: FC = () => {
           </div>
           <button className={styles.logoutBtn} onClick={() => { logout(true); navigate('/'); }}>로그아웃</button>
         </div>
-
-        <div className={styles.statsGroup}>
-          <div className={styles.miniStats}>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>레벨</span>
-              <span className={styles.miniValue}>{levelText}</span>
-            </span>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>스텝</span>
-              <span className={styles.miniValue}>{stepText}</span>
-            </span>
-            <span className={styles.miniStatItem}>
-              <span className={styles.miniLabel}>진도</span>
-              <span className={styles.miniValue}>{progressText}</span>
-            </span>
-          </div>
-          <button className={styles.statsBtn} onClick={() => navigate('/profile/stats')}>학습 통계</button>
-        </div>
       </div>
+
+      {/* 하루 목표 */}
+      <section className={styles.card}>
+        <h2 className={styles.sectionTitle}>하루 목표</h2>
+        <div className={styles.choices} role="radiogroup" aria-label="하루 목표 단어 수">
+          {GOAL_OPTIONS.map((goal) => (
+            <button
+              key={goal}
+              type="button"
+              role="radio"
+              aria-checked={preferences?.dailyGoal === goal}
+              className={styles.choice}
+              onClick={() => savePreference('dailyGoal', goal)}
+              disabled={!preferences || savingKey !== null}
+            >
+              {goal}개
+            </button>
+          ))}
+        </div>
+        <p className={styles.settingHint}>진도·집중 학습과 복습에서 답한 카드 수로 셉니다. 홈과 기록에서 오늘 얼마나 했는지 보여 드려요.</p>
+        {failedKey === 'dailyGoal' && <p className={styles.fieldError}>하루 목표를 저장하지 못했어요. 다시 시도해주세요.</p>}
+      </section>
+
+      {/* 카드 공개 순서 */}
+      <section className={styles.card}>
+        <h2 className={styles.sectionTitle}>카드 공개 순서</h2>
+        <div className={styles.choices} role="radiogroup" aria-label="학습 카드를 누를 때 먼저 보일 것">
+          {REVEAL_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={preferences?.revealFirst === value}
+              className={styles.choice}
+              onClick={() => savePreference('revealFirst', value)}
+              disabled={!preferences || savingKey !== null}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className={styles.settingHint}>학습 카드를 누를 때마다 이 순서로 하나씩 보여요. 다 보인 뒤 한 번 더 누르면 다시 가려요.</p>
+        {failedKey === 'revealFirst' && <p className={styles.fieldError}>공개 순서를 저장하지 못했어요. 다시 시도해주세요.</p>}
+      </section>
 
       {/* 계정 연동 */}
       <section className={styles.card}>
@@ -236,7 +256,7 @@ const UserProfilePage: FC = () => {
             ) : (
               <button
                 className={styles.linkBtn}
-                onClick={handleKakaoLink}
+                onClick={() => startKakaoAuth('link')}
                 disabled={linkLoading === 'kakao'}
               >
                 연동하기

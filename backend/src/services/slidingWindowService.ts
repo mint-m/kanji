@@ -1,10 +1,10 @@
 import Word from '../models/word';
-import { LearningLevel, StepRange } from '../types/common';
-import { WindowConfig, DeckWindow, WindowCheckpoint } from '../types/services/slidingWindow';
+import { LearningLevel, StepRange, ObjectId } from '../types/common';
+import { WindowConfig, DeckWindow } from '../types/services/slidingWindow';
 import { shuffleArray } from '../utils/shuffle';
 
 // Re-export types for backwards compatibility
-export type { WindowConfig, DeckWindow, WindowCheckpoint };
+export type { WindowConfig, DeckWindow };
 
 export class SlidingWindowService {
   private static readonly DEFAULT_CONFIG: WindowConfig = {
@@ -78,23 +78,23 @@ export class SlidingWindowService {
     return result;
   }
 
+  // 윈도우에 속한 단어 전체(패스와 무관) — 순환 윈도우의 스텝 계산은 레벨의 실제 maxStep에 의존한다
+  static async getWindowWordIds(level: LearningLevel, steps: StepRange): Promise<ObjectId[]> {
+    const windowSteps = this.getWindowSteps(steps, await this.resolveConfig(level));
+    const words = await Word.find({ level, step: { $in: windowSteps } }).select('_id').sort({ step: 1, entry: 1 });
+    return words.map((word) => word._id);
+  }
+
   static async generateDeck(
     level: LearningLevel,
     steps: StepRange,
     shuffled: boolean = true
   ): Promise<DeckWindow> {
     const config = await this.resolveConfig(level);
-    const windowSteps = this.getWindowSteps(steps, config);
     const allWindows = this.generateAllWindows(level, config);
     const windowIndex = allWindows.findIndex((window) => window.start === steps.start && window.end === steps.end);
 
-    // Fetch words for the window steps
-    const words = await Word.find({
-      level: level,
-      step: { $in: windowSteps },
-    }).sort({ step: 1, entry: 1 });
-
-    let wordIds = words.map((word) => word._id);
+    let wordIds = await this.getWindowWordIds(level, steps);
 
     // Shuffle if requested
     if (shuffled) {

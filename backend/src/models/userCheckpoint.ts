@@ -12,6 +12,18 @@ import { WordProgressModel } from '../interfaces/wordProgress';
 // 순환 의존을 피하기 위해 mongoose 레지스트리에서 동적으로 조회
 const wordProgressModel = () => mongoose.model('WordProgress') as WordProgressModel;
 
+// 윈도우의 단어 전체를 섞어 새 덱을 만들고 그 단어들의 윈도우 완료 표시를 지운다 — 새 윈도우는 모두 '모름'에서 시작한다
+const buildFreshDeck = async (
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType,
+  level: LearningLevel,
+  steps: StepRange
+): Promise<mongoose.Types.ObjectId[]> => {
+  const { wordIds } = await SlidingWindowService.generateDeck(level, steps, true);
+  await wordProgressModel().resetWindowCompletionForWords(userId, wordIds, progressType);
+  return wordIds;
+};
+
 // UserCheckpoint - Simplified learning session state
 // Combines session tracking and checkpoint functionality
 const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
@@ -64,6 +76,9 @@ const userCheckpointSchema = new mongoose.Schema<UserCheckpointDocument>(
   }
 );
 
+// 사용자당 세션 타입별로 하나 — 동시 생성 요청이 중복 세션을 만들지 못하게 한다
+userCheckpointSchema.index({ user_id: 1, progress_type: 1 }, { unique: true });
+
 // Instance methods
 userCheckpointSchema.methods.isCompleted = function (this: UserCheckpointDocument): boolean {
   return this.current_index >= this.shuffled_order.length;
@@ -83,10 +98,6 @@ userCheckpointSchema.methods.isAtWord = function (
   return index === this.current_index && !!this.getCurrentWord()?.equals(wordId);
 };
 
-userCheckpointSchema.methods.getRemainingWords = function (this: UserCheckpointDocument): mongoose.Types.ObjectId[] {
-  return this.shuffled_order.slice(this.current_index);
-};
-
 userCheckpointSchema.methods.moveToNext = function (this: UserCheckpointDocument): boolean {
   if (!this.isCompleted()) {
     this.current_index++;
@@ -95,28 +106,31 @@ userCheckpointSchema.methods.moveToNext = function (this: UserCheckpointDocument
   return false;
 };
 
-userCheckpointSchema.methods.resetProgress = function (this: UserCheckpointDocument): void {
-  this.current_index = 0;
-};
-
+// 현재 패스 기준 진행 — 순환 윈도우(9-1)는 start > end라 스텝 수로 나누는 계산을 두지 않는다
 userCheckpointSchema.methods.getSessionStats = function (this: UserCheckpointDocument): SessionStats {
   const totalWords = this.shuffled_order.length;
-  const completedWords = this.current_index;
-  const remainingWords = totalWords - completedWords;
-  const progressPercentage = totalWords > 0 ? (completedWords / totalWords) * 100 : 0;
-  const totalSteps = this.steps.end - this.steps.start + 1;
-  const averageWordsPerStep = totalSteps > 0 ? totalWords / totalSteps : 0;
-  const currentStep = Math.floor(this.current_index / averageWordsPerStep) + this.steps.start;
+  const completedWords = Math.min(this.current_index, totalWords);
 
   return {
     totalWords,
     completedWords,
-    remainingWords,
-    progressPercentage,
-    averageWordsPerStep,
-    currentStep: Math.min(currentStep, this.steps.end),
-    totalSteps,
+    remainingWords: totalWords - completedWords,
+    progressPercentage: totalWords > 0 ? (completedWords / totalWords) * 100 : 0,
   };
+};
+
+// 이번 윈도우(패스가 아닌 범위 전체)에서 몇 개를 익혔는지 — 화면의 "익힘 n / 전체"
+userCheckpointSchema.methods.getWindowProgress = async function (
+  this: UserCheckpointDocument
+): Promise<{ total: number; known: number }> {
+  const wordIds = await SlidingWindowService.getWindowWordIds(this.current_level, this.steps);
+  const known = await wordProgressModel().countDocuments({
+    user_id: this.user_id,
+    word_id: { $in: wordIds },
+    progress_type: this.progress_type,
+    is_window_completed: true,
+  });
+  return { total: wordIds.length, known };
 };
 
 userCheckpointSchema.methods.isWindowCompleted = async function (
@@ -154,16 +168,6 @@ userCheckpointSchema.methods.reshuffleUnknownWords = async function (
   return this.shuffled_order.length;
 };
 
-userCheckpointSchema.methods.canMoveToNextWindow = async function (
-  this: UserCheckpointDocument,
-  userId: mongoose.Types.ObjectId,
-  progressType: ProgressType
-): Promise<boolean> {
-  const allKnown = await this.isWindowCompleted(userId, progressType);
-  if (!allKnown) return false;
-  return await SlidingWindowService.canMoveToNextWindow(this.steps, this.current_level);
-};
-
 userCheckpointSchema.methods.generateNextSlidingWindow = async function (
   this: UserCheckpointDocument,
   userId: mongoose.Types.ObjectId,
@@ -174,13 +178,19 @@ userCheckpointSchema.methods.generateNextSlidingWindow = async function (
     throw new Error('No next window available for this level');
   }
 
-  const nextDeck = await SlidingWindowService.generateDeck(this.current_level, nextWindow, true);
-
-  // Reset only after deck generation succeeds to avoid data loss on failure
-  await wordProgressModel().resetWindowCompletionForWords(userId, this.shuffled_order, progressType);
-
+  // 겹치는 스텝의 단어는 이전 윈도우에서 '알았음'으로 남아 있으므로 새 덱 기준으로 리셋한다
+  this.shuffled_order = await buildFreshDeck(userId, progressType, this.current_level, nextWindow);
   this.steps = nextWindow;
-  this.shuffled_order = nextDeck.wordIds;
+  this.current_index = 0;
+};
+
+// 같은 윈도우를 처음부터 다시 — 서브 세션 집중 루프. 마지막 패스의 단어만 섞으면 루프가 점점 줄어든다
+userCheckpointSchema.methods.restartWindow = async function (
+  this: UserCheckpointDocument,
+  userId: mongoose.Types.ObjectId,
+  progressType: ProgressType
+): Promise<void> {
+  this.shuffled_order = await buildFreshDeck(userId, progressType, this.current_level, this.steps);
   this.current_index = 0;
 };
 
@@ -210,19 +220,12 @@ userCheckpointSchema.statics.createNewSession = async function (
     throw new InvalidStepRangeError(`Invalid step range ${steps.start}-${steps.end} for level ${level}`);
   }
 
-  // Generate deck using SlidingWindowService
-  const deckWindow = await SlidingWindowService.generateDeck(level, steps, true);
-
-  // Reset window completion state for all words in this new session
-  await wordProgressModel().resetWindowCompletionForWords(userId, deckWindow.wordIds, type);
-
-  // Create new session
   const session = new this({
     user_id: userId,
     progress_type: type,
     current_level: level,
     steps,
-    shuffled_order: deckWindow.wordIds,
+    shuffled_order: await buildFreshDeck(userId, type, level, steps),
     current_index: 0,
   });
 
