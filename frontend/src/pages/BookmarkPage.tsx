@@ -5,6 +5,7 @@ import { LearningLevel, ProgressType } from 'services/types';
 import { getErrorMessage } from 'services/apiClient';
 import CenterDiv from 'components/CommonStyled/CenterDiv';
 import { LEVELS, levelName } from 'constants/levels';
+import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
 import { clsx } from 'clsx';
 import * as styles from './BookmarkPage.css';
 
@@ -162,7 +163,7 @@ const BookmarkPage: FC = () => {
                 <button
                   className={styles.deleteBtn}
                   onClick={() => handleRemoveBookmark(bookmark.word._id, bookmark.progress_type)}
-                  aria-label={`${bookmark.word.pron || bookmark.word.entry} 북마크 삭제`}
+                  aria-label={`${displaySpelling(bookmark.word).written} 북마크 삭제`}
                 >
                   ×
                 </button>
@@ -171,7 +172,7 @@ const BookmarkPage: FC = () => {
               <div className={styles.wordArea}>
                 {bookmark.word.pron ? (
                   <ruby className={styles.wordKanji}>
-                    {bookmark.word.pron}
+                    {displaySpelling(bookmark.word).written}
                     <rt className={styles.wordReading}>{bookmark.word.entry}</rt>
                   </ruby>
                 ) : (
@@ -188,7 +189,8 @@ const BookmarkPage: FC = () => {
                     ))}
                   </div>
                 )}
-                <p className={styles.meanings}>{bookmark.word.means.join(', ')}</p>
+                {/* 한 뜻 안은 쉼표로 이어지므로 뜻과 뜻 사이는 / 로 나눈다 */}
+                <p className={styles.meanings}>{bookmark.word.means.map(formatMeaning).join(' / ')}</p>
               </div>
 
               <div className={styles.notesBox}>

@@ -8,6 +8,7 @@ import Kanji from 'components/Kanji';
 import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { reset as resetKanji } from 'store/modules/kanji';
 import { canSpeak, speakJapanese } from 'utils/speech';
+import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
 import * as styles from './StudyCard.css';
 
 export interface StudyWord {
@@ -41,9 +42,9 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
   const [showMeaning, setShowMeaning] = useState(false);
   const kanjiCursor = useRef(0);
   const speakable = canSpeak();
+  const { written, others } = displaySpelling(word);
   // 가나로만 쓰는 단어는 읽기가 본문과 같다
-  const hasReading = Boolean(word.pron) && word.pron !== word.entry;
-  const written = word.pron || word.entry;
+  const hasReading = written !== word.entry;
 
   // 다음 단어가 그려지기 전에 가린다 — useEffect면 앞 카드의 공개 상태로 한 프레임 보이고, 바로 누른 Space가 앞 카드 기준으로 토글된다
   useLayoutEffect(() => {
@@ -147,8 +148,12 @@ const StudyCard: FC<StudyCardProps> = ({ word, next, onAnswer, isBookmarked, onB
             </div>
           )}
           <ul className={styles.means}>
-            {word.means.map((mean, index) => <li key={index}>{mean}</li>)}
+            {word.means.map((mean, index) => <li key={index}>{formatMeaning(mean)}</li>)}
           </ul>
+          {/* 다른 표기는 뜻과 함께 공개한다 — 표제어 칸에 두면 단어마다 표제어 자리가 달라진다 */}
+          {others.length > 0 && (
+            <p className={styles.others}>다른 표기 <span lang="ja">{others.join('・')}</span></p>
+          )}
         </div>
 
         {!revealed && <p className={styles.tapHint}>카드를 누르면 읽기와 뜻이 보여요</p>}

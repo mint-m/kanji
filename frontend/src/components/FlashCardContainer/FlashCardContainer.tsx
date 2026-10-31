@@ -6,6 +6,7 @@ import DefaultButton from 'components/CommonStyled/DefaultButton';
 import { DeckWord } from 'services/types';
 import progressService from 'services/progressService';
 import { useToggleBookmark } from 'hooks/useToggleBookmark';
+import { displaySpelling, formatMeaning } from 'utils/wordDisplay';
 import * as styles from './FlashCardContainer.css';
 
 interface FlashCardContainerProps {
@@ -193,8 +194,8 @@ const FlashCardContainer: FC<FlashCardContainerProps> = memo(
                     ) : (
                       listWords.map(w => (
                         <div key={w._id} className={styles.wordItem}>
-                          <span className={styles.wordItemEntry} lang="ja">{w.pron || w.entry}</span>
-                          <span className={styles.wordItemMean}>{w.means[0] ?? ''}</span>
+                          <span className={styles.wordItemEntry} lang="ja">{displaySpelling(w).written}</span>
+                          <span className={styles.wordItemMean}>{formatMeaning(w.means[0] ?? '')}</span>
                         </div>
                       ))
                     )}

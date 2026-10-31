@@ -104,6 +104,15 @@ describe('StudyCard', () => {
     input.remove();
   });
 
+  it('묶인 표기는 대표 표기만 보이고, 다른 표기와 쉼표로 다듬은 뜻은 뜻을 공개할 때 보인다', () => {
+    renderCard({ word: { _id: 'w3', entry: 'しめきり', pron: '締(め)切り·締切·〆切', means: ['마감;마감 날짜'], parts: ['명사'] } });
+    expect(screen.getByRole('button', { name: '締 한자 풀이 보기' }).parentElement).toHaveTextContent(/^締め切り$/);
+    expect(screen.getByText('締切・〆切').closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'true');
+    press('KeyM');
+    expect(screen.getByText('마감, 마감 날짜')).toBeInTheDocument();
+    expect(screen.getByText('締切・〆切').closest('[aria-hidden]')).toHaveAttribute('aria-hidden', 'false');
+  });
+
   it('가나로만 쓰는 단어는 요미가나 버튼을 끈다', () => {
     renderCard({ word: { _id: 'w2', entry: 'ありがとう', pron: '', means: ['고마워'] } });
     expect(screen.getByRole('button', { name: '요미가나' })).toBeDisabled();

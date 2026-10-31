@@ -98,6 +98,12 @@ export const means = style({
   lineHeight: 1.4,
 });
 
+export const others = style({
+  margin: 0,
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textMuted,
+});
+
 // 자리는 지키고 보이지만 않게 — 공개할 때 카드가 출렁이지 않는다
 export const concealed = style({
   visibility: 'hidden',
